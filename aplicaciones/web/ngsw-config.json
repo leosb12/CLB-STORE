@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/@angular/service-worker/config/schema.json",
+  "index": "/index.html",
+  "assetGroups": [
+    {
+      "name": "clb-aplicacion",
+      "installMode": "prefetch",
+      "updateMode": "prefetch",
+      "resources": {
+        "files": [
+          "/index.html",
+          "/*.css",
+          "/*.js",
+          "/manifest.webmanifest",
+          "/configuracion.json",
+          "/iconos/**",
+          "/ilustraciones/**"
+        ]
+      }
+    }
+  ],
+  "navigationUrls": ["/**", "!/**/*.*", "!/api/**"],
+  "navigationRequestStrategy": "performance"
+}

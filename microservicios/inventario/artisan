@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+use Illuminate\Foundation\Application;
+use Symfony\Component\Console\Input\ArgvInput;
+
+define('LARAVEL_START', microtime(true));
+
+require __DIR__.'/vendor/autoload.php';
+
+/** @var Application $aplicación */
+$aplicación = require_once __DIR__.'/bootstrap/app.php';
+
+$estado = $aplicación->handleCommand(new ArgvInput);
+
+exit($estado);

@@ -1,0 +1,30 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "clb-store/inventario",
+    "type": "project",
+    "description": "Microservicio de Inventario de CLB Store con arquitectura Hexagonal.",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.4",
+        "ext-mbstring": "*",
+        "ext-mongodb": "^2.5",
+        "laravel/framework": "^13.0",
+        "mongodb/laravel-mongodb": "^5.11"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.27",
+        "phpunit/phpunit": "^12.5.12"
+    },
+    "autoload": {"psr-4": {"Clb\\Inventario\\": "fuente/"}},
+    "autoload-dev": {"psr-4": {"Pruebas\\": "pruebas/"}},
+    "scripts": {
+        "pruebas": "@php vendor/bin/phpunit",
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ]
+    },
+    "config": {"optimize-autoloader": true, "preferred-install": "dist", "sort-packages": true},
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

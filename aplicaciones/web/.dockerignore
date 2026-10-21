@@ -1,0 +1,11 @@
+.env
+.env.*
+node_modules
+dist
+.angular
+.git
+test-results
+test-results-administracion
+playwright-report
+pruebas
+*.log

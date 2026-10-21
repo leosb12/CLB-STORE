@@ -1,0 +1,166 @@
+name: clb-store
+
+services:
+  postgres:
+    # Base privada de Ventas (PostgreSQL).
+    labels:
+      clb.componente: "Base de datos de Ventas"
+      clb.tecnologia: "PostgreSQL"
+    image: postgres:17.6-bookworm
+    container_name: clb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clb_ventas
+      POSTGRES_USER: ${CLB_POSTGRES_USUARIO:?Defina CLB_POSTGRES_USUARIO}
+      POSTGRES_PASSWORD: ${CLB_POSTGRES_CLAVE:?Defina CLB_POSTGRES_CLAVE}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+    ports:
+      - "127.0.0.1:${CLB_POSTGRES_PUERTO:-5432}:5432"
+    volumes:
+      - ventas:/var/lib/postgresql/data
+    networks: [bases]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  mongo:
+    # Base privada de Inventario (MongoDB).
+    labels:
+      clb.componente: "Base de datos de Inventario"
+      clb.tecnologia: "MongoDB"
+    image: mongo:8.0.13
+    container_name: clb_mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${CLB_MONGO_ADMINISTRADOR:?Defina CLB_MONGO_ADMINISTRADOR}
+      MONGO_INITDB_ROOT_PASSWORD: ${CLB_MONGO_CLAVE_ADMINISTRADOR:?Defina CLB_MONGO_CLAVE_ADMINISTRADOR}
+      MONGO_INITDB_DATABASE: clb_inventario
+      CLB_MONGO_USUARIO: ${CLB_MONGO_USUARIO:?Defina CLB_MONGO_USUARIO}
+      CLB_MONGO_CLAVE: ${CLB_MONGO_CLAVE:?Defina CLB_MONGO_CLAVE}
+    ports:
+      - "127.0.0.1:${CLB_MONGO_PUERTO:-27017}:27017"
+    volumes:
+      - inventario:/data/db
+      - configuracion-inventario:/data/configdb
+      - ./inicializar-inventario.js:/docker-entrypoint-initdb.d/inicializar-inventario.js:ro
+    networks: [bases]
+    healthcheck:
+      test:
+        - CMD
+        - mongosh
+        - --quiet
+        - --eval
+        - 'const base = db.getSiblingDB("clb_inventario"); if (!base.auth(process.env.CLB_MONGO_USUARIO, process.env.CLB_MONGO_CLAVE) || base.runCommand({ping: 1}).ok !== 1) quit(1);'
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 20s
+
+  dynamodb:
+    # Base local de Clientes; todavía no hay backend de Clientes.
+    labels:
+      clb.componente: "Base de datos local de Clientes"
+      clb.tecnologia: "DynamoDB Local"
+    image: amazon/dynamodb-local:3.1.0
+    container_name: clb_dynamodb
+    restart: unless-stopped
+    user: "0:0"
+    working_dir: /home/dynamodblocal
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
+    environment:
+      AWS_ACCESS_KEY_ID: ${CLB_DYNAMODB_IDENTIFICADOR:-clblocal}
+      AWS_SECRET_ACCESS_KEY: ${CLB_DYNAMODB_CLAVE:-clblocalficticia}
+      AWS_DEFAULT_REGION: ${CLB_DYNAMODB_REGION:-us-east-1}
+    ports:
+      - "127.0.0.1:${CLB_DYNAMODB_PUERTO:-8000}:8000"
+    volumes:
+      - clientes:/home/dynamodblocal/data
+    networks: [bases]
+
+  inventario:
+    # Backend REST existente: Laravel + PHP. Accede solo a su MongoDB privado.
+    image: clb_inventario:local
+    build:
+      context: ../../microservicios/inventario
+    container_name: clb_backend_inventario
+    restart: unless-stopped
+    init: true
+    labels:
+      clb.componente: "Backend de Inventario — API REST"
+      clb.tecnologia: "PHP 8.4 + Laravel 13"
+    environment:
+      APP_NAME: "CLB Store — Inventario"
+      APP_ENV: local
+      APP_DEBUG: "false"
+      APP_KEY: ${CLB_INVENTARIO_CLAVE_APLICACION:?Defina CLB_INVENTARIO_CLAVE_APLICACION}
+      APP_URL: http://127.0.0.1:${CLB_INVENTARIO_PUERTO:-18080}
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
+      CLB_MONGO_SERVIDOR: mongo
+      CLB_MONGO_PUERTO: "27017"
+      CLB_MONGO_BASE: clb_inventario
+      CLB_MONGO_AUTENTICACION: clb_inventario
+      CLB_MONGO_USUARIO: ${CLB_MONGO_USUARIO:?Defina CLB_MONGO_USUARIO}
+      CLB_MONGO_CLAVE: ${CLB_MONGO_CLAVE:?Defina CLB_MONGO_CLAVE}
+      CLB_MONGO_COLECCION: productos
+      # Habilitación explícita de desarrollo; APP_ENV distinto de local/testing siempre la bloquea.
+      CLB_ADMINISTRACION_LOCAL_HABILITADA: ${CLB_ADMINISTRACION_LOCAL_HABILITADA:-false}
+      CLB_ADMINISTRACION_REDES_LOCALES: "127.0.0.0/8,::1/128,172.16.0.0/12"
+    ports:
+      - "127.0.0.1:${CLB_INVENTARIO_PUERTO:-18080}:8000"
+    networks: [bases, aplicaciones]
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, infraestructura/comprobar-salud.php]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  web:
+    # Frontend principal: Angular compilado como PWA, servido con Nginx.
+    # El navegador usa /api; Nginx lo remite al backend por la red interna.
+    image: clb_web:local
+    build:
+      context: ../../aplicaciones/web
+    container_name: clb_frontend_web_angular
+    restart: unless-stopped
+    labels:
+      clb.componente: "Frontend web — Catálogo PWA"
+      clb.tecnologia: "Angular 21 + Nginx"
+    ports:
+      - "127.0.0.1:${CLB_WEB_PUERTO:-14200}:8080"
+    networks: [aplicaciones]
+    depends_on:
+      inventario:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/manifest.webmanifest]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  ventas:
+    name: clb_datos_ventas
+  inventario:
+    name: clb_datos_inventario
+  configuracion-inventario:
+    name: clb_configuracion_inventario
+  clientes:
+    name: clb_datos_clientes
+
+networks:
+  aplicaciones:
+    name: clb_aplicaciones
+    driver: bridge
+  bases:
+    name: clb_bases
+    driver: bridge

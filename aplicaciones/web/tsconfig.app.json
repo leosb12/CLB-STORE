@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "outDir": "./dist/compilacion", "types": [] },
+  "files": ["fuente/principal.ts"],
+  "include": ["fuente/**/*.d.ts"]
+}
