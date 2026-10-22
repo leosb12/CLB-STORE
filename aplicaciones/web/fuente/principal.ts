@@ -12,6 +12,7 @@ import {
   AdministracionRest,
 } from "./administracion/adaptadores/administracion-rest";
 import { PaginaAdministracion } from "./administracion/presentacion/pagina-administracion";
+import { PaginaCarrito } from "./existencias/presentacion/pagina-carrito";
 
 async function iniciar(): Promise<void> {
   const respuesta = await fetch("/configuracion.json");
@@ -29,6 +30,7 @@ async function iniciar(): Promise<void> {
         useValue: new CatalogoRest(configuración.apiInventario),
       },
       provideRouter([
+        { path: "carrito", component: PaginaCarrito },
         { path: "administracion/productos", component: PaginaAdministracion },
         { path: "catalogo", component: PaginaCatalogo },
         {

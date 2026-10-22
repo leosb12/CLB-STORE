@@ -34,6 +34,7 @@ interface EventoInstalacion extends Event {
         <a routerLink="/administracion/productos" routerLinkActive="actual"
           >Administración</a
         >
+        <a routerLink="/carrito" routerLinkActive="actual">Carrito</a>
       </nav>
       @if (this["instalación"]()) {
         <button class="instalar" (click)="instalar()">

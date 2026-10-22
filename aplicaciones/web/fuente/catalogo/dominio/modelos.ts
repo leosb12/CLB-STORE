@@ -1,3 +1,4 @@
+import type { ConfirmacionExistencias, Variante } from "../../existencias/dominio/modelos";
 export interface Producto {
   identificador: string;
   sku: string;
@@ -43,6 +44,9 @@ export interface Operacion {
   vencimiento?: number;
   versiónEsperada?: number | null;
   resultado?: Producto;
+  resultadoExistencias?: Variante;
+  dependencias?: string[];
+  versiónDesde?: string;
   detalleError?: Record<string, unknown>;
   reemplazadaPor?: string;
   motivoRevision?: "CONFLICTO_PERMANENTE" | "REINTENTOS_AGOTADOS";
@@ -70,7 +74,7 @@ export interface ProcesadorOperacion {
   procesar(
     operación: Readonly<Operacion>,
     señal: AbortSignal,
-  ): Promise<void | Producto>;
+  ): Promise<void | Producto | ConfirmacionExistencias>;
 }
 
 export class ErrorRemoto extends Error {

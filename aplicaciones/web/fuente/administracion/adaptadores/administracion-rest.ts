@@ -1,4 +1,5 @@
 import { InjectionToken } from "@angular/core";
+import { varianteValida, type Variante, type Movimiento, type ConfirmacionExistencias } from "../../existencias/dominio/modelos";
 import {
   ErrorRemoto,
   type Operacion,
@@ -95,11 +96,46 @@ export class AdministracionRest {
   }
 
   procesadores(): ProcesadorOperacion[] {
-    return ["REGISTRAR_PRODUCTO", "MODIFICAR_PRODUCTO"].map((tipo) => ({
+    return [...["CREAR_VARIANTE", "MODIFICAR_VARIANTE", "REGISTRAR_MOVIMIENTO", "CONFIGURAR_MINIMO"].map(tipo => ({
+      tipo, endpoint: this.url + "/variantes", procesar: (operación: Readonly<Operacion>, señal: AbortSignal) => this.enviarExistencias(operación, señal),
+    })), ...["REGISTRAR_PRODUCTO", "MODIFICAR_PRODUCTO"].map((tipo) => ({
       tipo,
       endpoint: this.url + "/productos",
-      procesar: async (operación, señal) => this.enviar(operación, señal),
-    }));
+      procesar: async (operación: Readonly<Operacion>, señal: AbortSignal) => this.enviar(operación, señal),
+    }))];
+  }
+
+  async variantes(producto: string, administración = false): Promise<Variante[]> {
+    const respuesta = await this.petición<{ variantes: Variante[] }>((administración ? "/administracion" : "") + "/productos/" + encodeURIComponent(producto) + "/variantes");
+    if (!Array.isArray(respuesta.variantes) || !respuesta.variantes.every(varianteValida) || respuesta.variantes.some(v => v.identificador_producto !== producto)) throw new Error("Respuesta de variantes inválida.");
+    return respuesta.variantes;
+  }
+  async variante(id: string): Promise<Variante> {
+    const respuesta = await this.petición<ConfirmacionExistencias>("/administracion/variantes/" + encodeURIComponent(id));
+    if (!varianteValida(respuesta.variante)) throw new Error("Respuesta de variante inválida.");
+    return respuesta.variante;
+  }
+  async movimientos(id: string): Promise<Movimiento[]> {
+    const respuesta = await this.petición<{ movimientos: Movimiento[] }>("/variantes/" + encodeURIComponent(id) + "/movimientos");
+    if (!Array.isArray(respuesta.movimientos)) throw new Error("Historial inválido.");
+    return respuesta.movimientos;
+  }
+  async enviarExistencias(operación: Readonly<Operacion>, señal: AbortSignal): Promise<ConfirmacionExistencias> {
+    const { identificador_producto, identificador_variante, ...datos } = operación.datos;
+    const crear = operación.tipo === "CREAR_VARIANTE";
+    const movimiento = operación.tipo === "REGISTRAR_MOVIMIENTO";
+    const mínimo = operación.tipo === "CONFIGURAR_MINIMO";
+    const ruta = crear ? `/productos/${encodeURIComponent(String(identificador_producto))}/variantes`
+      : `/variantes/${encodeURIComponent(String(identificador_variante))}${movimiento ? "/movimientos" : mínimo ? "/minimo" : ""}`;
+    const respuesta = await this.petición<ConfirmacionExistencias>(ruta, {
+      method: crear || movimiento ? "POST" : "PUT", signal: señal,
+      headers: { "Content-Type": "application/json", "Idempotency-Key": operación.claveIdempotencia },
+      body: JSON.stringify({ ...datos, ...(!crear ? { versión_esperada: operación.versiónEsperada } : {}) }),
+    });
+    if (!varianteValida(respuesta.variante) || respuesta.variante.identificador !== (crear ? datos["identificador"] : identificador_variante)
+      || respuesta.variante.versión_sincronización !== (crear ? 1 : Number(operación.versiónEsperada) + 1))
+      throw new Error("No se recibió una confirmación válida de existencias. Se reintentará la misma operación.");
+    return respuesta;
   }
 
   async enviar(

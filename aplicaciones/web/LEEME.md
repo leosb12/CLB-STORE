@@ -60,3 +60,16 @@ npx playwright test --config playwright.administracion.config.ts
 ```
 
 La suite inicia temporalmente Laravel en `127.0.0.1:18081` y la PWA de producción en `127.0.0.1:14201`. Requiere PHP local/ext-mongodb mediante el ejecutor de Inventario, además de Chrome. Usa una colección aleatoria `clb_prueba_web_*` y la limpia al finalizar, sin tocar productos reales. Perfiles temporales aislados para comprobar cierre/reapertura offline, respuesta perdida tras escritura y resolución de conflicto. Capturas/trazas en `test-results-administracion/`. Las cinco pruebas originales de PWA se siguen ejecutando con `npm run pruebas:pwa` en 14200.
+
+
+## Variantes, stock y carrito
+
+En `/administracion/productos`, abrir «Variantes y stock» del producto. Registrar talla/color/SKU, gestionar entradas/salidas/ajustes con motivo, configurar mínimo y descargar historial. Las existencias de la tabla son confirmadas; las propuestas y conflictos se muestran aparte. Una variante con movimientos o reservas conserva su identidad para auditoría. Los comandos siguen restringidos al entorno local.
+
+Las variantes pueden prepararse offline y «Preparar stock dependiente» permite encolar su entrada antes de que exista en el servidor. Conservan un UUID estable y se envían en orden causal. La hija espera la confirmación de su antecedente y usa su versión devuelta. Una respuesta perdida reintenta la misma clave; un 409/403/422 exige revisión explícita. Los datos propuestos no sustituyen saldos confirmados. La confirmación incierta se consulta con la misma operación.
+
+El detalle público ofrece únicamente combinaciones de talla/color registradas y muestra disponibilidad real de referencia. Las variantes consultadas se guardan para offline; se advierte que el stock puede cambiar. Las imágenes continúan siendo locales. `/carrito` agrega variantes por UUID/SKU, permite editar cantidad, eliminar y vaciar, y conserva la selección al cerrar completamente Chrome. Precio guardado en centavos; totales con bigint. Precio y stock son estimados hasta futura confirmación del servidor. El carrito no reserva ni genera pedidos o pagos.
+
+IndexedDB pasa de versión 2 a 3 sin borrar productos, favoritos, propuestas o metadatos. Se añaden variantes públicas/administrativas, historial descargado y carrito. Se conserva la única cola `operaciones`. Datos privados administrativos y resultados históricos de idempotencia no se publican como disponibilidad actual. Favoritos continúan sin procesador remoto.
+
+Los comandos de prueba anteriores ejecutan también las nuevas pruebas unitarias y cinco recorridos de navegador de variantes, stock, carrito, cierre/reapertura offline, sincronización causal, respuesta perdida y conflicto. Todos los datos de navegador se crean en la colección temporal aislada, nunca en los ocho productos originales.

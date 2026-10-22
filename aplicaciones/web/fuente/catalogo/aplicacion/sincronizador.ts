@@ -54,7 +54,15 @@ export class Sincronizador {
           uno.fechaCreación.localeCompare(otro.fechaCreación) ||
           uno.identificador.localeCompare(otro.identificador),
       );
-      for (const pendiente of pendientes) {
+      // Orden topológico estable: una dependencia puede tener la misma fecha que su hija.
+      const ordenadas = pendientes.filter(operación => !operación.dependencias?.length);
+      const restantes = pendientes.filter(operación => operación.dependencias?.length);
+      while (restantes.length) {
+        const índice = restantes.findIndex(operación => operación.dependencias?.every(id => ordenadas.some(anterior => anterior.identificador === id)));
+        if (índice < 0) break; // Dependencia ausente/cíclica: se conserva pendiente, sin envío.
+        ordenadas.push(...restantes.splice(índice, 1));
+      }
+      for (const pendiente of ordenadas) {
         const procesador = this.procesadores.find(
           (candidato) =>
             candidato.tipo === pendiente.tipo &&

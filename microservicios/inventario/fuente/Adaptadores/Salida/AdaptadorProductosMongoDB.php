@@ -47,7 +47,7 @@ final readonly class AdaptadorProductosMongoDB implements RepositorioProductos
 
     public function listar(\Clb\Inventario\Dominio\ConsultaProductos $consulta): \Clb\Inventario\Dominio\PaginaProductos
     {
-        $filtro = $consulta->incluirInactivos ? [] : ['activo' => true];
+        $filtro = $consulta->incluirInactivos ? ['identificador' => ['$exists' => true]] : ['activo' => true];
         if ($consulta->búsqueda !== '') {
             $filtro['nombre'] = new \MongoDB\BSON\Regex(preg_quote($consulta->búsqueda), 'i');
         }

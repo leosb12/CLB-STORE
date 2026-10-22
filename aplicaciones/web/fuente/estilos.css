@@ -1308,3 +1308,26 @@ footer {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Variantes, stock y carrito conservan la identidad visual CLB. */
+.panel-existencias { margin-block: 2rem; padding: clamp(1rem, 3vw, 2rem); border: 1px solid #d8dfd6; border-radius: 20px; background: #f5f7f1; min-width: 0; }
+.rejilla-existencias { display: grid; grid-template-columns: minmax(230px, .7fr) minmax(0, 1.5fr); gap: 1.5rem; align-items: start; }
+.rejilla-existencias > *, .gestion-stock { min-width: 0; }
+.formulario-stock { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-block: 1.3rem; }
+.formulario-stock label { flex: 1 1 130px; }
+.formulario-stock label:last-of-type { flex-basis: 240px; }
+.propuesta-variante { padding: .8rem; border: 1px dashed #a5b69c; border-radius: 10px; }
+.seleccion-variante { border-top: 1px solid #d8dfd6; margin-top: 1.5rem; padding-top: 1rem; }
+.seleccion-variante label { display: block; margin-block: .8rem; font-weight: 600; }
+.seleccion-variante input, .seleccion-variante select, .linea-carrito input, .formulario-administracion select { display: block; width: 100%; padding: .8rem; border: 1px solid #bdc9b7; border-radius: 9px; margin-top: .4rem; background: white; color: #243529; font: inherit; }
+.seleccion-variante input { max-width: 140px; }
+.disponibilidad { color: #365638; font-weight: 700; }
+.disponibilidad.agotado { color: #9b542e; }
+.pagina-carrito { max-width: 1200px; margin: auto; padding: 2rem 0; }
+.rejilla-carrito { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .45fr); gap: 2rem; margin-top: 2rem; }
+.linea-carrito { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.3rem; padding: 1.5rem 0; border-bottom: 1px solid #d8dfd6; }
+.linea-carrito h2 { font-size: 1.25rem; margin: 0; }
+.linea-carrito input { max-width: 130px; }
+.linea-carrito strong { display: block; margin-top: 1rem; }
+.resumen-carrito { padding: 1.5rem; background: #edf1e6; border-radius: 18px; align-self: start; }
+@media (max-width: 850px) { .rejilla-existencias, .rejilla-carrito { grid-template-columns: minmax(0, 1fr); } .encabezado nav { flex-wrap: wrap; } }

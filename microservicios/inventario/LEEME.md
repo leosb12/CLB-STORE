@@ -47,3 +47,33 @@ Cada escritura administrativa conserva su resultado en el propio documento, junt
 Un reintento idéntico devuelve la misma instantánea y versión originales. Una clave usada con otros datos responde 409; una versión atrasada responde 409 con `código: CONFLICTO_VERSION` y `producto_actual`. La respuesta de un reintento puede ser histórica; consultar otra vez el producto para conocer su versión vigente. Los comprobantes son internos y no se exponen por REST.
 
 El historial local admite 256 operaciones por producto, incluido el registro idempotente. Al llegar al límite se rechazan nuevas modificaciones con 422, conservando todos los comprobantes y los datos. Requiere revisión técnica; no borrar historiales ni aplicar TTL para continuar, porque se perdería la deduplicación de solicitudes anteriores.
+
+
+## Variantes, stock y reservas locales
+
+Después de reconstruir, ejecutar `docker compose exec inventario php artisan clb:migrar-variantes` desde la carpeta Compose. Puede repetirse: conserva el SKU comercial y todos los productos sin asignar atributos o existencias ficticias. Las variantes se registran explícitamente, inicialmente con saldo cero. Las pruebas crean datos solo en colecciones temporales.
+
+Todas las escrituras nuevas requieren `Idempotency-Key` UUID v4. Ejemplo de creación de variante: `{"identificador":"UUID-v4-estable","sku":"CLB-CAM-NEG-M","talla":"M","color":"Negro","activo":true}`. El precio sigue siendo el del producto.
+
+| Método y ruta (prefijo `/api/v1`) | Contrato y acceso |
+| --- | --- |
+| POST `/productos/{id}/variantes` | Crear variante; administrativo local |
+| GET `/productos/{id}/variantes` | Variantes activas de producto activo, público |
+| GET `/variantes/{id}` o `/variantes/{id}/existencias` | Variante pública con física, reservada, disponible, mínimo, versión y fechas |
+| PUT `/variantes/{id}` | SKU/talla/color/activo y `versión_esperada`; administrativo local |
+| GET `/administracion/productos/{id}/variantes` | Incluye variantes inactivas; administrativo local |
+| GET `/administracion/variantes/{id}` | Estado actual administrativo |
+| POST `/variantes/{id}/movimientos` | `tipo`, `cantidad` entera positiva, `motivo`, `versión_esperada`; AJUSTE además requiere `sentido`: INCREMENTO o DISMINUCION |
+| GET `/variantes/{id}/movimientos` | Historial auditado; administrativo local |
+| PUT `/variantes/{id}/minimo` | `mínimo` entero no negativo y `versión_esperada`; administrativo local |
+| POST `/interno/reservas` | `identificador` UUID, `identificador_pedido` externo y `líneas`: arreglo de `{identificador_variante,cantidad,versión_esperada}` |
+| GET `/interno/reservas/{id}` | Estado actual de reserva; interno local |
+| POST `/interno/reservas/{id}/consumir` | Cuerpo vacío; consume una vez, interno local |
+| POST `/interno/reservas/{id}/liberar` | Cuerpo vacío; compensa una vez, interno local |
+| GET `/interno/eventos` | Eventos `stock_bajo` persistidos pendientes; interno local |
+
+Cada reserva admite de una a cincuenta variantes distintas. Si alguna carece de disponibilidad o tiene otra versión, no se reserva ninguna. Una salida no consume unidades reservadas. Consumir resta física y reservada juntas y registra SALIDA por cada variante; liberar solo reduce reservada. Una reserva consumida no puede liberarse. Una terminación repetida, incluso con otra clave, no repite efectos. Usar la misma clave con otra solicitud da 409. Los conflictos de existencias devuelven `variante_actual` cuando procede; no sobrescribirlos automáticamente.
+
+El agregado local `clb_existencias` permite atomicidad de todas las líneas en una sola escritura durable, compatible con MongoDB standalone. Comparte colección e índice de claves con los productos; se excluye de su listado. Se conservan los comprobantes originales y eventos sin TTL. Límite de 256 operaciones por variante y 8 MiB BSON del agregado, con margen para terminar reservas activas. Al agotarse, requiere partición técnica conservando historial; este adaptador acota el desarrollo local y no promete escala de producción. No hay SAGA distribuida ni consumidor n8n.
+
+`php vendor/bin/phpunit` incluye ahora una prueba operacional que reinicia `clb_mongo` para verificar persistencia real, sin borrar volúmenes. Ejecutarla con Docker disponible y sin otra suite MongoDB concurrente. Todas las escrituras de prueba continúan en colecciones `clb_prueba_*`, eliminadas individualmente al terminar.

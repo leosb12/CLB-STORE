@@ -8,10 +8,11 @@ import {
 } from "../dominio/productos-administrativos";
 import type { Operacion, Producto } from "../../catalogo/dominio/modelos";
 import { precioEnBob } from "../../catalogo/aplicacion/estado-catalogo";
+import { PanelExistencias } from "../../existencias/presentacion/panel-existencias";
 
 @Component({
   selector: "clb-pagina-administracion",
-  imports: [FormsModule, DatePipe, JsonPipe],
+  imports: [FormsModule, DatePipe, JsonPipe, PanelExistencias],
   template: ` <section
     class="administracion"
     aria-labelledby="titulo-administracion"
@@ -195,6 +196,7 @@ import { precioEnBob } from "../../catalogo/aplicacion/estado-catalogo";
                     >
                       Editar
                     </button>
+                    <button class="botón-texto" (click)="productoVariantes = producto.identificador" [attr.aria-label]="'Variantes y stock de ' + producto.nombre">Variantes y stock</button>
                     <button
                       class="botón-texto"
                       (click)="alternar(producto)"
@@ -221,6 +223,7 @@ import { precioEnBob } from "../../catalogo/aplicacion/estado-catalogo";
         </div>
       </section>
     </div>
+    @if (productoVariantes) { <clb-panel-existencias [producto]="productoVariantes" /> }
     <section
       class="operaciones-administracion"
       aria-labelledby="titulo-operaciones"
@@ -316,6 +319,7 @@ export class PaginaAdministracion {
   datos: DatosProducto = datosDeProducto();
   base?: Producto;
   revision?: string;
+  productoVariantes = "";
   constructor() {
     void this.estado.iniciar();
   }

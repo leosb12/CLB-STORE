@@ -14,7 +14,7 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(api: __DIR__.'/../rutas/api.php')
-    ->withCommands([\Clb\Inventario\Adaptadores\Entrada\CargarCatalogoDemostracion::class])
+    ->withCommands([\Clb\Inventario\Adaptadores\Entrada\CargarCatalogoDemostracion::class, \Clb\Inventario\Adaptadores\Entrada\MigrarVariantes::class])
     ->withMiddleware(function (Middleware $intermediarios): void {
         $intermediarios->remove([
             TrimStrings::class,
@@ -22,6 +22,9 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $excepciones): void {
+        $excepciones->render(function (\Clb\Inventario\Dominio\ErrorDeExistencias $error) {
+            return response()->json(['mensaje' => $error->getMessage(), 'código' => $error->estado === 409 ? 'CONFLICTO_EXISTENCIAS' : 'EXISTENCIAS_INVALIDAS', 'variante_actual' => $error->actual], $error->estado);
+        });
         $excepciones->dontReport([ReglaDeProductoIncumplida::class, SkuDuplicado::class]);
         $excepciones->shouldRenderJsonWhen(fn (Request $solicitud, Throwable $error): bool => true);
         $excepciones->render(function (\Clb\Inventario\Dominio\AdministracionNoAutorizada $error) {

@@ -89,7 +89,7 @@ services:
     restart: unless-stopped
     init: true
     labels:
-      clb.componente: "Backend de Inventario — API REST"
+      clb.componente: "Backend de Inventario — Productos, variantes, stock y reservas REST"
       clb.tecnologia: "PHP 8.4 + Laravel 13"
     environment:
       APP_NAME: "CLB Store — Inventario"
@@ -132,7 +132,7 @@ services:
     container_name: clb_frontend_web_angular
     restart: unless-stopped
     labels:
-      clb.componente: "Frontend web — Catálogo PWA"
+      clb.componente: "Frontend web — Catálogo, administración y carrito PWA"
       clb.tecnologia: "Angular 21 + Nginx"
     ports:
       - "127.0.0.1:${CLB_WEB_PUERTO:-14200}:8080"

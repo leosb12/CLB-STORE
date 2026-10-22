@@ -15,6 +15,9 @@ final class ProveedorInventario extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoGestionarExistencias::class, \Clb\Inventario\Aplicacion\GestionarExistencias::class);
+        $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoInternoInventario::class, \Clb\Inventario\Adaptadores\Entrada\AccesoInternoLocal::class);
+        $this->app->bind(\Clb\Inventario\Puertos\Salida\RepositorioExistencias::class, fn () => new \Clb\Inventario\Adaptadores\Salida\AdaptadorExistenciasMongoDB(DB::connection('mongodb')->getCollection(config('inventario.colección'))));
         $this->app->bind(PuertoRegistrarProducto::class, RegistrarProducto::class);
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoModificarProducto::class, \Clb\Inventario\Aplicacion\ModificarProducto::class);
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoAdministrativo::class, \Clb\Inventario\Adaptadores\Entrada\AccesoAdministrativoLocal::class);
