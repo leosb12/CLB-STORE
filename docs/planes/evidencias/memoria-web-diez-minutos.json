@@ -1,0 +1,131 @@
+{
+  "duracion_segundos": 600,
+  "muestras": [
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 182,
+      "bytes": 9742580,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 182,
+      "bytes": 9742580,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 180,
+      "bytes": 9300008,
+      "inexacta": false,
+      "backend": "webgl"
+    }
+  ]
+}

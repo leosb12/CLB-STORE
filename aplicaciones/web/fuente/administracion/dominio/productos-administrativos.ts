@@ -39,7 +39,7 @@ export function validarProducto(datos: DatosProducto): Record<string, string> {
   if ([...datos.descripción].length > 5000)
     errores["descripción"] = "La descripción admite hasta 5000 caracteres.";
   if (!datos.categoría.trim() || [...datos.categoría.trim()].length > 100)
-    errores["categoría"] = "Escribe una categoría de hasta 100 caracteres.";
+    errores["categoría"] = "Selecciona una categoría de la lista.";
   if (
     !/^(?:0|[1-9][0-9]{0,8})(?:\.[0-9]{1,2})?$/.test(datos.precio) ||
     /^0(?:\.0{1,2})?$/.test(datos.precio)

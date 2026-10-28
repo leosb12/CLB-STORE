@@ -14,11 +14,15 @@ services:
       POSTGRES_USER: ${CLB_POSTGRES_USUARIO:?Defina CLB_POSTGRES_USUARIO}
       POSTGRES_PASSWORD: ${CLB_POSTGRES_CLAVE:?Defina CLB_POSTGRES_CLAVE}
       POSTGRES_INITDB_ARGS: --encoding=UTF8
+      # Solo para el script de inicialización de un volumen vacío (base clb_analitica de IA).
+      CLB_ANALITICA_CLAVE: ${CLB_ANALITICA_CLAVE:-}
     ports:
       - "127.0.0.1:${CLB_POSTGRES_PUERTO:-5432}:5432"
     volumes:
       - ventas:/var/lib/postgresql/data
-    networks: [bases]
+      - ./inicializar-analitica.sh:/docker-entrypoint-initdb.d/20-inicializar-analitica.sh:ro
+    # «analitica» es la única red que comparte con IA: IA no alcanza MongoDB ni DynamoDB.
+    networks: [bases, analitica]
     healthcheck:
       test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 5s
@@ -60,7 +64,7 @@ services:
       start_period: 20s
 
   dynamodb:
-    # Base local de Clientes; todavía no hay backend de Clientes.
+    # Base privada de Clientes (DynamoDB Local).
     labels:
       clb.componente: "Base de datos local de Clientes"
       clb.tecnologia: "DynamoDB Local"
@@ -96,7 +100,7 @@ services:
       APP_ENV: local
       APP_DEBUG: "false"
       APP_KEY: ${CLB_INVENTARIO_CLAVE_APLICACION:?Defina CLB_INVENTARIO_CLAVE_APLICACION}
-      APP_URL: http://127.0.0.1:${CLB_INVENTARIO_PUERTO:-18080}
+      APP_URL: http://127.0.0.1:${CLB_PASARELA_PUERTO:-18000}
       CACHE_STORE: array
       SESSION_DRIVER: array
       QUEUE_CONNECTION: sync
@@ -107,11 +111,15 @@ services:
       CLB_MONGO_USUARIO: ${CLB_MONGO_USUARIO:?Defina CLB_MONGO_USUARIO}
       CLB_MONGO_CLAVE: ${CLB_MONGO_CLAVE:?Defina CLB_MONGO_CLAVE}
       CLB_MONGO_COLECCION: productos
-      # Habilitación explícita de desarrollo; APP_ENV distinto de local/testing siempre la bloquea.
-      CLB_ADMINISTRACION_LOCAL_HABILITADA: ${CLB_ADMINISTRACION_LOCAL_HABILITADA:-false}
-      CLB_ADMINISTRACION_REDES_LOCALES: "127.0.0.0/8,::1/128,172.16.0.0/12"
-    ports:
-      - "127.0.0.1:${CLB_INVENTARIO_PUERTO:-18080}:8000"
+      CLB_RECURSOS_PROBADOR: ${CLB_RECURSOS_PROBADOR:-false}
+      CLB_RECURSOS_DIRECTORIO: /var/www/clb_inventario/storage/app/prendas
+      # Fase 7: administración (rol admin) e API interna (rol servicio) con tokens de Keycloak.
+      CLB_INVENTARIO_ACCESO: oidc
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
+      CLB_IDENTIDAD_JWKS: http://identidad:8080/identidad/realms/clb/protocol/openid-connect/certs
+    volumes:
+      - recursos-prendas:/var/www/clb_inventario/storage/app/prendas
+    # Sin puerto publicado: se accede solo por la pasarela (punto único de entrada).
     networks: [bases, aplicaciones]
     depends_on:
       mongo:
@@ -123,6 +131,228 @@ services:
       retries: 10
       start_period: 30s
 
+  identidad:
+    # SSO: Keycloak con el realm clb (roles cliente/admin/servicio). Se publica solo a través de la pasarela.
+    image: quay.io/keycloak/keycloak:26.8.1
+    container_name: clb_identidad
+    restart: unless-stopped
+    labels:
+      clb.componente: "Identidad — SSO OIDC (realm clb)"
+      clb.tecnologia: "Keycloak 26"
+    # Modo de desarrollo local (H2 en volumen). En cloud: modo start con base gestionada y TLS.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${CLB_IDENTIDAD_ADMINISTRADOR:?Defina CLB_IDENTIDAD_ADMINISTRADOR}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${CLB_IDENTIDAD_CLAVE_ADMINISTRADOR:?Defina CLB_IDENTIDAD_CLAVE_ADMINISTRADOR}
+      # Emisor estable: la URL pública por la pasarela. Los servicios validan "iss" contra ella.
+      KC_HOSTNAME: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HTTP_RELATIVE_PATH: /identidad
+      KC_PROXY_HEADERS: xforwarded
+      KC_HEALTH_ENABLED: "true"
+    volumes:
+      - identidad:/opt/keycloak/data
+      - ../identidad/realm-clb.json:/opt/keycloak/data/import/realm-clb.json:ro
+    networks: [aplicaciones]
+    healthcheck:
+      test: [CMD-SHELL, "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /identidad/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+
+  pasarela:
+    # Punto único de entrada: enruta /api a cada microservicio y /identidad a Keycloak.
+    image: nginx:stable-alpine
+    container_name: clb_pasarela
+    restart: unless-stopped
+    user: nginx
+    labels:
+      clb.componente: "Pasarela — punto único de entrada"
+      clb.tecnologia: "Nginx"
+    volumes:
+      - ../pasarela/nginx.conf:/etc/nginx/nginx.conf:ro
+    # Nginx bufferiza en /tmp las fotos del probador: en RAM, nunca en el disco del contenedor.
+    tmpfs: ["/tmp:size=64m,mode=1777"]
+    ports:
+      - "127.0.0.1:${CLB_PASARELA_PUERTO:-18000}:8080"
+    networks: [aplicaciones]
+    depends_on:
+      identidad:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/salud]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  ventas:
+    # Backend de Ventas: Spring Boot + DDD. Orquesta la SAGA de compra; accede solo a su PostgreSQL.
+    image: clb_ventas:local
+    build:
+      context: ../../microservicios/ventas
+    container_name: clb_backend_ventas
+    restart: unless-stopped
+    init: true
+    labels:
+      clb.componente: "Backend de Ventas — Pedidos, SAGA de compra y outbox REST"
+      clb.tecnologia: "Java 21 + Spring Boot 4"
+    environment:
+      CLB_ENTORNO: local
+      CLB_VENTAS_PUERTO_INTERNO: "8080"
+      CLB_POSTGRES_SERVIDOR: postgres
+      CLB_POSTGRES_PUERTO: "5432"
+      CLB_POSTGRES_BASE: clb_ventas
+      CLB_POSTGRES_USUARIO: ${CLB_POSTGRES_USUARIO:?Defina CLB_POSTGRES_USUARIO}
+      CLB_POSTGRES_CLAVE: ${CLB_POSTGRES_CLAVE:?Defina CLB_POSTGRES_CLAVE}
+      CLB_INVENTARIO_URL: http://inventario:8000
+      CLB_CLIENTES_URL: http://clientes:3000
+      # Tokens de Keycloak: emisor público (pasarela) y JWKS/token por la red interna. Secreto solo en el .env local.
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
+      CLB_IDENTIDAD_INTERNO: http://identidad:8080/identidad
+      CLB_IDENTIDAD_SECRETO_VENTAS: ${CLB_IDENTIDAD_SECRETO_VENTAS:?Defina CLB_IDENTIDAD_SECRETO_VENTAS}
+    # Sin puerto publicado: se accede solo por la pasarela (punto único de entrada).
+    networks: [bases, aplicaciones]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      inventario:
+        condition: service_healthy
+      clientes:
+        condition: service_healthy
+      identidad:
+        condition: service_healthy
+
+  clientes:
+    # Backend de Clientes: NestJS en capas. Accede solo a su DynamoDB Local.
+    image: clb_clientes:local
+    build:
+      context: ../../microservicios/clientes
+    container_name: clb_backend_clientes
+    restart: unless-stopped
+    init: true
+    labels:
+      clb.componente: "Backend de Clientes — Fidelización y puntos REST"
+      clb.tecnologia: "NestJS 12 + TypeScript"
+    environment:
+      CLB_ENTORNO: local
+      CLB_CLIENTES_PUERTO_INTERNO: "3000"
+      CLB_DYNAMODB_ENDPOINT: http://dynamodb:8000
+      CLB_DYNAMODB_REGION: ${CLB_DYNAMODB_REGION:-us-east-1}
+      CLB_DYNAMODB_IDENTIFICADOR: ${CLB_DYNAMODB_IDENTIFICADOR:-clblocal}
+      CLB_DYNAMODB_CLAVE: ${CLB_DYNAMODB_CLAVE:-clblocalficticia}
+      # Tokens de Keycloak: emisor público (pasarela) y JWKS por la red interna.
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
+      CLB_IDENTIDAD_JWKS: http://identidad:8080/identidad/realms/clb/protocol/openid-connect/certs
+    # Sin puerto publicado: se accede solo por la pasarela (punto único de entrada).
+    networks: [bases, aplicaciones]
+    depends_on:
+      dynamodb:
+        condition: service_started
+
+  ia:
+    # Inteligencia Artificial: FastAPI + CLEAR. Gestión empresarial con agentes, GraphQL, MCP, reportes, voz y ML.
+    # Su base privada es el modelo de lectura clb_analitica (CQRS); recibe datos solo por eventos REST, nunca de bases ajenas.
+    image: clb_ia:local
+    build:
+      context: ../../microservicios/inteligencia-artificial
+    container_name: clb_backend_ia
+    restart: unless-stopped
+    init: true
+    labels:
+      clb.componente: "Backend de IA — Agentes, GraphQL, MCP, reportes, voz y ML"
+      clb.tecnologia: "Python 3.12 + FastAPI"
+    environment:
+      CLB_ANALITICA_SERVIDOR: postgres
+      CLB_ANALITICA_PUERTO: "5432"
+      CLB_ANALITICA_CLAVE: ${CLB_ANALITICA_CLAVE:?Defina CLB_ANALITICA_CLAVE}
+      CLB_VENTAS_URL: http://ventas:8080
+      CLB_INVENTARIO_URL: http://inventario:8000
+      CLB_CLIENTES_URL: http://clientes:3000
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
+      CLB_IDENTIDAD_INTERNO: http://identidad:8080/identidad
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA:?Defina CLB_IDENTIDAD_SECRETO_IA}
+      # Ollama corre nativo en el host para usar la GPU.
+      CLB_IA_OLLAMA_URL: ${CLB_IA_OLLAMA_URL:-http://host.docker.internal:11434}
+      CLB_IA_MODELO: ${CLB_IA_MODELO:-qwen3:8b}
+      CLB_IA_MODELO_VOZ: ${CLB_IA_MODELO_VOZ:-small}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - modelos-ia:/modelos
+    # Sin puerto publicado: se accede solo por la pasarela (punto único de entrada). Mínimo privilegio de red: solo
+    # PostgreSQL (su base clb_analitica) y la red de aplicaciones; nunca MongoDB ni DynamoDB de otros servicios.
+    networks: [analitica, aplicaciones]
+    # No depende de Ventas ni de Inventario: si caen, la ingesta reintenta desde su cursor.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      identidad:
+        condition: service_healthy
+
+  ia-vton:
+    # Worker opcional del microservicio IA; GPU dedicada y sin acceso a bases ajenas.
+    profiles: [vton]
+    image: clb_ia_vton:local
+    build:
+      context: ../../microservicios/inteligencia-artificial
+      dockerfile: Dockerfile.vton
+    container_name: clb_worker_vton
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    gpus: all
+    mem_limit: ${CLB_VTON_RAM:-4g}
+    memswap_limit: ${CLB_VTON_RAM_SWAP:-5g}
+    cpus: 4
+    environment:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
+      CLB_IDENTIDAD_INTERNO: http://identidad:8080/identidad
+    volumes:
+      - ../../microservicios/inteligencia-artificial/weights:/weights:ro
+      - resultados-vton:/resultados
+    networks: [aplicaciones]
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud')"]
+      start_period: 900s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  ia-prendas:
+    # Worker del mismo servicio IA; perfil opcional, nunca un quinto backend público.
+    profiles: [prendas]
+    image: clb_ia_prendas:local
+    build:
+      context: ../../microservicios/inteligencia-artificial
+      dockerfile: Dockerfile.prendas
+    container_name: clb_worker_prendas
+    init: true
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 2g
+    cpus: 2
+    environment:
+      CLB_INVENTARIO_URL: http://inventario:8000
+      CLB_IDENTIDAD_INTERNO: http://identidad:8080/identidad
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA:?Defina CLB_IDENTIDAD_SECRETO_IA}
+    volumes:
+      - ../../microservicios/inteligencia-artificial/modelos-prendas:/modelos-prendas:ro
+    networks: [aplicaciones]
+    depends_on:
+      inventario:
+        condition: service_healthy
+      identidad:
+        condition: service_healthy
+
   web:
     # Frontend principal: Angular compilado como PWA, servido con Nginx.
     # El navegador usa /api; Nginx lo remite al backend por la red interna.
@@ -131,6 +361,7 @@ services:
       context: ../../aplicaciones/web
     container_name: clb_frontend_web_angular
     restart: unless-stopped
+    tmpfs: ["/tmp:size=64m,mode=1777"] # fotos del probador en tránsito: solo en RAM
     labels:
       clb.componente: "Frontend web — Catálogo, administración y carrito PWA"
       clb.tecnologia: "Angular 21 + Nginx"
@@ -138,7 +369,7 @@ services:
       - "127.0.0.1:${CLB_WEB_PUERTO:-14200}:8080"
     networks: [aplicaciones]
     depends_on:
-      inventario:
+      pasarela:
         condition: service_healthy
     healthcheck:
       test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/manifest.webmanifest]
@@ -147,7 +378,87 @@ services:
       retries: 5
       start_period: 10s
 
+  probador:
+    # Microfrontend React del probador virtual (TensorFlow.js + MoveNet local). Contenedor y build propios; sin puerto
+    # publicado: la web lo remite en /probador/ para compartir origen, CSP y Service Worker. La web no depende de él.
+    image: clb_probador:local
+    build:
+      context: ../../aplicaciones/probador-virtual
+    container_name: clb_frontend_probador_react
+    restart: unless-stopped
+    # Solo sirve estáticos: sistema de archivos de solo lectura, sin capacidades ni escalada de privilegios.
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    labels:
+      clb.componente: "Microfrontend — Probador virtual"
+      clb.tecnologia: "React 19 + TensorFlow.js + Nginx"
+    networks: [aplicaciones]
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:8080/probador/manifiesto.json]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  automatizacion:
+    # n8n local (fase 10): flujo A stock_bajo → alerta en gestión y flujo B pedido_confirmado → comprobante en Ventas.
+    # Lee eventos con cursor (pull) por la red interna; sin Internet, telemetría ni plantillas. Editor solo en 127.0.0.1.
+    image: n8nio/n8n:2.43.8
+    container_name: clb_automatizacion
+    restart: unless-stopped
+    labels:
+      clb.componente: "Automatización — Flujos entre servicios"
+      clb.tecnologia: "n8n 2.43"
+    entrypoint: ["tini", "--", "/bin/sh", "/clb/iniciar-n8n.sh"]
+    environment:
+      N8N_ENCRYPTION_KEY: ${CLB_N8N_CLAVE_CIFRADO:?Defina CLB_N8N_CLAVE_CIFRADO}
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+      N8N_TEMPLATES_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_HIRING_BANNER_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false"
+      N8N_HOST: 127.0.0.1
+      # Los flujos leen URL internas y el secreto del cliente clb-n8n desde estas variables ($env).
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # M04: solo se guardan ejecuciones fallidas (los flujos fijan saveDataSuccessExecution=none) y se podan a las 24 h.
+      EXECUTIONS_DATA_PRUNE: "true"
+      EXECUTIONS_DATA_MAX_AGE: "24"
+      EXECUTIONS_DATA_PRUNE_MAX_COUNT: "500"
+      GENERIC_TIMEZONE: America/La_Paz
+      TZ: America/La_Paz
+      CLB_N8N_REIMPORTAR: ${CLB_N8N_REIMPORTAR:-false}
+      CLB_N8N_SECRETO: ${CLB_IDENTIDAD_SECRETO_N8N:?Defina CLB_IDENTIDAD_SECRETO_N8N}
+      CLB_IDENTIDAD_TOKEN_URL: http://identidad:8080/identidad/realms/clb/protocol/openid-connect/token
+      CLB_INVENTARIO_URL: http://inventario:8000
+      CLB_VENTAS_URL: http://ventas:8080
+      CLB_CLIENTES_URL: http://clientes:3000
+      CLB_IA_URL: http://ia:8000
+    ports:
+      - "127.0.0.1:${CLB_N8N_PUERTO:-15678}:5678"
+    volumes:
+      - n8n:/home/node/.n8n
+      - ../automatizacion/flujos:/clb/flujos:ro
+      - ../automatizacion/iniciar-n8n.sh:/clb/iniciar-n8n.sh:ro
+    networks: [aplicaciones]
+    # Sin depends_on de los servicios: si alguno no está, el flujo falla y el siguiente ciclo reintenta desde su cursor.
+    depends_on:
+      identidad:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, wget, --quiet, --spider, http://127.0.0.1:5678/healthz]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+
 volumes:
+  resultados-vton:
+    name: clb_resultados_vton
+  recursos-prendas:
+    name: clb_recursos_prendas
   ventas:
     name: clb_datos_ventas
   inventario:
@@ -156,6 +467,12 @@ volumes:
     name: clb_configuracion_inventario
   clientes:
     name: clb_datos_clientes
+  identidad:
+    name: clb_datos_identidad
+  modelos-ia:
+    name: clb_modelos_ia
+  n8n:
+    name: clb_datos_n8n
 
 networks:
   aplicaciones:
@@ -163,4 +480,7 @@ networks:
     driver: bridge
   bases:
     name: clb_bases
+    driver: bridge
+  analitica:
+    name: clb_analitica_red
     driver: bridge

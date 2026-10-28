@@ -1,0 +1,236 @@
+{
+  "modelo": "sdk_gphone64_x86_64",
+  "android": "15",
+  "ajustes_originales": {
+    "airplane_mode_on": "0",
+    "wifi_on": "0",
+    "mobile_data": "0"
+  },
+  "antes": {
+    "bateria_c": 25.0,
+    "estado_termico": 0,
+    "utc": "2026-10-24T03:16:36.052349+00:00"
+  },
+  "muestras_termicas": [
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:16:37.432845+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:16:42.545913+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:16:47.669307+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:16:52.908188+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:16:58.020044+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:03.132184+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:08.271172+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:13.385074+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:18.511976+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:24.212099+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:29.397025+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:34.553424+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:39.781985+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:44.942163+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:50.077843+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:17:55.196365+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:00.332335+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:05.448794+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:10.564383+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:15.708925+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:20.824181+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:25.931674+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:33.429332+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:38.575687+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:43.802748+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:48.914849+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:54.042955+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:18:59.170981+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:04.299916+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:09.424775+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:14.589155+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:19.768235+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:25.063875+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:30.270958+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:35.383955+00:00"
+    },
+    {
+      "bateria_c": 25.0,
+      "estado_termico": 0,
+      "utc": "2026-10-24T03:19:40.569736+00:00"
+    }
+  ],
+  "pruebas": [
+    {
+      "archivo": "material_test.dart",
+      "codigo_salida": 0,
+      "composiciones_ms": [
+        8308,
+        4816,
+        3823,
+        3722,
+        3757,
+        3985,
+        7174,
+        4509,
+        9926,
+        4401
+      ]
+    },
+    {
+      "archivo": "dispositivo_test.dart",
+      "codigo_salida": 0
+    }
+  ],
+  "apk_normal_restaurada": true,
+  "sin_red": {
+    "airplane_mode_on": "1",
+    "wifi_on": "0",
+    "mobile_data": "0"
+  },
+  "reverse_api_ausente": true,
+  "despues": {
+    "bateria_c": 25.0,
+    "estado_termico": 0,
+    "utc": "2026-10-24T03:19:45.677250+00:00"
+  },
+  "reverse_api_restaurado": true,
+  "ajustes_finales": {
+    "airplane_mode_on": "0",
+    "wifi_on": "0",
+    "mobile_data": "0"
+  }
+}

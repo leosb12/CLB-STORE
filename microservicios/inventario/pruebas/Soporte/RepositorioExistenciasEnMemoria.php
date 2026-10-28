@@ -28,4 +28,8 @@ final class RepositorioExistenciasEnMemoria implements RepositorioExistencias
         return true;
     }
     public function migrar(): int { return 0; }
+    public function eventos(int $desde, int $límite): array
+    {
+        return ['total' => count($this->existencias->eventos), 'eventos' => array_slice(array_values($this->existencias->eventos), $desde, $límite)];
+    }
 }

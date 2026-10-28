@@ -1,0 +1,3 @@
+# Solo desarrollo y pruebas; la imagen instala requirements.txt.
+-r requirements-prendas.txt
+pytest==9.1.1

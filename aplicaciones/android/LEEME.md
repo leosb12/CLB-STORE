@@ -1,0 +1,99 @@
+# CLB Store para Android (Flutter)
+
+App móvil de la tienda: catálogo y carrito sin conexión (SQLite), compra por una cola de sincronización idempotente,
+probador con TensorFlow Lite en el teléfono y la misma cuenta que la web (Keycloak por AppAuth). Especificación vigente en [ICONIX](../../docs/iconix/LEEME.md).
+
+## Arquitectura (Presentation / Domain / Data)
+- `lib/dominio/` — Dart puro: entidades y reglas (`modelos.dart`: dinero en centavos, cola y su máquina de estados),
+  `tallas.dart` y `pose.dart` (port 1:1 del probador web), `contratos.dart` (interfaces) y `casos_de_uso.dart`.
+- `lib/datos/` — adaptadores: `almacen_sqlite.dart` (sqflite), `rest.dart` (pasarela), `sesion_keycloak.dart`
+  (flutter_appauth + Keystore), `detector_movenet.dart` (tflite_flutter / LiteRT).
+- `lib/presentacion/` — pantallas Material 3 y `EstadoTienda` (`ChangeNotifier`); solo conoce el dominio.
+- `lib/main.dart` — raíz de composición.
+
+## Ejecutar
+
+Versión actual: **1.0.9+10** (RA 3D por WebView desde el 27-oct; ejecutar antes `preparar-probador.ps1`, que `preparar-movil.ps1` ya llama). Preparación completa del teléfono, desde esta carpeta en PowerShell:
+
+```powershell
+./preparar-movil.ps1 -Dispositivo ID_DEL_DISPOSITIVO
+```
+
+Comprueba la API local, compila explícitamente `lib/main.dart`, instala sin borrar datos, restaura `adb reverse` después de instalar y verifica que el SHA-256 de la APK instalada coincida. Abre la aplicación normal. Sin `-Dispositivo` selecciona el único teléfono autorizado conectado. No reutiliza la APK que pudiera haber dejado `integration_test`.
+
+La app confirma disponibilidad mediante la sincronización real, sin confundir Wi-Fi con acceso al servidor. Si la sincronización falló, vuelve a intentarla cada 30 segundos mientras la app está activa, incluso sin evento de red (caso USB). Al desconectar/reconectar USB, reiniciar ADB o revocar depuración puede perderse el túnel: restablecerlo con `adb reverse tcp:18000 tcp:18000`; no hace falta reinstalar. Para sincronizar en esta configuración local se conserva el cable; la copia descargada sigue disponible sin él.
+
+Requisitos: Flutter 3.41, Android SDK 36, el stack Docker levantado (pasarela en `127.0.0.1:18000`).
+```bash
+adb reverse tcp:18000 tcp:18000        # el teléfono (o emulador) ve la pasarela de la laptop como 127.0.0.1:18000
+flutter run                            # o: flutter build apk --debug && adb install -r build/app/outputs/flutter-apk/app-debug.apk
+```
+La pasarela no se publica en la red Wi-Fi: el túnel de adb mantiene el mismo emisor de tokens que la web
+(`http://127.0.0.1:18000/identidad/realms/clb`). Para otro despliegue: `--dart-define=CLB_PASARELA=https://...`.
+HTTP en claro solo hacia `127.0.0.1`, `localhost` y `10.0.2.2` (`android/app/src/main/res/xml/network_security_config.xml`).
+
+Usuario: `cliente.demo` (clave en `infraestructura/bases-de-datos/.env`, igual que en la web). En un emulador nuevo, Chrome
+muestra su bienvenida la primera vez: «Use without an account».
+
+## Pruebas
+```bash
+flutter analyze
+flutter test                                        # 52 aprobadas + una integración omitida en host al 23 oct
+CLB_INTEGRACION=1 flutter test test/integracion     # contra el stack real: catálogo, SAGA y misma Idempotency-Key
+flutter test integration_test -d <dispositivo>      # en Android: MoveNet con TFLite real y SQLite del sistema
+```
+La prueba contra el stack crea un pedido real de 1 unidad con `cliente.demo` (como las demostraciones).
+
+## Guion de la demo
+### Cola de fotografías (1.0.8+9)
+
+Con sesión iniciada y la prenda descargada, retira el enlace con
+`adb -s ID_DEL_DISPOSITIVO reverse --remove tcp:18000`. En el modo fotográfico elige
+una foto y pulsa «Generar imagen»: aparece en «Solicitudes de esta prenda»,
+guardada en el teléfono. Restaura `adb -s ID_DEL_DISPOSITIVO reverse tcp:18000 tcp:18000`.
+Con la app abierta, se reintenta automáticamente con espera exponencial y *jitter* (1–60 s) sin otro clic.
+Sin red, con la sesión vencida o con el servidor caído/ocupado no hay tope; un fallo de la generación en el servidor
+se reintenta hasta 5 veces y luego pide «Reintentar». Fotos y resultados viven en archivos privados (`clb_vton/`), no
+como BLOB en SQLite; cerrar sesión los borra.
+Al finalizar, el resultado queda disponible en esa lista y sin conexión.
+
+La nueva base SQLite privada `clb_vton_cola.db` conserva, por cuenta, hasta cuatro
+solicitudes pendientes o rechazadas y veinte resultados. Deduplica por titular,
+foto, prenda, categoría y versión del motor; los reenvíos recuperan el mismo
+trabajo determinista del servidor. Las fotos originales se retiran de la cola
+al finalizar; las pendientes pueden eliminarse desde la lista. Al cerrar Android,
+el proceso se suspende: no se promete ejecución en segundo plano. Al abrir de nuevo,
+se recuperan los trabajos interrumpidos. Los 4xx definitivos quedan para revisión;
+errores de red, 401, 429 y 5xx reintentan. «Borrar imágenes locales» elimina resultados,
+sin descartar solicitudes pendientes. Cada cuenta ve y envía solo sus solicitudes.
+
+### Catálogo y pedidos
+
+1. Con red: Cuenta → Iniciar sesión (`cliente.demo`). La franja verde dice «Catálogo actualizado · fecha».
+2. Modo avión **y** `adb reverse --remove tcp:18000` (el túnel de adb no pasa por la red del teléfono: sin quitarlo, la app
+   seguiría llegando a la laptop). La franja pasa a «Sin conexión · catálogo del …».
+3. Catálogo → prenda → talla y color → Agregar al carrito → Carrito → Confirmar pedido: queda «En el teléfono, por enviar»
+   (insignia cobre en Pedidos). Nunca se muestra como compra hecha.
+4. Probar virtualmente → Galería o Cámara: MoveNet corre en el teléfono y la prenda se ajusta; cuatro medidas → talla con
+   sus probabilidades (las mismas que el servicio de IA). Pie: «La foto y tus medidas no salen del teléfono».
+5. Quitar el modo avión y `adb reverse tcp:18000 tcp:18000`: en segundos el pedido pasa a Confirmado con los pasos de la
+   SAGA; luego «Comprobante de venta disponible» (n8n). «Reenviar con la misma clave» devuelve el mismo pedido.
+6. En la web, con `admin.demo`, el panel `/gestion` refleja la venta; en PostgreSQL hay un solo pedido para esa clave.
+
+## Decisiones
+Decisiones en [docs/decisiones.md](../../docs/decisiones.md). Modelo: MoveNet SinglePose Lightning v4, TFLite float16 (Kaggle
+`google/movenet`, Apache 2.0), SHA-256 `0fac2226112d0371903ca86e3853cec24ef603a0b2f96f589b180f0ebdd135ab` (lo verifica una
+prueba). Tipografía de títulos: Gelasio (SIL OFL 1.1, `assets/fuentes/OFL-Gelasio.txt`), compatible en métrica con Georgia.
+
+## RA 3D, administración y gestión (27-oct-2026)
+- **RA 3D:** el microfrontend React del probador en una WebView, servido desde `127.0.0.1` por `ServidorProbador`.
+  `preparar-probador.ps1` copia el build y BlazePose a `assets/probador/` y verifica los hashes; `preparar-movil.ps1` ya
+  lo llama. Sin ese paso `flutter build` falla porque faltan las carpetas de assets.
+- **Pestaña «Gestión»** (solo rol admin): `pantalla_gestion.dart`, `pantalla_existencias.dart`, `pantalla_foto_prenda.dart`
+  y `microfono.dart`. Datos: `datos/administracion_rest.dart` (REST y GraphQL; procesadores de la cola).
+  Dominio: `dominio/administracion.dart` (operaciones de existencias y `resolverVersion`).
+- **Cola única:** pedidos y cambios de administración (`operaciones`, JSON compatible con las filas anteriores).
+- **Pruebas:**
+  - `test/dominio/cola_administracion_test.dart` (7) y `test/datos/servidor_probador_test.dart` (4);
+  - `test/presentacion/pantalla_probador_test.dart` (+1: vista rápida y modo inicial);
+  - contra el stack: `CLB_INTEGRACION=1 flutter test test/integracion/administracion_stack_test.dart`.

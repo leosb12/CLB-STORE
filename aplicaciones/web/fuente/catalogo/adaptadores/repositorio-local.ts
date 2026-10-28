@@ -1,3 +1,4 @@
+import type { TexturaGuardada } from "../dominio/recurso-probador";
 import { openDB, type DBSchema, type IDBPDatabase } from "idb";
 import { validarCantidad, type Variante, type ConfirmacionExistencias, type LineaCarrito, type Movimiento } from "../../existencias/dominio/modelos";
 import type {
@@ -6,8 +7,10 @@ import type {
   Operacion,
   Producto,
 } from "../dominio/modelos";
+import type { ConfirmacionPedido, PedidoVenta } from "../../pedidos/dominio/modelos";
 
 interface EsquemaClb extends DBSchema {
+  recursos: { key: string; value: TexturaGuardada };
   productos: { key: string; value: Producto };
   favoritos: { key: string; value: Favorito };
   operaciones: { key: string; value: Operacion };
@@ -25,8 +28,9 @@ export class RepositorioLocal {
   constructor(private readonly nombre = "clb_catalogo") {}
 
   private abrir(): Promise<IDBPDatabase<EsquemaClb>> {
-    return (this.base ??= openDB<EsquemaClb>(this.nombre, 3, {
+    return (this.base ??= openDB<EsquemaClb>(this.nombre, 4, {
       upgrade(base, anterior) {
+        if (anterior < 4) base.createObjectStore("recursos", {keyPath: "sha256"});
         if (anterior < 3) {
           for (const nombre of ["variantes", "variantesAdministracion", "carrito", "movimientos"] as const)
             base.createObjectStore(nombre, { keyPath: "identificador" });
@@ -71,12 +75,30 @@ export class RepositorioLocal {
       .then((dato) => dato?.valor);
   }
 
-  async guardarCatalogo(productos: Producto[]): Promise<void> {
+  async guardarHistorial(titular: string, pedidos: PedidoVenta[], fecha: string): Promise<void> {
+    await (await this.abrir()).put("metadatos", { clave: "historial:" + titular, valor: { pedidos, fecha } });
+  }
+
+  async historial(titular: string): Promise<{ pedidos: PedidoVenta[]; fecha: string } | undefined> {
+    return await this.metadato("historial:" + titular) as { pedidos: PedidoVenta[]; fecha: string } | undefined;
+  }
+
+  async texturas(): Promise<TexturaGuardada[]> { return (await this.abrir()).getAll("recursos"); }
+
+  async guardarCatalogo(productos: Producto[], texturas: TexturaGuardada[] = []): Promise<void> {
+    const hashes = new Set(texturas.map(t => t.sha256));
+    for (const producto of productos) {
+      const r = producto.recurso_probador;
+      if (r && (!hashes.has(r.sha256) || (r.esquema === 2 && r.espalda && !hashes.has(r.espalda.sha256))))
+        throw new Error("El paquete fotográfico está incompleto; se conserva la generación anterior.");
+    }
     const transacción = (await this.abrir()).transaction(
-      ["productos", "metadatos"],
+      ["productos", "metadatos", "recursos"],
       "readwrite",
     );
     await transacción.objectStore("productos").clear();
+    await transacción.objectStore("recursos").clear();
+    for (const textura of texturas) await transacción.objectStore("recursos").put(textura);
     for (const producto of productos)
       await transacción.objectStore("productos").put(producto);
     await transacción
@@ -262,7 +284,7 @@ export class RepositorioLocal {
   async finalizar(
     operación: Operacion,
     propietario: string,
-    respuesta?: Producto | ConfirmacionExistencias,
+    respuesta?: Producto | ConfirmacionExistencias | ConfirmacionPedido,
   ): Promise<void> {
     const transacción = (await this.abrir()).transaction(
       ["operaciones", "productos", "productosAdministracion", "variantesAdministracion"],
@@ -270,8 +292,9 @@ export class RepositorioLocal {
     );
     const operaciones = transacción.objectStore("operaciones");
     const actual = await operaciones.get(operación.identificador);
-    const producto = respuesta && !("variante" in respuesta) ? respuesta : undefined;
+    const pedido = respuesta && "pedido" in respuesta ? respuesta.pedido : undefined;
     const variante = respuesta && "variante" in respuesta ? respuesta.variante : undefined;
+    const producto = respuesta && !variante && !pedido ? (respuesta as Producto) : undefined;
     if (actual?.estado === "ENVIANDO" && actual.propietario === propietario) {
       const {
         propietario: descartado,
@@ -282,6 +305,7 @@ export class RepositorioLocal {
         ...resultado,
         ...(producto ? { resultado: producto } : {}),
         ...(variante ? { resultadoExistencias: variante } : {}),
+        ...(pedido ? { resultadoPedido: pedido } : {}),
       });
       if (variante) {
         const almacén = transacción.objectStore("variantesAdministracion");
@@ -354,6 +378,57 @@ export class RepositorioLocal {
   async quitarCarrito(id: string): Promise<void> { await (await this.abrir()).delete("carrito", id); }
   async vaciarCarrito(): Promise<void> { await (await this.abrir()).clear("carrito"); }
 
+  /**
+   * Convierte el carrito en una solicitud de pedido pendiente en una sola transacción: o se encola el pedido y se vacía
+   * el carrito, o no cambia nada. La operación conserva su UUID y su Idempotency-Key en todos los reintentos.
+   */
+  async encolarPedido(crear: (líneas: LineaCarrito[]) => Operacion): Promise<Operacion> {
+    const transacción = (await this.abrir()).transaction(["operaciones", "carrito"], "readwrite");
+    try {
+      // Se arma (y valida) la operación antes de escribir nada.
+      const operación = crear(await transacción.objectStore("carrito").getAll());
+      await transacción.objectStore("operaciones").add(operación);
+      await transacción.objectStore("carrito").clear();
+      await transacción.done;
+      return operación;
+    } catch (error) {
+      try { transacción.abort(); } catch { /* ya terminada */ }
+      await transacción.done.catch(() => undefined);
+      throw error;
+    }
+  }
+
+  /** Último estado consultado en Ventas; solo reemplaza resultados más antiguos (fechas comparadas como instantes). */
+  async actualizarPedido(operación: string, pedido: PedidoVenta): Promise<void> {
+    const transacción = (await this.abrir()).transaction("operaciones", "readwrite");
+    const actual = await transacción.store.get(operación);
+    if (actual?.resultadoPedido && Date.parse(actual.resultadoPedido.fecha_actualización) <= Date.parse(pedido.fecha_actualización))
+      await transacción.store.put({ ...actual, resultadoPedido: pedido });
+    await transacción.done;
+  }
+
+  /**
+   * Un pedido rechazado sin remedio (REQUIERE_REVISION por un rechazo permanente) devuelve sus prendas al carrito
+   * en la misma transacción y queda marcado, sin borrarse, para conservar el antecedente.
+   */
+  async recuperarPedidoEnCarrito(identificador: string): Promise<void> {
+    const transacción = (await this.abrir()).transaction(["operaciones", "carrito"], "readwrite");
+    const operaciones = transacción.objectStore("operaciones");
+    const operación = await operaciones.get(identificador);
+    if (!operación || operación.estado !== "REQUIERE_REVISION" || operación.motivoRevision !== "CONFLICTO_PERMANENTE" || operación.reemplazadaPor) {
+      transacción.abort();
+      await transacción.done.catch(() => undefined);
+      throw new Error("Este pedido no se puede devolver al carrito.");
+    }
+    const carrito = transacción.objectStore("carrito");
+    for (const línea of (operación.datos["carrito"] ?? []) as LineaCarrito[]) {
+      const anterior = await carrito.get(línea.identificador);
+      await carrito.put({ ...línea, cantidad: (anterior?.cantidad ?? 0) + línea.cantidad });
+    }
+    await operaciones.put({ ...operación, reemplazadaPor: "CARRITO" });
+    await transacción.done;
+  }
+
   async encolarExistencias(operación: Operacion, reemplaza?: string): Promise<void> {
     const transacción = (await this.abrir()).transaction("operaciones", "readwrite");
     const anteriores = await transacción.store.getAll();
@@ -383,6 +458,14 @@ export class RepositorioLocal {
       await transacción.store.put({ ...anterior, reemplazadaPor: operación.identificador });
     }
     await transacción.store.add(operación);
+    await transacción.done;
+  }
+
+  /** Datos que solo puede ver un administrador: se borran al cerrar sesión en un navegador compartido. */
+  async borrarDatosAdministrativos(): Promise<void> {
+    const transacción = (await this.abrir()).transaction(["productosAdministracion", "variantesAdministracion", "movimientos", "metadatos"], "readwrite");
+    await Promise.all([transacción.objectStore("productosAdministracion").clear(), transacción.objectStore("variantesAdministracion").clear(),
+      transacción.objectStore("movimientos").clear(), transacción.objectStore("metadatos").delete("administracion_visitada")]);
     await transacción.done;
   }
 

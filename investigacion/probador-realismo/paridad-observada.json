@@ -1,0 +1,9 @@
+{
+  "runtime": "TensorFlow.js 4.22 CPU",
+  "valores": 393216,
+  "error_maximo": 0.000018537044525146484,
+  "error_medio": 6.374655849109937e-7,
+  "segundos": 5.913733,
+  "paridad_un_tensor": true,
+  "fotorealismo_evaluado": false
+}

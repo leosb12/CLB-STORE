@@ -1,11 +1,11 @@
 :root {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: #222e29;
   background: #f8f7f3;
   font-synthesis: none;
   --verde: #254e43;
   --borde: #dedfd6;
-  --tenue: #66726a;
+  --tenue: #46544b;
 }
 * {
   box-sizing: border-box;
@@ -66,7 +66,7 @@ p {
   background: var(--verde);
   color: #f0f4ec;
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 2.5px;
   padding: 11px;
 }
@@ -103,7 +103,7 @@ p {
 }
 .monograma > span {
   position: absolute;
-  font: 8px Arial;
+  font: 10px system-ui, sans-serif;
   top: 8px;
   right: 6px;
 }
@@ -114,7 +114,7 @@ p {
 }
 .nombre-marca small {
   display: block;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2.5px;
   font-weight: 400;
   margin-top: 7px;
@@ -142,9 +142,9 @@ p {
 .contador-favoritos {
   border: 1px solid var(--borde);
   border-radius: 50%;
-  font-size: 10px;
-  min-width: 20px;
-  height: 20px;
+  font-size: 11px;
+  min-width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
 }
@@ -181,7 +181,7 @@ p {
   justify-content: space-between;
   gap: 20px;
   padding: 9px max(48px, calc((100vw - 1224px) / 2));
-  font-size: 11px;
+  font-size: 12px;
   color: #4d5c51;
 }
 .barra-sincronización > div > span {
@@ -189,13 +189,13 @@ p {
 }
 .barra-sincronización small {
   margin-left: 17px;
-  color: #70786b;
-  font-size: 10px;
+  color: #445347;
+  font-size: 12px;
 }
 .barra-sincronización button {
   background: none;
   color: var(--verde);
-  font-size: 11px;
+  font-size: 12px;
   white-space: nowrap;
 }
 .barra-sincronización button span {
@@ -238,7 +238,7 @@ main {
   z-index: 1;
 }
 .antetítulo {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 2.1px;
   color: #4d6758;
   font-weight: 600;
@@ -253,7 +253,7 @@ main {
 }
 .portada p:not(.antetítulo) {
   font-size: 13px;
-  color: #566151;
+  color: #3d4a3b;
   line-height: 1.7;
 }
 .botón-principal {
@@ -279,8 +279,8 @@ main {
 }
 .nota-portada {
   display: block;
-  font-size: 10px;
-  color: #63705d;
+  font-size: 12px;
+  color: #3c4b3a;
   margin-top: 19px;
 }
 .nota-portada > span {
@@ -321,10 +321,10 @@ main {
   flex-direction: column;
   font: 22px Georgia;
   transform: rotate(12deg);
-  color: #526e46;
+  color: #2e4722;
 }
 .sello-portada small {
-  font: 7px Arial;
+  font: 11px system-ui, sans-serif;
   letter-spacing: 1.2px;
   margin-top: 4px;
 }
@@ -332,9 +332,9 @@ main {
   position: absolute;
   bottom: 25px;
   right: 29px;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2.8px;
-  color: #647459;
+  color: #3d4d34;
 }
 .colección {
   padding-top: 43px;
@@ -357,7 +357,7 @@ main {
   gap: 14px;
 }
 .cantidad {
-  font: 11px Arial;
+  font: 11px system-ui, sans-serif;
   border: 1px solid var(--borde);
   padding: 5px 8px;
   border-radius: 20px;
@@ -365,7 +365,7 @@ main {
 }
 .nota-local {
   color: var(--tenue);
-  font-size: 11px;
+  font-size: 12px;
 }
 .nota-local > span {
   font-size: 18px;
@@ -421,11 +421,11 @@ select {
   display: flex;
   justify-content: space-between;
   margin: 20px 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--tenue);
 }
 .resumen-catálogo > span {
-  font-size: 10px;
+  font-size: 12px;
 }
 .rejilla-productos {
   display: grid;
@@ -485,8 +485,8 @@ select {
   bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-size: 7px;
-  color: #697061;
+  font-size: 11px;
+  color: #27382c;
   background: #f8f7f3b3;
   padding: 5px 7px;
 }
@@ -494,10 +494,10 @@ select {
   padding-top: 14px;
 }
 .categoría-producto {
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 1.4px;
   text-transform: uppercase;
-  color: #727a6d;
+  color: #43533e;
 }
 .datos-producto h3 {
   font-size: 13px;
@@ -579,15 +579,15 @@ select {
   letter-spacing: -0.3px;
 }
 .banda-offline p {
-  font-size: 11px;
+  font-size: 12px;
   margin-top: 8px;
   color: var(--tenue);
 }
 .etiqueta-offline {
   margin-left: auto;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1.5px;
-  color: #53734c;
+  color: #2d4a25;
   border: 1px solid #cbd4c3;
   padding: 10px 13px;
   white-space: nowrap;
@@ -600,15 +600,15 @@ footer {
   justify-content: space-between;
   gap: 30px;
   color: var(--tenue);
-  font-size: 10px;
+  font-size: 12px;
 }
 .marca-pie {
-  font: bold 19px Arial;
+  font: bold 19px system-ui, sans-serif;
   color: var(--verde);
 }
 .marca-pie span {
   display: block;
-  font: 10px Arial;
+  font: 11px system-ui, sans-serif;
   color: var(--tenue);
   margin-top: 7px;
 }
@@ -649,8 +649,22 @@ footer {
   position: absolute;
   bottom: 16px;
   left: 20px;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--tenue);
+}
+.imagen-detalle.fotografica img {
+  height: min(70vh, 620px);
+  object-fit: contain;
+  padding: 24px 24px 44px;
+}
+.filtro-fotografias {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.resumen-catálogo:has(.filtro-fotografias) {
+  flex-wrap: wrap;
+  gap: 12px;
 }
 .información-detalle h1 {
   font: 46px/1.1 Georgia;
@@ -743,7 +757,7 @@ footer {
 }
 @media (max-width: 650px) {
   .franja-superior {
-    font-size: 8px;
+    font-size: 11px;
     letter-spacing: 1.8px;
   }
   .encabezado {
@@ -763,35 +777,38 @@ footer {
     font-size: 17px;
   }
   .nombre-marca small {
-    font-size: 6px;
+    font-size: 11px;
     letter-spacing: 1.6px;
   }
   .encabezado nav {
     order: 3;
     width: 100%;
-    height: 43px;
     margin: 0;
-    gap: 27px;
+    gap: 0 27px; /* envuelve por la regla de 850 px */
     font-size: 12px;
   }
+  /* Filas de 43 px: a 320 px «Pedidos» pasa a la segunda fila en vez de montarse sobre la barra de sincronización. */
+  .encabezado nav a {
+    height: 43px;
+  }
   .estado-conexión {
-    font-size: 10px;
+    font-size: 11px;
   }
   .instalar {
-    font-size: 10px;
+    font-size: 11px;
     margin-left: auto;
   }
   .barra-sincronización {
     padding: 11px 20px;
     align-items: flex-start;
-    font-size: 10px;
+    font-size: 12px;
     gap: 10px;
   }
   .barra-sincronización > div {
     line-height: 1.5;
   }
   .barra-sincronización button {
-    font-size: 10px;
+    font-size: 12px;
   }
   main {
     padding: 20px 20px 35px;
@@ -804,7 +821,7 @@ footer {
     padding: 28px 0 26px 25px;
   }
   .portada .antetítulo {
-    font-size: 7px;
+    font-size: 11px;
     letter-spacing: 1.5px;
   }
   .portada h1 {
@@ -821,10 +838,10 @@ footer {
   .portada .botón-principal {
     padding: 12px 15px;
     gap: 13px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .nota-portada {
-    font-size: 8px;
+    font-size: 11px;
     line-height: 1.5;
     max-width: 130px;
   }
@@ -848,10 +865,10 @@ footer {
     font-size: 16px;
   }
   .sello-portada small {
-    font-size: 4px;
+    font-size: 11px;
   }
   .texto-portada {
-    font-size: 5px;
+    font-size: 11px;
     letter-spacing: 1px;
     bottom: 20px;
     right: 10px;
@@ -866,7 +883,7 @@ footer {
     font-size: 28px;
   }
   .encabezado-colección .antetítulo {
-    font-size: 8px;
+    font-size: 11px;
   }
   .encabezado-colección > .nota-local {
     display: none;
@@ -892,11 +909,11 @@ footer {
     margin-left: 10px;
   }
   .resumen-catálogo {
-    font-size: 10px;
+    font-size: 12px;
     margin: 17px 0;
   }
   .resumen-catálogo > span {
-    font-size: 8px;
+    font-size: 12px;
   }
   .rejilla-productos {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -915,13 +932,13 @@ footer {
     font-size: 12px;
   }
   .categoría-producto {
-    font-size: 8px;
+    font-size: 11px;
   }
   .precio {
     font-size: 12px;
   }
   .etiqueta-imagen {
-    font-size: 6px;
+    font-size: 11px;
     padding: 4px;
     left: 8px;
     bottom: 8px;
@@ -935,7 +952,7 @@ footer {
     font-size: 20px;
   }
   .banda-offline p {
-    font-size: 10px;
+    font-size: 12px;
     line-height: 1.7;
   }
   .símbolo-offline {
@@ -949,10 +966,10 @@ footer {
   footer p {
     order: 3;
     flex-basis: 100%;
-    font-size: 9px;
+    font-size: 11px;
   }
   footer small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .detalle {
     grid-template-columns: 1fr;
@@ -966,7 +983,7 @@ footer {
   }
   .paginación {
     gap: 10px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .paginación button {
     padding: 10px;
@@ -1084,7 +1101,7 @@ footer {
   padding: 11px 12px;
   background: #fbfcf8;
   color: #243d2d;
-  font: 13px/1.5 Arial;
+  font: 13px/1.5 system-ui, sans-serif;
   border-radius: 0;
 }
 .formulario-administracion [aria-invalid="true"] {
@@ -1096,7 +1113,24 @@ footer {
 .campos-dobles {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  align-items: start;
   gap: 15px;
+}
+.formulario-administracion select[name="categoria"] {
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 0;
+  padding: 11px 12px;
+  border: 1px solid #cfd7cb;
+  border-radius: 0;
+  background: #fbfcf8;
+  color: #243d2d;
+  font: 13px/1.5 system-ui, sans-serif;
+}
+.campo-categoria {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
 }
 .formulario-administracion .campo-activo {
   display: flex;
@@ -1146,10 +1180,10 @@ footer {
   text-align: left;
 }
 .tabla-administracion th {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: #687862;
+  color: #40523a;
   font-weight: 500;
   padding: 12px 9px;
   background: #f0f3ec;
@@ -1167,7 +1201,7 @@ footer {
 }
 .tabla-administracion td small {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   color: var(--tenue);
   margin-top: 4px;
 }
@@ -1176,7 +1210,7 @@ footer {
 }
 .etiqueta-estado {
   display: inline-block;
-  font: 9px Arial;
+  font: 11px system-ui, sans-serif;
   letter-spacing: 0.4px;
   padding: 6px 8px;
   background: #e6efdf;
@@ -1218,7 +1252,7 @@ footer {
   line-height: 1.7;
 }
 .identificador-operacion {
-  font-size: 9px;
+  font-size: 11px;
   overflow-wrap: anywhere;
   color: var(--tenue);
   display: block;
@@ -1331,3 +1365,164 @@ footer {
 .linea-carrito strong { display: block; margin-top: 1rem; }
 .resumen-carrito { padding: 1.5rem; background: #edf1e6; border-radius: 18px; align-self: start; }
 @media (max-width: 850px) { .rejilla-existencias, .rejilla-carrito { grid-template-columns: minmax(0, 1fr); } .encabezado nav { flex-wrap: wrap; } }
+
+/* Pedidos (fase 6): confirmación desde el carrito y seguimiento de la SAGA. Mismo sistema visual: verde, crema y paneles suaves. */
+.confirmar-pedido { width: 100%; margin-top: 1.4rem; font-size: 14px; letter-spacing: 0.3px; }
+.nota-envío { font-size: 12.5px; line-height: 1.6; color: #3d5146; margin: 0.7rem 0 1.4rem; }
+.nota-envío.sin-conexión { color: #7b5727; background: #f6eddc; padding: 0.7rem 0.8rem; border-radius: 10px; }
+.pagina-pedidos { max-width: 960px; margin: auto; padding: 2rem 0; }
+.encabezado-pedidos { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.encabezado-pedidos h1 { margin-bottom: 0; }
+.lista-pedidos { list-style: none; margin: 2rem 0 0; padding: 0; }
+.pedido { padding: 1.6rem 0; border-bottom: 1px solid var(--borde); }
+.pedido.reciente { background: #f1f4ec; padding-inline: 1.2rem; border-radius: 14px; border-bottom-color: transparent; }
+.cabecera-pedido { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 1.2rem; }
+.cabecera-pedido h2 { font-size: 1.15rem; margin: 0; letter-spacing: 0.2px; }
+.cabecera-pedido p { margin: 0.3rem 0 0; font-size: 13px; color: var(--tenue); }
+.total-pedido { font-size: 1.05rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.etiqueta-estado[data-tono="ok"] { background: #e2eedb; color: #2c5528; }
+.etiqueta-estado[data-tono="espera"] { background: #f3eadb; color: #6f4d20; }
+.etiqueta-estado[data-tono="alerta"] { background: #f6e1dc; color: #8a2f22; }
+.cabecera-pedido .etiqueta-estado { font-size: 10.5px; padding: 6px 10px; }
+.explicación-pedido { margin: 0.8rem 0 0; font-size: 14px; line-height: 1.6; max-width: 68ch; color: #2f3c35; }
+.detalle-pedido { margin-top: 0.9rem; font-size: 13.5px; }
+.detalle-pedido summary { cursor: pointer; color: var(--verde); text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+.detalle-pedido h3 { font-size: 12px; letter-spacing: 0.4px; margin: 1.3rem 0 0.6rem; color: var(--tenue); }
+.lineas-pedido { list-style: none; padding: 0; margin: 1rem 0 0; }
+.lineas-pedido li { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px dashed #d8dfd6; font-variant-numeric: tabular-nums; }
+.lineas-pedido small { color: var(--tenue); margin-left: 0.4rem; }
+.pasos-saga { list-style: none; margin: 0; padding: 0 0 0 1rem; border-left: 1px solid #c9d3c4; }
+.pasos-saga li { position: relative; padding: 0.35rem 0 0.35rem 0.4rem; }
+.pasos-saga li::before { content: ""; position: absolute; left: -1.33rem; top: 0.8rem; width: 8px; height: 8px; border-radius: 50%; background: var(--verde); }
+.pasos-saga li[data-resultado="Falló"]::before, .pasos-saga li[data-resultado="Rechazado"]::before { background: #8a2f22; }
+.pasos-saga li[data-resultado^="Sin respuesta"]::before { background: #aa703b; }
+.pasos-saga time { display: block; font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.lista-pedidos .estado-vacío .botón-principal { margin-top: 1rem; }
+@media (max-width: 650px) {
+  .cabecera-pedido { grid-template-columns: minmax(0, 1fr) auto; }
+  .cabecera-pedido .etiqueta-estado { grid-column: 1 / -1; justify-self: start; }
+}
+.acción-pedido { margin-top: 0.9rem; font-size: 13px; padding: 10px 16px; }
+
+/* Sesión única (fase 7): controles discretos en el encabezado, con el mismo lenguaje de botones. */
+.control-sesion { display: flex; align-items: center; gap: 12px; font-size: 12px; white-space: nowrap; }
+.titular-sesion { font-weight: bold; color: var(--verde); max-width: 16ch; overflow: hidden; text-overflow: ellipsis; }
+.iniciar-sesion { padding: 8px 14px; font-size: 12px; }
+.pagina-retorno { max-width: 640px; margin: 4rem auto; padding: 0 1rem; text-align: center; }
+
+/* Gestión empresarial (fase 8): documento de trabajo con pestañas por agente, mismo lenguaje que Administración.
+   El verde de datos (#1f8a5c) es el de la marca con croma suficiente para leerse como color en un gráfico. */
+.gestion { --dato: #1f8a5c; --dato-fuerte: #166a46; --superficie-suave: #f0f3ec; max-width: 1180px; margin: auto; }
+.gestion ::selection { background: #d5e6d0; color: #17322b; }
+.titulo-gestion { margin-bottom: 28px; }
+.titulo-gestion h1 { font: 38px/1.2 Georgia, serif; letter-spacing: -0.5px; text-wrap: balance; }
+.titulo-gestion p { margin-top: 10px; max-width: 70ch; font-size: 14px; line-height: 1.65; color: var(--tenue); }
+.pestanas { display: flex; gap: 4px; box-shadow: inset 0 -1px 0 var(--borde); margin-bottom: 24px; overflow-x: auto; overflow-y: hidden; }
+.pestanas button { background: none; padding: 12px 16px; font-size: 13px; color: var(--tenue); border-bottom: 2px solid transparent; white-space: nowrap; transition: color 150ms ease-out, border-color 150ms ease-out; }
+.pestanas button:hover { color: var(--verde); }
+.pestanas button.actual { color: var(--verde); font-weight: bold; border-bottom-color: var(--verde); }
+.panel-gestion { min-height: 320px; }
+.gestion .aviso-error, .gestion .mensaje-administracion { text-align: left; margin: 0 0 20px; }
+.gestion label { font-size: 12px; color: var(--tenue); }
+.gestion input:not([type="checkbox"]), .gestion textarea, .gestion select { border: 1px solid #cfd3c8; background: #fff; padding: 11px 12px; color: inherit; border-radius: 0; }
+.gestion textarea { width: 100%; resize: vertical; line-height: 1.5; margin-top: 8px; }
+.gestion input:focus-visible, .gestion textarea:focus-visible, .gestion select:focus-visible { outline: 3px solid #aa703b; outline-offset: 2px; }
+.gestion ::placeholder { color: #7b857e; }
+.mision { display: grid; gap: 10px; max-width: 760px; margin-bottom: 32px; }
+.mision > .botón-principal { justify-self: start; font-size: 13px; margin-bottom: 14px; }
+.campo-accion { display: flex; gap: 10px; }
+.campo-accion input { flex: 1; min-width: 0; }
+.progreso { font-size: 13px; color: var(--tenue); line-height: 1.6; }
+.progreso::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: #aa703b; animation: latido 1.2s ease-out infinite; vertical-align: 1px; }
+@keyframes latido { 50% { opacity: 0.25; } }
+.meta { font-size: 12px; color: var(--tenue); font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+.respuesta-agente { padding: 22px 0; border-top: 1px solid var(--borde); }
+.respuesta-agente header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.respuesta-agente h2, .reporte-grafico h2, .subtitulo-gestion, .encabezado-seccion h2 { font: 22px/1.3 Georgia, serif; }
+.texto-agente { margin-top: 10px; font-size: 15px; line-height: 1.7; max-width: 72ch; }
+.nota-agente { font-size: 12px; line-height: 1.6; color: var(--tenue); margin-top: 8px; max-width: 80ch; }
+.fuentes-agente { margin-top: 12px; font-size: 12px; }
+.fuentes-agente summary, .tabla-reporte summary, .reporte-especificacion summary, .evidencia-reporte summary { cursor: pointer; color: var(--verde); text-decoration: underline; text-underline-offset: 3px; width: fit-content; padding: 4px 0; }
+.fuentes-agente ol { padding-left: 18px; }
+.fuentes-agente li { margin-top: 10px; }
+.fuentes-agente small { color: var(--tenue); margin-left: 6px; overflow-wrap: anywhere; }
+.gestion pre { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--superficie-suave); padding: 12px 14px; max-height: 260px; overflow: auto; font-size: 11px; line-height: 1.55; margin: 8px 0 0; }
+.gestion code { font-size: 12px; color: var(--verde); }
+.estado-vacio-gestion { padding: 28px 0; font-size: 14px; line-height: 1.7; color: var(--tenue); max-width: 70ch; }
+.formulario-reporte { max-width: 900px; margin-bottom: 30px; }
+.sugerencias { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 6px 0 10px -10px; }
+.acciones-reporte { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
+.acciones-reporte .botón-principal { margin-left: auto; font-size: 13px; }
+.destino { display: flex; align-items: center; gap: 8px; }
+.botón-secundario.grabando { background: #f4ead7; border-color: #aa703b; color: #67491f; }
+.reporte-panel { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr); gap: 36px; padding: 26px 0 34px; border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); align-items: start; }
+.reporte-especificacion { background: var(--superficie-suave); padding: 20px; font-size: 12px; }
+.reporte-especificacion h3 { font-size: 12px; margin-top: 16px; }
+.reporte-especificacion pre { background: #fff; }
+.acciones-especificacion { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center; }
+.acciones-especificacion .botón-secundario { font-size: 12px; padding: 14px 18px; }
+.subtitulo-gestion { margin: 36px 0 12px; }
+.encabezado-seccion { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.gestion .numero { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gestion td.agotado { color: #8a2f22; font-weight: bold; }
+.gestion .tabla-administracion td small { font-size: 11px; overflow-wrap: anywhere; }
+.gestion tr.total td { font-weight: bold; border-bottom: 0; }
+.acciones-fila { display: flex; gap: 6px; align-items: center; white-space: nowrap; }
+.propuesta { display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--borde); font-size: 13px; }
+.propuesta small { display: block; margin-top: 6px; color: var(--tenue); font-size: 12px; max-width: 70ch; line-height: 1.5; }
+.propuesta .botón-principal { font-size: 12px; padding: 11px 16px; }
+.segmentos { list-style: none; padding: 0; margin: 18px 0 0; }
+.segmentos li { padding: 18px 0; border-top: 1px solid var(--borde); }
+.cabecera-segmento { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.cabecera-segmento h2 { font: 20px/1.3 Georgia, serif; }
+.cabecera-segmento span { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--tenue); white-space: nowrap; }
+.segmentos p { margin-top: 6px; font-size: 14px; line-height: 1.65; max-width: 75ch; }
+/* Gráfico: una serie, marcas finas, rejilla recesiva; el texto nunca usa el color del dato. */
+.grafico { width: 100%; height: auto; display: block; margin-top: 14px; overflow: visible; stroke: none; stroke-width: 0; }
+.grafico text { stroke: none; }
+.grafico .rejilla { stroke: #e2e4dc; stroke-width: 1; fill: none; }
+.grafico .eje { fill: var(--tenue); font-size: 11px; font-variant-numeric: tabular-nums; }
+.grafico .etiqueta { fill: #222e29; font-size: 12px; }
+.grafico .valor { fill: #222e29; font-size: 12px; font-weight: bold; font-variant-numeric: tabular-nums; }
+.grafico .dato { fill: var(--dato); transition: fill 150ms ease-out; }
+.grafico .marca:hover .dato { fill: var(--dato-fuerte); }
+.grafico .zona { fill: transparent; }
+.grafico .linea { fill: none; stroke: var(--dato); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.grafico .area { fill: var(--dato); opacity: 0.1; }
+.grafico .punto { fill: var(--dato); stroke: #f8f7f3; stroke-width: 2; }
+.grafico .marca:hover .punto { r: 6; }
+.kpi-reporte { padding: 26px 0 10px; }
+.kpi-reporte strong { display: block; font-size: 56px; line-height: 1.05; font-weight: 600; letter-spacing: -1px; }
+.kpi-reporte span { display: block; margin-top: 8px; font-size: 13px; color: var(--tenue); }
+.tabla-reporte { margin-top: 16px; font-size: 12px; }
+.tabla-reporte .tabla-administracion { margin-top: 10px; }
+.vista-reporte { max-width: 980px; margin: auto; }
+.vista-reporte .titulo-gestion { margin-top: 18px; }
+.evidencia-reporte { margin-top: 26px; font-size: 12px; }
+@media (max-width: 820px) {
+  main:has(.gestion) { padding-inline: 16px; }
+  .reporte-panel { grid-template-columns: 1fr; }
+  .campo-accion { flex-direction: column; }
+  .acciones-reporte .botón-principal { margin-left: 0; }
+  .titulo-gestion h1 { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) { .progreso::before { animation: none; } }
+.gestion .fecha { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Probador virtual (fase 9): el microfrontend React trae sus propios estilos en Shadow DOM; aquí solo su lugar en el shell. */
+.probar-virtualmente { display: inline-flex; align-items: center; padding: 15px 22px; font-size: 12px; line-height: 1.3; margin-left: 10px; }
+.probar-virtualmente:hover { background: #eef1ea; }
+.probador-virtual { display: block; }
+.salida-probador { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 32px; padding: 18px 20px; background: #e9eee4; font-size: 14px; }
+.salida-probador strong { font: 400 22px Georgia, serif; color: var(--verde); }
+@media (max-width: 650px) { .probar-virtualmente { margin: 10px 0 0; } }
+
+.categoría-detalle {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #43533e;
+  margin-bottom: 8px;
+}

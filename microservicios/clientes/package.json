@@ -1,0 +1,32 @@
+{
+  "name": "clb-clientes",
+  "private": true,
+  "description": "CLB Store — microservicio de Clientes (NestJS, arquitectura clásica en capas, DynamoDB)",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "limpiar": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "compilar": "npm run limpiar && tsc -p tsconfig.json",
+    "iniciar": "node dist/fuente/principal.js",
+    "probar": "npm run compilar && node --test --test-concurrency=1 \"dist/pruebas/*.test.js\""
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "3.1155.0",
+    "@aws-sdk/lib-dynamodb": "3.1155.0",
+    "@nestjs/common": "12.2.0",
+    "@nestjs/core": "12.2.0",
+    "@nestjs/platform-express": "12.2.0",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "jose": "6.2.13",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@types/express": "5.0.6",
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
+  }
+}

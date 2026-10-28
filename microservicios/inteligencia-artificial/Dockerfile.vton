@@ -1,0 +1,21 @@
+FROM pytorch/pytorch:2.7.1-cuda12.8-cudnn9-devel@sha256:3d614dfd422b7e43647491cbf07d6acc516c032fc49c594a94afdebd52552fb9
+ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1 MAX_JOBS=2
+RUN apt-get update && apt-get install -y --no-install-recommends git build-essential libglib2.0-0 libgl1 && rm -rf /var/lib/apt/lists/*
+COPY requirements-vton.txt /tmp/requirements-vton.txt
+RUN pip install -r /tmp/requirements-vton.txt
+# Kernels CUDA para DensePose en RTX 5060 (Blackwell); no se admite fallback CPU.
+RUN git clone https://github.com/facebookresearch/detectron2.git /opt/detectron2 && cd /opt/detectron2 && git checkout b0fe2f0a5bb6496f65246ef35687a386a9f19202 && FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="12.0+PTX" MAX_JOBS=1 pip install --no-build-isolation . && pip install --no-build-isolation ./projects/DensePose
+RUN git clone https://github.com/Zheng-Chong/CatVTON.git /opt/CatVTON && cd /opt/CatVTON && git checkout 7818397f25613beedb3d861a34769f607cfcf3b1
+COPY adaptar_catvton.py /tmp/adaptar_catvton.py
+RUN python /tmp/adaptar_catvton.py /opt/CatVTON
+WORKDIR /app
+COPY fuente ./fuente
+COPY setup_weights.py ./setup_weights.py
+COPY preparar_objetos_vton.py ./preparar_objetos_vton.py
+COPY comprobar_vton_gpu.py ./comprobar_vton_gpu.py
+COPY optimizar_weights.py ./optimizar_weights.py
+RUN useradd --uid 10001 --create-home clb && mkdir /resultados && chown clb:clb /resultados
+ENV HF_HOME=/tmp/clb-vton-hf TRANSFORMERS_CACHE=/tmp/clb-vton-transformers HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 HF_HUB_DISABLE_TELEMETRY=1 CLB_VTON_FUENTE=/opt/CatVTON CLB_VTON_PESOS=/weights CLB_VTON_CACHE=/resultados U2NET_HOME=/weights/rembg
+ENV NUMBA_CACHE_DIR=/tmp/clb-numba MPLCONFIGDIR=/tmp/clb-matplotlib XDG_CACHE_HOME=/tmp/clb-cache NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2
+USER clb
+CMD ["uvicorn", "--factory", "fuente.infraestructura.trabajos_vton:app_desde_entorno", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--no-access-log"]

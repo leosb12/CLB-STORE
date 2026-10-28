@@ -1,0 +1,31 @@
+{
+  "muestras": [
+    {
+      "tensores": 463,
+      "bytes": 41785268,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 463,
+      "bytes": 41785268,
+      "inexacta": false,
+      "backend": "webgl"
+    },
+    {
+      "tensores": 463,
+      "bytes": 41785268,
+      "inexacta": false,
+      "backend": "webgl"
+    }
+  ],
+  "final": {
+    "tensores": 180,
+    "bytes": 9300008,
+    "inexacta": false,
+    "backend": "webgl"
+  },
+  "offline": true,
+  "fotos_transmitidas": 0,
+  "peticiones_publicas": 0
+}

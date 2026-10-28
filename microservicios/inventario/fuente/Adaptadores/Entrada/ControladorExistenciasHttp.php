@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Clb\Inventario\Adaptadores\Entrada;
 
+use Clb\Inventario\Aplicacion\GestionarExistencias;
+use Clb\Inventario\Dominio\ErrorDeExistencias;
 use Clb\Inventario\Puertos\Entrada\PuertoGestionarExistencias;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -64,5 +66,11 @@ final readonly class ControladorExistenciasHttp
     public function varianteAdministrativa(string $id): JsonResponse { return response()->json($this->casos->consultar('VARIANTE', $id, true)); }
     public function movimientos(string $id): JsonResponse { return response()->json($this->casos->consultar('MOVIMIENTOS', $id, true)); }
     public function reserva(string $id): JsonResponse { return response()->json($this->casos->consultar('RESERVA', $id, true)); }
-    public function eventos(): JsonResponse { return response()->json($this->casos->consultar('EVENTOS', '', true)); }
+    public function eventos(Request $solicitud): JsonResponse
+    {
+        $desde = filter_var($solicitud->query->get('desde', '0'), FILTER_VALIDATE_INT);
+        $límite = filter_var($solicitud->query->get('límite', '100'), FILTER_VALIDATE_INT);
+        if ($desde === false || $límite === false) throw new ErrorDeExistencias(GestionarExistencias::CURSOR_INVÁLIDO);
+        return response()->json($this->casos->eventosDesde($desde, $límite));
+    }
 }

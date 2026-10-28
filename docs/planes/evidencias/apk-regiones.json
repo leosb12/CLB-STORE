@@ -1,0 +1,12 @@
+{
+  "fecha": "2026-10-23T16:17:00.3586308-04:00",
+  "paquete": "bo.clb.store",
+  "version": "1.0.2",
+  "version_code": 3,
+  "target": "lib/main.dart",
+  "tipo": "debug-normal",
+  "bytes": 205063748,
+  "sha256": "216a78232eb13edf1606978e8e462c9dffbd8fca274665943e83c6b1f15b3168",
+  "instalada_en_telefono": false,
+  "validacion_fisica_regiones": "pendiente: usuario no puede conectar Samsung por ahora"
+}

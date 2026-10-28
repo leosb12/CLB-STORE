@@ -16,7 +16,7 @@ final readonly class RestringirAdministracion
         $this->acceso->autorizar();
         $respuesta = $siguiente($solicitud);
         $respuesta->headers->set('Cache-Control', 'no-store');
-        $respuesta->headers->set('X-CLB-Administracion', 'SOLO-LOCAL-NO-APTA-PARA-PRODUCCION');
+        if (config('administracion.acceso') === 'local') $respuesta->headers->set('X-CLB-Administracion', 'SOLO-LOCAL-NO-APTA-PARA-PRODUCCION');
         return $respuesta;
     }
 }

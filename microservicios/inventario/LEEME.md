@@ -66,11 +66,12 @@ Todas las escrituras nuevas requieren `Idempotency-Key` UUID v4. Ejemplo de crea
 | POST `/variantes/{id}/movimientos` | `tipo`, `cantidad` entera positiva, `motivo`, `versión_esperada`; AJUSTE además requiere `sentido`: INCREMENTO o DISMINUCION |
 | GET `/variantes/{id}/movimientos` | Historial auditado; administrativo local |
 | PUT `/variantes/{id}/minimo` | `mínimo` entero no negativo y `versión_esperada`; administrativo local |
-| POST `/interno/reservas` | `identificador` UUID, `identificador_pedido` externo y `líneas`: arreglo de `{identificador_variante,cantidad,versión_esperada}` |
+| POST `/interno/reservas` | `identificador` UUID, `identificador_pedido` externo y `líneas`: arreglo de `{identificador_variante,cantidad}`. Sin versión esperada: basta la disponibilidad; el CAS del agregado impide sobrevender |
 | GET `/interno/reservas/{id}` | Estado actual de reserva; interno local |
 | POST `/interno/reservas/{id}/consumir` | Cuerpo vacío; consume una vez, interno local |
 | POST `/interno/reservas/{id}/liberar` | Cuerpo vacío; compensa una vez, interno local |
-| GET `/interno/eventos` | Eventos `stock_bajo` persistidos pendientes; interno local |
+| GET `/interno/eventos?desde=N&límite=M` | Eventos `stock_bajo` desde la posición N (predeterminado 0; límite 1–100, predeterminado 100) y `siguiente`. Registro solo creciente: cada consumidor guarda su cursor. `desde` mayor que el total → 409 (reiniciar desde 0); interno local |
+| GET `/salud` (sin prefijo `/api`) | `{estado, servicio, dependencias:{mongodb}}`; 200 ACTIVO o 503 DEGRADADO |
 
 Cada reserva admite de una a cincuenta variantes distintas. Si alguna carece de disponibilidad o tiene otra versión, no se reserva ninguna. Una salida no consume unidades reservadas. Consumir resta física y reservada juntas y registra SALIDA por cada variante; liberar solo reduce reservada. Una reserva consumida no puede liberarse. Una terminación repetida, incluso con otra clave, no repite efectos. Usar la misma clave con otra solicitud da 409. Los conflictos de existencias devuelven `variante_actual` cuando procede; no sobrescribirlos automáticamente.
 

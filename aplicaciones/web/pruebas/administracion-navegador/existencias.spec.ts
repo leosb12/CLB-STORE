@@ -40,7 +40,7 @@ test("camiseta desde formulario → variante → entrada → mínimo → catálo
   await expect(page.locator(".barra-sincronización")).toContainText("Catálogo actualizado");
   await page.getByLabel("SKU", { exact: true }).fill(código);
   await page.getByLabel("Nombre", { exact: true }).fill("Camiseta vertical " + código);
-  await page.getByLabel("Categoría", { exact: true }).fill("Camisetas");
+  await page.getByLabel("Categoría", { exact: true }).selectOption("Poleras");
   await page.getByLabel("Precio en BOB", { exact: true }).fill("0.29");
   await page.getByRole("button", { name: "Guardar propuesta", exact: true }).click();
   const botón = page.getByRole("button", { name: "Variantes y stock de Camiseta vertical " + código, exact: true });

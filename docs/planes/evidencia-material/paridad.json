@@ -1,0 +1,47 @@
+[
+  {
+    "raster": "TS vs Dart, misma foto/pose/probabilidades",
+    "valores": 3145728,
+    "error_maximo": 0,
+    "error_medio": 0.0,
+    "segundos_dart_jit": 0.97,
+    "telefono": false,
+    "caso": "privado-1"
+  },
+  {
+    "raster": "TS vs Dart, misma foto/pose/probabilidades",
+    "valores": 3145728,
+    "error_maximo": 0,
+    "error_medio": 0.0,
+    "segundos_dart_jit": 1.003,
+    "telefono": false,
+    "caso": "privado-2"
+  },
+  {
+    "raster": "TS vs Dart, misma foto/pose/probabilidades",
+    "valores": 3145728,
+    "error_maximo": 0,
+    "error_medio": 0.0,
+    "segundos_dart_jit": 0.972,
+    "telefono": false,
+    "caso": "privado-3"
+  },
+  {
+    "raster": "TS vs Dart, misma foto/pose/probabilidades",
+    "valores": 3145728,
+    "error_maximo": 0,
+    "error_medio": 0.0,
+    "segundos_dart_jit": 1.026,
+    "telefono": false,
+    "caso": "privado-4"
+  },
+  {
+    "raster": "TS vs Dart, misma foto/pose/probabilidades",
+    "valores": 2461440,
+    "error_maximo": 0,
+    "error_medio": 0.0,
+    "segundos_dart_jit": 0.768,
+    "telefono": false,
+    "caso": "referencia-publica"
+  }
+]

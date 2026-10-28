@@ -1,0 +1,27 @@
+{
+  "fecha": "2026-10-23",
+  "entrada": "Pexels17858295, camiseta blanca frontal",
+  "normalizacion": {
+    "media": 127.5,
+    "desviacion": 127.5,
+    "activacion": "SOFTMAX"
+  },
+  "pruebas_compositor": {
+    "ejecutadas": 10,
+    "aprobadas": 10
+  },
+  "react_heredado": {
+    "aprobadas": 23,
+    "build": true
+  },
+  "aceptacion_visual": false,
+  "integracion_clientes": false,
+  "dispositivo_fisico": false,
+  "limitaciones": [
+    "Pliegues del producto se mezclan con la luz de la base",
+    "Mangas sin reproducción fiel de detalles",
+    "La silueta y corte proceden de la camiseta base",
+    "Una sola foto real evaluada"
+  ],
+  "siguiente": "Validar reflectancia y UV regionales antes de integrar"
+}

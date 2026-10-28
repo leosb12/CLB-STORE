@@ -1,0 +1,406 @@
+{
+ "id": "clbStockBajo0001",
+ "name": "CLB · Stock bajo → alerta en gestión",
+ "active": false,
+ "nodes": [
+  {
+   "id": "a0000000-0000-4000-8000-000000000001",
+   "name": "Cada 20 segundos",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "seconds",
+       "secondsInterval": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a0000000-0000-4000-8000-000000000002",
+   "name": "Cursor de Inventario",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\nreturn [{ json: { desde: datos.cursorInventario ?? 0 } }];"
+   }
+  },
+  {
+   "id": "a0000000-0000-4000-8000-000000000003",
+   "name": "Token de servicio",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_IDENTIDAD_TOKEN_URL }}",
+    "sendBody": true,
+    "contentType": "form-urlencoded",
+    "specifyBody": "keypair",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "grant_type",
+       "value": "client_credentials"
+      },
+      {
+       "name": "client_id",
+       "value": "clb-n8n"
+      },
+      {
+       "name": "client_secret",
+       "value": "={{ $env.CLB_N8N_SECRETO }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    }
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000004",
+   "name": "Eventos de Inventario",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_INVENTARIO_URL }}/api/v1/interno/eventos",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "desde",
+       "value": "={{ $('Cursor de Inventario').first().json.desde }}"
+      },
+      {
+       "name": "límite",
+       "value": "50"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000005",
+   "name": "Solo stock_bajo",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    880,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\nconst r = $input.first().json;\n// 409: Inventario tiene menos eventos que el cursor (registro reiniciado): se vuelve a leer desde el principio.\nif (r.statusCode === 409) { datos.cursorInventario = 0; return []; }\nif (r.statusCode !== 200) throw new Error(`Inventario respondió ${r.statusCode}: se reintentará.`);\nconst { eventos, siguiente } = r.body;\nconst stockBajo = eventos.filter((e) => e.tipo === 'stock_bajo');\nif (!stockBajo.length) { datos.cursorInventario = siguiente; return []; }\nreturn stockBajo.map((e) => ({ json: { ...e, siguiente } }));"
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000006",
+   "name": "Variante",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1100,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_INVENTARIO_URL }}/api/v1/variantes/{{ $json.identificador_variante }}",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    }
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000007",
+   "name": "Producto",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_INVENTARIO_URL }}/api/v1/productos/{{ $('Solo stock_bajo').item.json.identificador_producto }}",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    }
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000008",
+   "name": "Armar alerta",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1540,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const registrarRechazo = (r) => {\n  const datosRechazos = $getWorkflowStaticData('global');\n  datosRechazos.rechazados = [{ ...r, fecha: new Date().toISOString() },\n    ...(datosRechazos.rechazados ?? []).filter((x) => x.evento !== r.evento)].slice(0, 100);\n};\nconst eventos = $('Solo stock_bajo').all();\nconst variantes = $('Variante').all();\nconst temporal = (estado) => estado >= 500 || [401, 403, 408, 425, 429].includes(estado);\nconst alertas = [];\nfor (const [i, r] of $input.all().entries()) {\n  const e = eventos[i].json;\n  const rv = variantes[i].json;\n  // Misma regla que VERIFICAR: un 4xx definitivo (404 variante desactivada, 400/422 dato inválido) se registra y se salta\n  // sin detener el lote; 5xx y 401/403/408/425/429 se reintentan.\n  if (temporal(rv.statusCode)) throw new Error(`Inventario respondió ${rv.statusCode} al leer la variante: se reintentará.`);\n  if (rv.statusCode >= 400) { registrarRechazo({ evento: e.identificador, destino: 'Inventario', estado: rv.statusCode, motivo: rv.statusCode === 404 ? 'Variante inexistente o desactivada.' : 'Inventario rechazó la variante del evento.' }); continue; }\n  // Un producto desactivado (404) deja la alerta útil con el SKU; cualquier otro error se reintenta, no se adivina.\n  if (r.json.statusCode !== 200 && r.json.statusCode !== 404) throw new Error(`Inventario respondió ${r.json.statusCode} al leer el producto: se reintentará.`);\n  const v = rv.body.variante;\n  const producto = r.json.statusCode === 200 ? r.json.body.producto.nombre : v.sku;\n  alertas.push({ json: { evento: e.identificador, tipo: 'stock_bajo', variante: e.identificador_variante, producto, sku: v.sku,\n    talla: v.talla, color: v.color, disponible: e.disponible, minimo: e['mínimo'], fecha_evento: e.fecha } });\n}\n// Si todo el lote se rechazó, el cursor avanza aquí: los nodos siguientes no se ejecutan sin elementos.\nif (!alertas.length) { $getWorkflowStaticData('global').cursorInventario = eventos[0].json.siguiente; }\nreturn alertas;"
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000009",
+   "name": "Registrar alerta en IA",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1760,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_IA_URL }}/api/v1/interno/notificaciones",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    },
+    "sendBody": true,
+    "contentType": "json",
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify($json) }}"
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000010",
+   "name": "Verificar respuesta de IA",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1980,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const registrarRechazo = (r) => {\n  const datosRechazos = $getWorkflowStaticData('global');\n  datosRechazos.rechazados = [{ ...r, fecha: new Date().toISOString() },\n    ...(datosRechazos.rechazados ?? []).filter((x) => x.evento !== r.evento)].slice(0, 100);\n};\nconst definitivos = [];\nfor (const [i, r] of $input.all().entries()) {\n  const estado = r.json.statusCode;\n  if (estado >= 500 || [401, 403, 408, 425, 429].includes(estado)) throw new Error(`IA respondió ${estado}: se reintentará.`);\n  if (estado >= 400) {\n    definitivos.push({ indice: i, estado });\n    registrarRechazo({ evento: $('Armar alerta').all()[i].json.evento, destino: 'IA', estado,\n      motivo: String(r.json.body?.mensaje ?? r.json.body?.detail ?? '').slice(0, 200) });\n  }\n}\nreturn [{ json: { procesados: $input.all().length, rechazados_definitivos: definitivos } }];"
+   }
+  },
+  {
+   "id": "a1000000-0000-4000-8000-000000000011",
+   "name": "Avanzar cursor",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2200,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\ndatos.cursorInventario = $('Solo stock_bajo').first().json.siguiente;\nreturn [{ json: { cursor: datos.cursorInventario, ...$input.first().json } }];"
+   }
+  }
+ ],
+ "connections": {
+  "Cada 20 segundos": {
+   "main": [
+    [
+     {
+      "node": "Cursor de Inventario",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Cursor de Inventario": {
+   "main": [
+    [
+     {
+      "node": "Token de servicio",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Token de servicio": {
+   "main": [
+    [
+     {
+      "node": "Eventos de Inventario",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Eventos de Inventario": {
+   "main": [
+    [
+     {
+      "node": "Solo stock_bajo",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Solo stock_bajo": {
+   "main": [
+    [
+     {
+      "node": "Variante",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Variante": {
+   "main": [
+    [
+     {
+      "node": "Producto",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Producto": {
+   "main": [
+    [
+     {
+      "node": "Armar alerta",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Armar alerta": {
+   "main": [
+    [
+     {
+      "node": "Registrar alerta en IA",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Registrar alerta en IA": {
+   "main": [
+    [
+     {
+      "node": "Verificar respuesta de IA",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verificar respuesta de IA": {
+   "main": [
+    [
+     {
+      "node": "Avanzar cursor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all",
+  "saveManualExecutions": false,
+  "timezone": "America/La_Paz"
+ },
+ "pinData": {},
+ "meta": {
+  "descripcion": "Flujo A (fase 10): eventos stock_bajo de Inventario → variante y producto → notificación en IA."
+ }
+}

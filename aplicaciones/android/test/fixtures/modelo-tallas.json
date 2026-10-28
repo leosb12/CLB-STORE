@@ -1,0 +1,277 @@
+{
+ "origen": "GET /api/v1/tallas/modelo y POST /api/v1/tallas/recomendacion del servicio de IA (fase 8)",
+ "modelo": {
+  "version": 1,
+  "tipo": "regresion_logistica_multinomial",
+  "caracteristicas": [
+   "altura_cm",
+   "peso_kg",
+   "pecho_cm",
+   "cintura_cm"
+  ],
+  "clases": [
+   "XS",
+   "S",
+   "M",
+   "L",
+   "XL"
+  ],
+  "media": [
+   170.060543,
+   70.009153,
+   98.150501,
+   83.082791
+  ],
+  "escala": [
+   10.634136,
+   17.63562,
+   12.568314,
+   13.566058
+  ],
+  "coeficientes": [
+   [
+    -3.413103,
+    -6.009092,
+    -4.922504,
+    -5.104564
+   ],
+   [
+    -1.373005,
+    -2.924069,
+    -2.494049,
+    -2.168401
+   ],
+   [
+    0.387071,
+    0.102555,
+    0.160491,
+    -0.29211
+   ],
+   [
+    1.453832,
+    2.900631,
+    2.300112,
+    2.341785
+   ],
+   [
+    2.945205,
+    5.929975,
+    4.95595,
+    5.223291
+   ]
+  ],
+  "intercepto": [
+   -7.061776,
+   3.000764,
+   6.173208,
+   3.85498,
+   -5.967176
+  ],
+  "inferencia": "softmax(coeficientes · ((x − media) / escala) + intercepto)",
+  "metricas": {
+   "exactitud": 0.945,
+   "matriz_confusion": [
+    [
+     79,
+     1,
+     0,
+     0,
+     0
+    ],
+    [
+     5,
+     72,
+     3,
+     0,
+     0
+    ],
+    [
+     0,
+     2,
+     74,
+     4,
+     0
+    ],
+    [
+     0,
+     0,
+     5,
+     74,
+     1
+    ],
+    [
+     0,
+     0,
+     0,
+     1,
+     79
+    ]
+   ],
+   "entrenamiento": 1600,
+   "prueba": 400
+  },
+  "tabla": {
+   "XS": {
+    "altura_cm": [
+     150,
+     162
+    ],
+    "peso_kg": [
+     42,
+     55
+    ],
+    "pecho_cm": [
+     78,
+     86
+    ],
+    "cintura_cm": [
+     62,
+     70
+    ]
+   },
+   "S": {
+    "altura_cm": [
+     158,
+     170
+    ],
+    "peso_kg": [
+     52,
+     64
+    ],
+    "pecho_cm": [
+     86,
+     94
+    ],
+    "cintura_cm": [
+     70,
+     78
+    ]
+   },
+   "M": {
+    "altura_cm": [
+     165,
+     177
+    ],
+    "peso_kg": [
+     62,
+     75
+    ],
+    "pecho_cm": [
+     94,
+     102
+    ],
+    "cintura_cm": [
+     78,
+     86
+    ]
+   },
+   "L": {
+    "altura_cm": [
+     170,
+     182
+    ],
+    "peso_kg": [
+     72,
+     88
+    ],
+    "pecho_cm": [
+     102,
+     110
+    ],
+    "cintura_cm": [
+     86,
+     96
+    ]
+   },
+   "XL": {
+    "altura_cm": [
+     175,
+     190
+    ],
+    "peso_kg": [
+     85,
+     105
+    ],
+    "pecho_cm": [
+     110,
+     120
+    ],
+    "cintura_cm": [
+     96,
+     108
+    ]
+   }
+  },
+  "aviso": "Estimación orientativa calculada con tus medidas; revisa la tabla de tallas antes de comprar."
+ },
+ "casos": [
+  {
+   "medidas": {
+    "altura_cm": 168,
+    "peso_kg": 66,
+    "pecho_cm": 95,
+    "cintura_cm": 80
+   },
+   "talla": "M",
+   "probabilidades": {
+    "XS": 0.0001,
+    "S": 0.2563,
+    "M": 0.7336,
+    "L": 0.01,
+    "XL": 0.0
+   },
+   "talla_por_tabla": "M"
+  },
+  {
+   "medidas": {
+    "altura_cm": 155,
+    "peso_kg": 48,
+    "pecho_cm": 82,
+    "cintura_cm": 66
+   },
+   "talla": "XS",
+   "probabilidades": {
+    "XS": 0.9705,
+    "S": 0.0295,
+    "M": 0.0,
+    "L": 0.0,
+    "XL": 0.0
+   },
+   "talla_por_tabla": "XS"
+  },
+  {
+   "medidas": {
+    "altura_cm": 183,
+    "peso_kg": 95,
+    "pecho_cm": 114,
+    "cintura_cm": 100
+   },
+   "talla": "XL",
+   "probabilidades": {
+    "XS": 0.0,
+    "S": 0.0,
+    "M": 0.0,
+    "L": 0.0381,
+    "XL": 0.9619
+   },
+   "talla_por_tabla": "XL"
+  },
+  {
+   "medidas": {
+    "altura_cm": 172,
+    "peso_kg": 74,
+    "pecho_cm": 102,
+    "cintura_cm": 88
+   },
+   "talla": "L",
+   "probabilidades": {
+    "XS": 0.0,
+    "S": 0.0016,
+    "M": 0.4692,
+    "L": 0.5287,
+    "XL": 0.0005
+   },
+   "talla_por_tabla": "M"
+  }
+ ]
+}

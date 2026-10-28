@@ -3,6 +3,7 @@ import { FormsModule } from "@angular/forms";
 import { ActivatedRoute } from "@angular/router";
 import { EstadoCatalogo } from "../aplicacion/estado-catalogo";
 import { TarjetaProducto } from "./tarjeta-producto";
+import { fotografiaPrenda } from "../dominio/imagen-prenda";
 
 @Component({
   selector: "clb-pagina-catalogo",
@@ -10,7 +11,6 @@ import { TarjetaProducto } from "./tarjeta-producto";
   template: ` @if (!soloFavoritos) {
       <section class="portada" aria-labelledby="titulo-portada">
         <div>
-          <p class="antetítulo">LO ESENCIAL, A TU MANERA</p>
           <h1 id="titulo-portada">Prendas para<br />vivir tus días.</h1>
           <p>
             Diseños que van contigo. Descubre tu próximo<br
@@ -30,7 +30,7 @@ import { TarjetaProducto } from "./tarjeta-producto";
           <span class="círculo-portada"></span>
           <img
             class="prenda-portada"
-            src="/ilustraciones/camisa.svg"
+            src="/prendas/polera-gris.png"
             alt=""
             width="420"
             height="460"
@@ -43,11 +43,6 @@ import { TarjetaProducto } from "./tarjeta-producto";
     <section id="coleccion" class="colección" aria-labelledby="titulo-catalogo">
       <div class="encabezado-colección">
         <div>
-          <p class="antetítulo">
-            {{
-              soloFavoritos ? "TU SELECCIÓN PERSONAL" : "ENCUENTRA TU ESTILO"
-            }}
-          </p>
           <h2 id="titulo-catalogo">
             {{ soloFavoritos ? "Tus favoritos" : "Nuestro catálogo"
             }}<span class="cantidad">{{ filtrados().length }}</span>
@@ -86,6 +81,8 @@ import { TarjetaProducto } from "./tarjeta-producto";
         </label>
       </div>
       <div class="resumen-catálogo">
+        <label class="filtro-fotografias"><input type="checkbox" [ngModel]="soloFotos()"
+          (ngModelChange)="filtrarFotos($event)" /> Mostrar solo prendas con fotografía</label>
         <p>
           {{ filtrados().length }} prendas
           {{
@@ -160,11 +157,13 @@ export class PaginaCatalogo {
   readonly búsqueda = signal("");
   readonly categoría = signal("");
   readonly página = signal(1);
+  readonly soloFotos = signal(inject(ActivatedRoute).snapshot.queryParamMap.get("fotos") === "1");
   readonly filtrados = computed(() =>
     this.estado
       .productos()
       .filter(
         (producto) =>
+          (!this.soloFotos() || !!fotografiaPrenda(producto.sku)) &&
           (!this.soloFavoritos ||
             this.estado.favoritos().has(producto.identificador)) &&
           producto.nombre
@@ -191,6 +190,11 @@ export class PaginaCatalogo {
   limpiar(): void {
     this.búsqueda.set("");
     this.categoría.set("");
+    this.página.set(1);
+    this.soloFotos.set(false);
+  }
+  filtrarFotos(valor: boolean): void {
+    this.soloFotos.set(valor);
     this.página.set(1);
   }
 }

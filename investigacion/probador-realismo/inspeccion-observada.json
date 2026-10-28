@@ -1,0 +1,46 @@
+{
+  "procedencia": "Google MediaPipe SelfieMulticlass float32 version 1",
+  "sha256": "c6748b1253a99067ef71f7e26ca71096cd449baefa8f101900ea23016507e0e0",
+  "bytes": 16371837,
+  "subgrafos": 1,
+  "entradas": [
+    {
+      "nombre": "input_29",
+      "forma": [
+        1,
+        256,
+        256,
+        3
+      ],
+      "tipo": 0
+    }
+  ],
+  "salidas": [
+    {
+      "nombre": "Identity",
+      "forma": [
+        1,
+        256,
+        256,
+        6
+      ],
+      "tipo": 0
+    }
+  ],
+  "operadores": {
+    "CONV_2D": 67,
+    "DEPTHWISE_CONV_2D": 18,
+    "ADD": 25,
+    "RESHAPE": 20,
+    "TRANSPOSE": 8,
+    "MUL": 18,
+    "SOFTMAX": 6,
+    "SUM": 6,
+    "RESIZE_BILINEAR": 3,
+    "RESIZE_NEAREST_NEIGHBOR": 3,
+    "TRANSPOSE_CONV": 1
+  },
+  "inferencia_ejecutada": false,
+  "compatibilidad_TFJS_demostrada": false,
+  "calidad_fotografica_demostrada": false
+}

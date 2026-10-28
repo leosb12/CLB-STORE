@@ -13,7 +13,9 @@ use MongoDB\Driver\Exception\Exception as ErrorMongoDB;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
-    ->withRouting(api: __DIR__.'/../rutas/api.php')
+    ->withRouting(api: __DIR__.'/../rutas/api.php', then: function (): void {
+        \Illuminate\Support\Facades\Route::get('/salud', \Clb\Inventario\Adaptadores\Entrada\ControladorSaludHttp::class);
+    })
     ->withCommands([\Clb\Inventario\Adaptadores\Entrada\CargarCatalogoDemostracion::class, \Clb\Inventario\Adaptadores\Entrada\MigrarVariantes::class])
     ->withMiddleware(function (Middleware $intermediarios): void {
         $intermediarios->remove([
@@ -22,11 +24,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $excepciones): void {
+        $excepciones->render(function (\Clb\Inventario\Dominio\ErrorDeRecurso $error) {
+            return response()->json(['mensaje'=>$error->getMessage(), 'código'=>$error->código], $error->estado);
+        });
         $excepciones->render(function (\Clb\Inventario\Dominio\ErrorDeExistencias $error) {
             return response()->json(['mensaje' => $error->getMessage(), 'código' => $error->estado === 409 ? 'CONFLICTO_EXISTENCIAS' : 'EXISTENCIAS_INVALIDAS', 'variante_actual' => $error->actual], $error->estado);
         });
         $excepciones->dontReport([ReglaDeProductoIncumplida::class, SkuDuplicado::class]);
         $excepciones->shouldRenderJsonWhen(fn (Request $solicitud, Throwable $error): bool => true);
+        $excepciones->render(function (\Clb\Inventario\Dominio\IdentidadNoDisponible $error) {
+            return response()->json(['mensaje' => $error->getMessage(), 'código' => 'IDENTIDAD_NO_DISPONIBLE'], 503);
+        });
+        $excepciones->render(function (\Clb\Inventario\Dominio\NoAutenticado $error) {
+            return response()->json(['mensaje' => $error->getMessage(), 'código' => 'NO_AUTENTICADO'], 401);
+        });
         $excepciones->render(function (\Clb\Inventario\Dominio\AdministracionNoAutorizada $error) {
             return response()->json(['mensaje' => $error->getMessage(), 'código' => 'ADMINISTRACION_NO_AUTORIZADA'], 403);
         });

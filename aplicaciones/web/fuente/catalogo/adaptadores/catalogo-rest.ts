@@ -1,3 +1,6 @@
+import type { TexturaGuardada } from "../dominio/recurso-probador";
+import { validarRecurso } from "../dominio/recurso-probador";
+import { descargarTextura } from "./descargar-textura";
 import {
   ErrorRemoto,
   type FuenteCatalogo,
@@ -75,6 +78,22 @@ export class CatalogoRest implements FuenteCatalogo {
     throw new Error("El catálogo excede el límite de descarga local.");
   }
 
+  async descargarRecursos(productos: Producto[], guardadas: TexturaGuardada[] = []) {
+    const frentes = productos.filter(p => p.recurso_probador).map(p => p.recurso_probador!);
+    // La espalda del modelo 3D se descarga y verifica igual que la textura frontal: la RA también funciona sin red.
+    const espaldas = frentes.flatMap(r => r.esquema === 2 && r.espalda ? [{...r, ...r.espalda}] : []);
+    const recursos = [...new Map([...frentes, ...espaldas].map(r => [r.sha256, r])).values()];
+    if (typeof navigator !== "undefined" && navigator.storage?.estimate) {
+      const estado = await navigator.storage.estimate();
+      const necesarios = recursos.reduce((n,r) => n+r.bytes,0);
+      if (estado.quota !== undefined && estado.usage !== undefined && estado.quota-estado.usage < necesarios*2)
+        throw new Error("No hay espacio para descargar el nuevo paquete fotográfico.");
+    }
+    const texturas = [];
+    for (const recurso of recursos) texturas.push(guardadas.find(t => t.sha256 === recurso.sha256) ?? await descargarTextura(recurso,this.solicitar,this.url));
+    return texturas;
+  }
+
   async consultar(identificador: string): Promise<Producto> {
     const respuesta = await this.leer<{ producto: Producto }>(
       `/productos/${encodeURIComponent(identificador)}`,
@@ -84,6 +103,7 @@ export class CatalogoRest implements FuenteCatalogo {
   }
 
   private validar(producto: Producto): void {
+    if (producto?.recurso_probador !== undefined) validarRecurso(producto.recurso_probador);
     if (
       !producto ||
       !/^[a-f0-9]{32}$/.test(producto.identificador) ||

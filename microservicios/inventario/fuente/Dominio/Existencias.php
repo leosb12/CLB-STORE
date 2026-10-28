@@ -158,10 +158,10 @@ final class Existencias
         if (!is_array($líneas) || !array_is_list($líneas) || count($líneas) < 1 || count($líneas) > 50) throw new ErrorDeExistencias('La reserva requiere entre 1 y 50 líneas.');
         $normalizadas = [];
         foreach ($líneas as $línea) {
-            if (!is_array($línea) || array_diff(array_keys($línea), ['identificador_variante', 'cantidad', 'versión_esperada'])) throw new ErrorDeExistencias('Línea de reserva inválida.');
+            if (!is_array($línea) || array_diff(array_keys($línea), ['identificador_variante', 'cantidad'])) throw new ErrorDeExistencias('Línea de reserva inválida.');
             $varianteId = self::validarUuid($línea['identificador_variante'] ?? null);
             if (isset($normalizadas[$varianteId])) throw new ErrorDeExistencias('Una variante no puede repetirse en la reserva.');
-            $normalizadas[$varianteId] = ['identificador_variante' => $varianteId, 'cantidad' => self::cantidad($línea['cantidad'] ?? null), 'versión_esperada' => $línea['versión_esperada'] ?? null];
+            $normalizadas[$varianteId] = ['identificador_variante' => $varianteId, 'cantidad' => self::cantidad($línea['cantidad'] ?? null)];
         }
         ksort($normalizadas);
         $normalizadas = array_values($normalizadas);
@@ -172,9 +172,10 @@ final class Existencias
             return ['reserva' => $anterior];
         }
         // Se valida todo antes de aplicar; la persistencia confirma el agregado completo por CAS.
+        // Sin versión esperada: una compra no debe fallar porque otro cliente movió la misma variante
+        // si la disponibilidad alcanza; el CAS del agregado ya impide sobrevender.
         foreach ($normalizadas as $línea) {
             $variante = $this->variante($línea['identificador_variante']);
-            $this->versión($variante, $línea['versión_esperada']);
             if (!$variante['activo'] || $variante['disponible'] < $línea['cantidad']) throw new ErrorDeExistencias('Variante inactiva o disponibilidad insuficiente.', 409);
         }
         foreach ($normalizadas as $línea) {

@@ -1,0 +1,9 @@
+{
+  "modelo": "U²-Net",
+  "archivo": "u2net.onnx",
+  "sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+  "bytes": 175997641,
+  "fuente": "https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2net.onnx",
+  "licencia": "Apache-2.0",
+  "repositorio_original": "https://github.com/xuebinqin/U-2-Net"
+}

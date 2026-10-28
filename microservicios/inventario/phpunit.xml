@@ -12,6 +12,8 @@
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_DEBUG" value="false" force="true"/>
+        <!-- Las pruebas existentes usan el modo local; las de OIDC lo cambian explícitamente. -->
+        <env name="CLB_INVENTARIO_ACCESO" value="local" force="true"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="SESSION_DRIVER" value="array"/>
     </php>

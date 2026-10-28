@@ -69,7 +69,7 @@ async function completar(
     .fill("Diseño de prueba en colección temporal");
   await página
     .getByLabel("Categoría", { exact: true })
-    .fill("Camisas de prueba");
+    .selectOption("Camisas");
   await página.getByLabel("Precio en BOB", { exact: true }).fill(precio);
 }
 

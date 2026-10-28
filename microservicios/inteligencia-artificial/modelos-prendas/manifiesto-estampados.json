@@ -1,0 +1,11 @@
+{
+  "nombre": "PP-OCRv4, detector de texto convertido por RapidAI",
+  "uso": "Solo preparación local de prendas; no reconocimiento ni generación de texto",
+  "archivo": "texto-prenda.onnx",
+  "bytes": 4745517,
+  "sha256": "d2a7720d45a54257208b1e13e36a8479894cb74155a5efe29462512d42f49da9",
+  "fuente_paquete": "https://files.pythonhosted.org/packages/ba/12/1e5497183bdbe782dbb91bad1d0d2297dba4d2831b2652657f7517bfc6df/rapidocr_onnxruntime-1.4.4-py3-none-any.whl",
+  "paquete_sha256": "971d7d5f223a7a808662229df1ef69893809d8457d834e6373d3854bc1782cbf",
+  "licencia": "Apache-2.0",
+  "procedencia_licencia": "https://rapidai.github.io/RapidOCRDocs/main/en/model_licenses/"
+}

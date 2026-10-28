@@ -1,0 +1,21 @@
+Fotografías de prendas: PNGimg.com. Colección de demostración académica.
+Licencia indicada por la fuente: CC BY-NC 4.0 — https://creativecommons.org/licenses/by-nc/4.0/
+Fuente y condiciones: https://pngimg.com/license/
+Fotos originales sin cambios. El SVG únicamente define su encuadre para el probador 2D.
+
+CLB-FOTO-POL-GRI: Polera gris jaspeada — https://pngimg.com/image/5448 — SHA-256 e52a5a29d5ce038312df369a265c5c922d78c7310f982414257c85535a42c486
+CLB-FOTO-POL-ROJ: Polera roja de cuello redondo — https://pngimg.com/image/5449 — SHA-256 90cd762264f7c501e4751fd9c932dc2de5489fb97d00654e67f6d0fbe977c189
+CLB-FOTO-CAM-NEG: Camisa negra de manga larga — https://pngimg.com/image/8117 — SHA-256 22a9ab14700b3dd418528a5c195317cff3cef17a02e6d49099c77f03e8419a40
+CLB-FOTO-CHA-ROJ: Chaqueta roja con cierre — https://pngimg.com/image/8058 — SHA-256 60fb236502ffa181a66a33a88c3ab9b47f5c33132f5b660b116afc5cb99be775
+CLB-FOTO-CHA-AZU: Chaqueta deportiva azul y blanca — https://pngimg.com/image/8056 — SHA-256 26c5de67281e49f3dbd4b694ab8dfb2786cdce48f2215abd4db10b33b52b70e5
+CLB-FOTO-VES-BUR: Vestido corto negro y burdeos — https://pngimg.com/image/56194 — SHA-256 89b897cca6abebd74d6066123a942a22785a74a34492599a56af1f23ffece83e
+
+Colección ingerida por el probador (llega con el catálogo de la API, no se empaqueta):
+CLB-ING-JEA-CEL: Jean celeste recto — https://pngimg.com/image/5766
+CLB-ING-JEA-GAS: Jean claro gastado — https://pngimg.com/image/5767
+CLB-ING-JEA-IND: Jean índigo — https://pngimg.com/image/5776
+CLB-ING-BUZ-GRI: Buzo gris con capucha — https://pngimg.com/image/104424
+CLB-ING-BUZ-AZU: Buzo azul con capucha — https://pngimg.com/image/104416
+CLB-ING-POL-VER: Polerón verde cuello redondo — https://pngimg.com/image/104430
+CLB-ING-SUE-GRI: Suéter gris cuello en V — https://pngimg.com/image/104437
+CLB-ING-SUE-BUR: Suéter burdeos — https://pngimg.com/image/104434

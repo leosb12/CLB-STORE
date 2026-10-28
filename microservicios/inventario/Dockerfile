@@ -20,10 +20,12 @@ RUN --mount=type=cache,id=clb_composer,target=/tmp/clb_composer \
 FROM base AS aplicacion
 COPY --from=dependencias /var/www/clb_inventario/vendor ./vendor
 COPY . .
-RUN mkdir -p bootstrap/cache storage/logs storage/framework/cache storage/framework/views \
+RUN mkdir -p bootstrap/cache storage/app/prendas storage/logs storage/framework/cache storage/framework/views \
     && composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
     && php artisan package:discover --ansi \
     && chown -R www-data:www-data bootstrap/cache storage
+
+RUN printf "upload_max_filesize=10M\npost_max_size=24M\n" > /usr/local/etc/php/conf.d/clb-recursos.ini
 
 USER www-data
 EXPOSE 8000

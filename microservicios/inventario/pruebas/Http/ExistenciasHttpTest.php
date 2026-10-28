@@ -39,7 +39,7 @@ final class ExistenciasHttpTest extends PruebaConMongoDB
         $producto = $this->producto(); $a = $this->variante($producto); $b = $this->variante($producto, 'CLB-BLANCO-M');
         $this->entrada($a); $this->entrada($b);
         $id = Existencias::uuid(); $clave = Existencias::uuid();
-        $datos = ['identificador' => $id, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 4, 'versión_esperada' => 2], ['identificador_variante' => $b, 'cantidad' => 3, 'versión_esperada' => 2]]];
+        $datos = ['identificador' => $id, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 4], ['identificador_variante' => $b, 'cantidad' => 3]]];
         $reserva = $this->postJson('/api/v1/interno/reservas', $datos, ['Idempotency-Key' => $clave])->assertCreated()->json();
         self::assertSame($reserva, $this->postJson('/api/v1/interno/reservas', $datos, ['Idempotency-Key' => $clave])->assertCreated()->json());
         $reordenados = $datos;
@@ -50,8 +50,6 @@ final class ExistenciasHttpTest extends PruebaConMongoDB
         $this->getJson('/api/v1/variantes/'.$a)->assertJsonPath('variante.disponible', 10)->assertJsonPath('variante.reservada', 0);
         $this->postJson('/api/v1/interno/reservas/'.$id.'/consumir')->assertConflict();
         $id = Existencias::uuid(); $datos['identificador'] = $id;
-        foreach ($datos['líneas'] as &$línea) $línea['versión_esperada'] = 4;
-        unset($línea);
         $this->postJson('/api/v1/interno/reservas', $datos)->assertCreated();
         $clave = Existencias::uuid();
         $consumo = $this->postJson('/api/v1/interno/reservas/'.$id.'/consumir', [], ['Idempotency-Key' => $clave])->assertOk()->json();
@@ -81,6 +79,28 @@ final class ExistenciasHttpTest extends PruebaConMongoDB
         $this->postJson('/api/v1/variantes/'.$id.'/movimientos', $datos, ['Idempotency-Key' => $clave])->assertCreated();
         $this->getJson('/api/v1/interno/eventos')->assertOk()->assertJsonCount(1, 'eventos')->assertJsonPath('eventos.0.estado', 'PENDIENTE');
         self::assertCount(1, $this->colección->findOne(['_id' => 'clb_existencias'])['eventos']);
+    }
+    public function test_cursor_de_eventos_por_consumidor(): void
+    {
+        $producto = $this->producto(); $a = $this->variante($producto); $b = $this->variante($producto, 'CLB-BLANCO-M');
+        foreach ([$a, $b] as $id) {
+            $this->entrada($id);
+            $this->putJson('/api/v1/variantes/'.$id.'/minimo', ['mínimo' => 10, 'versión_esperada' => 2], ['Idempotency-Key' => Existencias::uuid()])->assertOk();
+        }
+        $this->getJson('/api/v1/interno/eventos?desde=0&l%C3%ADmite=1')->assertOk()->assertJsonCount(1, 'eventos')->assertJsonPath('siguiente', 1)->assertJsonPath('eventos.0.identificador_variante', $a);
+        $this->getJson('/api/v1/interno/eventos?desde=1')->assertOk()->assertJsonCount(1, 'eventos')->assertJsonPath('siguiente', 2)->assertJsonPath('eventos.0.identificador_variante', $b);
+        // Otro consumidor lee desde el inicio sin afectar al primero.
+        $this->getJson('/api/v1/interno/eventos?desde=0')->assertOk()->assertJsonCount(2, 'eventos');
+        $this->getJson('/api/v1/interno/eventos?desde=2')->assertOk()->assertJsonCount(0, 'eventos')->assertJsonPath('siguiente', 2);
+        // Un cursor de un registro recreado (mayor que el total) no se ignora en silencio.
+        $this->getJson('/api/v1/interno/eventos?desde=3')->assertConflict();
+        foreach (['desde=-1', 'desde=x', 'l%C3%ADmite=0', 'l%C3%ADmite=101'] as $consulta) {
+            $this->getJson('/api/v1/interno/eventos?'.$consulta)->assertStatus(422)->assertJsonPath('código', 'EXISTENCIAS_INVALIDAS');
+        }
+    }
+    public function test_salud_informa_dependencia(): void
+    {
+        $this->getJson('/salud')->assertOk()->assertExactJson(['estado' => 'ACTIVO', 'servicio' => 'inventario', 'dependencias' => ['mongodb' => 'ACTIVO']]);
     }
     public function test_comandos_y_reservas_prohibidos_sin_habilitacion(): void
     {

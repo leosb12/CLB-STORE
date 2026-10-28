@@ -3,6 +3,7 @@ import { DatePipe } from "@angular/common";
 import { RouterLink, RouterLinkActive, RouterOutlet } from "@angular/router";
 import { SwUpdate } from "@angular/service-worker";
 import { EstadoCatalogo } from "./catalogo/aplicacion/estado-catalogo";
+import { EstadoSesion } from "./sesion/aplicacion/estado-sesion";
 
 interface EventoInstalacion extends Event {
   prompt(): Promise<void>;
@@ -30,12 +31,24 @@ interface EventoInstalacion extends Event {
           <span class="contador-favoritos">{{
             estado.favoritos().size
           }}</span></a
-        >
-        <a routerLink="/administracion/productos" routerLinkActive="actual"
-          >Administración</a
-        >
+        ><a routerLink="/probador" routerLinkActive="actual" [routerLinkActiveOptions]="{ exact: true }">Probador</a>
+        @if (sesion.administrador()) {
+          <a routerLink="/administracion/productos" routerLinkActive="actual"
+            >Administración</a
+          >
+          <a routerLink="/gestion" routerLinkActive="actual">Gestión</a>
+        }
         <a routerLink="/carrito" routerLinkActive="actual">Carrito</a>
+        <a routerLink="/pedidos" routerLinkActive="actual">Pedidos</a>
       </nav>
+      <div class="control-sesion">
+        @if (sesion.titular(); as titular) {
+          <span class="titular-sesion" [attr.title]="titular.vencida ? 'Sesión guardada: se renovará al reconectar' : null">{{ titular.nombre }}</span>
+          <button class="botón-texto" (click)="sesion.cerrar()">Cerrar sesión</button>
+        } @else {
+          <button class="botón-secundario iniciar-sesion" (click)="sesion.iniciar()">Iniciar sesión</button>
+        }
+      </div>
       @if (this["instalación"]()) {
         <button class="instalar" (click)="instalar()">
           Instalar aplicación ↗
@@ -85,6 +98,9 @@ interface EventoInstalacion extends Event {
         Sincronizar <span aria-hidden="true">↻</span>
       </button>
     </div>
+    @if (sesion.error()) {
+      <div class="aviso-error" role="alert">{{ sesion.error() }}</div>
+    }
     @if (estado.error()) {
       <div class="aviso-error" role="alert">{{ estado.error() }}</div>
     }
@@ -110,11 +126,13 @@ interface EventoInstalacion extends Event {
 })
 export class Aplicacion {
   readonly estado = inject(EstadoCatalogo);
+  readonly sesion = inject(EstadoSesion);
   readonly actualización = signal(false);
   readonly instalación = signal<EventoInstalacion | undefined>(undefined);
   readonly año = new Date().getFullYear();
   constructor() {
     void this.estado.iniciar();
+    void this.sesion.cargar();
     const actualizaciones = inject(SwUpdate);
     const suscripción = actualizaciones.versionUpdates.subscribe((evento) => {
       if (evento.type === "VERSION_READY") this.actualización.set(true);

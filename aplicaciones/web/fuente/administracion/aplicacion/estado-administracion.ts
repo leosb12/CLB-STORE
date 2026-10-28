@@ -30,6 +30,11 @@ export class EstadoAdministracion {
     });
   }
 
+  async catalogoFotograficoPublicado(): Promise<void> {
+    await this.catálogo.sincronizar(true);
+    await this.leerLocal();
+  }
+
   async iniciar(): Promise<void> {
     this.iniciada = true;
     try {

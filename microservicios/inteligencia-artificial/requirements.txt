@@ -1,0 +1,19 @@
+# Microservicio de Inteligencia Artificial (CLEAR). Versiones fijadas.
+fastapi==0.159.1
+uvicorn[standard]==0.54.0
+strawberry-graphql[fastapi]==0.336.2
+mcp==2.3.0
+# Cliente HTTP del SDK MCP; se importa directamente para pasar cabeceras.
+httpx2==2.16.0
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+httpx==0.28.1
+pydantic==2.14.1
+pyjwt[crypto]==2.15.1
+python-multipart==0.0.32
+numpy==2.5.4
+scikit-learn==1.9.1
+openpyxl==3.1.5
+faster-whisper==1.2.1
+# PyAV 17+ eliminó el argumento metadata_errors que usa faster-whisper 1.2.1 al decodificar audio.
+av==16.1.0

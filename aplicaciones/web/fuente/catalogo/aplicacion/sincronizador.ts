@@ -31,6 +31,12 @@ export class Sincronizador {
     return this.ejecución;
   }
 
+  private async descargarCatalogo(): Promise<void> {
+    const productos = await this.remoto.descargar();
+    const texturas = await this.remoto.descargarRecursos?.(productos,await this.local.texturas()) ?? [];
+    await this.local.guardarCatalogo(productos,texturas);
+  }
+
   private async ejecutar(forzar: boolean): Promise<ResultadoSincronizacion> {
     if (!forzar && this.reloj() < this.próximoIntento)
       return { disponible: false, actualizado: false };
@@ -42,12 +48,24 @@ export class Sincronizador {
         .catch(() => undefined);
     }, 10_000);
     try {
-      if (!(await this.remoto.disponible()))
-        throw new Error("Inventario no está disponible.");
-      const productos = await this.remoto.descargar();
-      await this.local.guardarCatalogo(productos);
-      this.fallos = 0;
-      this.próximoIntento = 0;
+      // La descarga del catálogo y la cola son independientes: si Inventario no responde, los pedidos para Ventas
+      // igual se envían. Una descarga fallida nunca reemplaza el catálogo válido.
+      let catálogoAlDía = false;
+      try {
+        if (await this.remoto.disponible()) {
+          await this.descargarCatalogo();
+          catálogoAlDía = true;
+        }
+      } catch {
+        catálogoAlDía = false;
+      }
+      if (catálogoAlDía) {
+        this.fallos = 0;
+        this.próximoIntento = 0;
+      } else {
+        this.fallos++;
+        this.próximoIntento = this.reloj() + Math.min(300_000, 1000 * 2 ** Math.min(this.fallos, 9));
+      }
       let huboEscrituras = false;
       const pendientes = (await this.local.operaciones()).sort(
         (uno, otro) =>
@@ -84,7 +102,7 @@ export class Sincronizador {
               temporizador = setTimeout(() => {
                 cancelación.abort();
                 rechazar(new Error("Tiempo de envío agotado."));
-              }, 10_000);
+              }, procesador.tiempoMáximo ?? 10_000);
             }),
           ]);
           await this.local.finalizar(
@@ -104,7 +122,8 @@ export class Sincronizador {
             error instanceof ErrorRemoto &&
             error.estado >= 400 &&
             error.estado < 500 &&
-            ![408, 425, 429].includes(error.estado);
+            // 401: la sesión venció o aún no existe; al iniciar sesión se reenvía la misma operación.
+            ![401, 408, 425, 429].includes(error.estado);
           const revisión = permanente || operación.intentos >= 8;
           await this.local.finalizar(
             {
@@ -131,9 +150,10 @@ export class Sincronizador {
           if (temporizador) clearTimeout(temporizador);
         }
       }
-      if (huboEscrituras)
-        await this.local.guardarCatalogo(await this.remoto.descargar());
-      return { disponible: true, actualizado: true };
+      // Tras escrituras confirmadas se relee el catálogo (stock y altas), solo si Inventario respondió en esta pasada.
+      if (huboEscrituras && catálogoAlDía)
+        await this.descargarCatalogo().catch(() => undefined);
+      return { disponible: catálogoAlDía, actualizado: catálogoAlDía };
     } catch (error) {
       this.fallos++;
       this.próximoIntento =

@@ -19,7 +19,7 @@ final class PersistenciaExistenciasTrasReinicioTest extends PruebaConMongoDB
         $casos->ejecutar('REGISTRAR_MOVIMIENTO', ['identificador_variante' => $id, 'tipo' => 'ENTRADA', 'cantidad' => 12, 'motivo' => 'Recepción antes del reinicio', 'versión_esperada' => 1], Existencias::uuid());
         $casos->ejecutar('CONFIGURAR_MINIMO', ['identificador_variante' => $id, 'mínimo' => 10, 'versión_esperada' => 2], Existencias::uuid());
         $reservaId = Existencias::uuid(); $clave = Existencias::uuid();
-        $datos = ['identificador' => $reservaId, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 3, 'versión_esperada' => 3]]];
+        $datos = ['identificador' => $reservaId, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 3]]];
         $reserva = $casos->ejecutar('RESERVAR', $datos, $clave);
         $antes = json_encode($this->colección->findOne(['_id' => 'clb_existencias']), JSON_THROW_ON_ERROR);
         $proceso = proc_open(['docker', 'restart', 'clb_mongo'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $tuberías);

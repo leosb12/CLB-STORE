@@ -1,0 +1,10 @@
+# syntax=docker/dockerfile:1
+FROM python:3.12-slim-bookworm
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HF_HUB_OFFLINE=1
+WORKDIR /app
+COPY requirements.txt requirements-prendas.txt ./
+RUN --mount=type=cache,id=clb_pip,target=/root/.cache/pip pip install pip==26.2.2 && pip install -r requirements-prendas.txt
+COPY fuente ./fuente
+RUN useradd --uid 10001 --create-home clb
+USER clb
+CMD ["python", "-m", "fuente.infraestructura.worker_prendas"]

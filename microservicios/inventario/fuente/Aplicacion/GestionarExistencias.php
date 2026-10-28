@@ -10,6 +10,8 @@ use Clb\Inventario\Puertos\Salida\{RepositorioExistencias, RepositorioProductos}
 
 final readonly class GestionarExistencias implements PuertoGestionarExistencias
 {
+    public const CURSOR_INVÁLIDO = 'desde debe ser un entero no negativo y límite un entero de 1 a 100.';
+
     public function __construct(private RepositorioExistencias $repositorio, private RepositorioProductos $productos) {}
 
     public function ejecutar(string $tipo, array $datos, string $clave): array
@@ -56,6 +58,16 @@ final readonly class GestionarExistencias implements PuertoGestionarExistencias
         foreach ($datos as &$valor) if (is_array($valor)) $valor = $this->ordenarPropiedades($valor);
         unset($valor);
         return $datos;
+    }
+
+    public function eventosDesde(int $desde, int $límite): array
+    {
+        if ($desde < 0 || $límite < 1 || $límite > 100) throw new ErrorDeExistencias(self::CURSOR_INVÁLIDO);
+        ['total' => $total, 'eventos' => $eventos] = $this->repositorio->eventos($desde, $límite);
+        // ponytail: el cursor es una posición; un registro recreado se detecta solo si desde supera el total.
+        // Si hiciera falta detectar cualquier recreación, agregar un identificador de registro al agregado.
+        if ($desde > $total) throw new ErrorDeExistencias('El cursor supera el registro de eventos; el consumidor debe reiniciar desde 0.', 409);
+        return ['eventos' => $eventos, 'siguiente' => $desde + count($eventos)];
     }
 
     public function consultar(string $tipo, string $id = '', bool $administración = false): array

@@ -4,3 +4,6 @@ dist/
 test-results/
 test-results-administracion/
 playwright-report/
+test-results-probador/
+
+test-results-recursos/
