@@ -52,7 +52,7 @@ final class ExistenciasConcurrentesTest extends PruebaConMongoDB
     public function test_dos_reservas_multiples_son_todo_o_nada(): void
     {
         [$casos, [$a, $b]] = $this->preparada();
-        $datos = ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'externo', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 7, 'versión_esperada' => 2], ['identificador_variante' => $b, 'cantidad' => 7, 'versión_esperada' => 2]]];
+        $datos = ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'externo', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 7], ['identificador_variante' => $b, 'cantidad' => 7]]];
         $otro = [...$datos, 'identificador' => Existencias::uuid()];
         $estados = array_column($this->dos('RESERVAR', $datos, $otro), 'estado'); sort($estados);
         self::assertSame([200, 409], $estados);
@@ -71,7 +71,7 @@ final class ExistenciasConcurrentesTest extends PruebaConMongoDB
     {
         [$casos, [$a]] = $this->preparada();
         $id = Existencias::uuid();
-        $casos->ejecutar('RESERVAR', ['identificador' => $id, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 3, 'versión_esperada' => 2]]], Existencias::uuid());
+        $casos->ejecutar('RESERVAR', ['identificador' => $id, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 3]]], Existencias::uuid());
         [$uno, $otro] = $this->dos('CONSUMIR_RESERVA', ['identificador_reserva' => $id], ['identificador_reserva' => $id], Existencias::uuid());
         self::assertSame($uno, $otro);
         self::assertSame(7, $casos->consultar('VARIANTE', $a)['variante']['física']);
@@ -94,7 +94,7 @@ final class ExistenciasConcurrentesTest extends PruebaConMongoDB
     public function test_consumir_y_liberar_en_carrera_tienen_un_solo_resultado_terminal(): void
     {
         [$casos, [$a]] = $this->preparada(); $id = Existencias::uuid();
-        $casos->ejecutar('RESERVAR', ['identificador' => $id, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 3, 'versión_esperada' => 2]]], Existencias::uuid());
+        $casos->ejecutar('RESERVAR', ['identificador' => $id, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $a, 'cantidad' => 3]]], Existencias::uuid());
         $datos = ['identificador_reserva' => $id];
         $estados = array_column($this->dos('CONSUMIR_RESERVA', $datos, $datos, tipoOtro: 'LIBERAR_RESERVA'), 'estado'); sort($estados);
         self::assertSame([200, 409], $estados);

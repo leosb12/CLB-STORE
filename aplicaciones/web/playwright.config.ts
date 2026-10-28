@@ -8,14 +8,14 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   reporter: "list",
   use: {
-    baseURL: "http://127.0.0.1:14200",
+    baseURL: process.env["CLB_PWA_BASEURL"] ?? "http://127.0.0.1:14200",
     channel: "chrome",
     headless: true,
     trace: "retain-on-failure",
   },
   webServer: {
     command: "npm run previsualizar",
-    url: "http://127.0.0.1:14200",
+    url: process.env["CLB_PWA_BASEURL"] ?? "http://127.0.0.1:14200",
     reuseExistingServer: !process.env["CI"],
     timeout: 30_000,
   },

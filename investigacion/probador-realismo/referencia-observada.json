@@ -1,0 +1,13 @@
+{
+  "runtime": "ai-edge-litert 2.3.0 CPU Windows",
+  "forma": [
+    1,
+    256,
+    256,
+    6
+  ],
+  "minimo": -1.5012614727020264,
+  "maximo": 3.008307456970215,
+  "segundos": 0.0413847000017995,
+  "fotorealismo_evaluado": false
+}

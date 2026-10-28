@@ -1,3 +1,4 @@
+import { PanelFotografia } from "./panel-fotografia";
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { DatePipe, JsonPipe } from "@angular/common";
@@ -12,22 +13,20 @@ import { PanelExistencias } from "../../existencias/presentacion/panel-existenci
 
 @Component({
   selector: "clb-pagina-administracion",
-  imports: [FormsModule, DatePipe, JsonPipe, PanelExistencias],
+  imports: [FormsModule, DatePipe, JsonPipe, PanelExistencias, PanelFotografia],
   template: ` <section
     class="administracion"
     aria-labelledby="titulo-administracion"
   >
     <div class="aviso-administracion" role="note">
-      <strong>SOLO DESARROLLO LOCAL · NO APTA PARA PRODUCCIÓN</strong>
+      <strong>PANEL DE ADMINISTRACIÓN · ROL ADMIN</strong>
       <p>
-        Este entorno no autentica usuarios. Las operaciones requieren
-        habilitación local en el servidor. La integración OIDC con Keycloak y
-        rol ADMIN está pendiente.
+        Sesión única con Keycloak: cada operación se envía con tu token y
+        Inventario verifica el rol de administrador antes de aplicarla.
       </p>
     </div>
     <div class="titulo-administracion">
       <div>
-        <p class="antetítulo">GESTIÓN DE INVENTARIO</p>
         <h1 id="titulo-administracion">Administración de productos</h1>
       </div>
       <button class="botón-secundario" (click)="nuevo()">Nuevo producto</button>
@@ -96,12 +95,25 @@ import { PanelExistencias } from "../../existencias/presentacion/panel-existenci
             }}</small>
           }
           <div class="campos-dobles">
-            <label
-              >Categoría<input
+            <div class="campo-categoria">
+              <label for="categoria-producto">Categoría</label>
+              <select id="categoria-producto"
                 name="categoria"
                 [(ngModel)]="datos['categoría']"
-                maxlength="100"
-            /></label>
+                required
+                [attr.aria-invalid]="!!estado.errores()['categoría']"
+                aria-describedby="ayuda-categoria error-categoria"
+              >
+                <option value="" disabled>Selecciona una categoría</option>
+                @for (categoria of categorias; track categoria) {
+                  <option [value]="categoria">{{ categoria }}</option>
+                }
+              </select>
+              <small id="ayuda-categoria" class="nota-local">Elige el tipo de prenda.</small>
+              @if (estado.errores()["categoría"]) {
+                <small id="error-categoria" class="error-campo" role="alert">{{ estado.errores()["categoría"] }}</small>
+              }
+            </div>
             <label
               >Precio en BOB<input
                 name="precio"
@@ -112,11 +124,6 @@ import { PanelExistencias } from "../../existencias/presentacion/panel-existenci
                 [attr.aria-invalid]="!!estado.errores()['precio']"
             /></label>
           </div>
-          @if (estado.errores()["categoría"]) {
-            <small class="error-campo">{{
-              estado.errores()["categoría"]
-            }}</small>
-          }
           @if (estado.errores()["precio"]) {
             <small class="error-campo">{{ estado.errores()["precio"] }}</small>
           }
@@ -223,6 +230,7 @@ import { PanelExistencias } from "../../existencias/presentacion/panel-existenci
         </div>
       </section>
     </div>
+    @if (base) { <clb-panel-fotografia [producto]="base" (publicado)="fotografiaPublicada()" /> }
     @if (productoVariantes) { <clb-panel-existencias [producto]="productoVariantes" /> }
     <section
       class="operaciones-administracion"
@@ -320,6 +328,13 @@ export class PaginaAdministracion {
   base?: Producto;
   revision?: string;
   productoVariantes = "";
+  get categorias(): string[] {
+    return [...new Set([
+      "Poleras", "Camisas", "Chaquetas", "Abrigos", "Buzos", "Suéteres", "Pantalones", "Shorts", "Faldas", "Vestidos",
+      ...this.estado.productos().map(producto => producto.categoría),
+      this.datos.categoría,
+    ].filter(categoria => categoria.trim()))].sort((a, b) => a.localeCompare(b, "es"));
+  }
   constructor() {
     void this.estado.iniciar();
   }
@@ -329,6 +344,12 @@ export class PaginaAdministracion {
     this.datos = datosDeProducto();
     this.estado.errores.set({});
   }
+  async fotografiaPublicada(): Promise<void> {
+    const id = this.base?.identificador;
+    await this.estado.catalogoFotograficoPublicado();
+    this.base = this.estado.productos().find(p => p.identificador === id);
+  }
+
   editar(producto: Producto): void {
     this.base = producto;
     this.revision = undefined;

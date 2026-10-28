@@ -1,3 +1,4 @@
+import type { TrabajoFotografico } from "../dominio/trabajo-fotografico";
 import { InjectionToken } from "@angular/core";
 import { varianteValida, type Variante, type Movimiento, type ConfirmacionExistencias } from "../../existencias/dominio/modelos";
 import {
@@ -53,6 +54,28 @@ export class AdministracionRest {
         datos,
       );
     return datos as T;
+  }
+
+  async capacidadFotografica(): Promise<boolean> {
+    return (await this.petición<{habilitado: boolean}>("/administracion/recursos-probador/capacidades")).habilitado === true;
+  }
+  async cargarFotografia(id: string, clave: string, version: number, color: string, archivo: File): Promise<TrabajoFotografico> {
+    const datos = new FormData(); datos.set("imagen",archivo); datos.set("color",color); datos.set("versión_esperada",String(version));
+    return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador`, {method: "POST", headers: {"Idempotency-Key": clave},body: datos})).trabajo;
+  }
+  async consultarFotografia(id: string, trabajo: string): Promise<TrabajoFotografico> {
+    return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador/${trabajo}`)).trabajo;
+  }
+  async publicarFotografia(id: string, trabajo: string, clave: string, version: number, aceptarAvisos = false): Promise<TrabajoFotografico> {
+    return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador/${trabajo}/publicar`, {
+      method: "POST", headers: {"Content-Type": "application/json", "Idempotency-Key": clave},
+      body: JSON.stringify({versión_esperada: version, ...(aceptarAvisos ? {aceptar_avisos: true} : {})})})).trabajo;
+  }
+  async previsualizarFotografia(id: string, trabajo: string): Promise<Blob> {
+    const r = await this.solicitar(`${this.url}/productos/${id}/recursos-probador/${trabajo}/previsualizacion`, {
+      headers: await this.credenciales.cabeceras(), cache: "no-store", signal: AbortSignal.timeout(10_000)});
+    if (!r.ok || r.headers.get("Content-Type")?.split(";")[0] !== "image/png") throw new Error("No se pudo cargar la previsualización.");
+    return r.blob();
   }
 
   async descargar(): Promise<Producto[]> {

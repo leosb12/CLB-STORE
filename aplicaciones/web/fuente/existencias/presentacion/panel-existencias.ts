@@ -9,7 +9,7 @@ import type { Operacion } from "../../catalogo/dominio/modelos";
   selector: "clb-panel-existencias",
   imports: [FormsModule, DatePipe, JsonPipe],
   template: `<section class="panel-existencias" aria-label="Variantes y existencias">
-    <div class="titulo-administracion"><div><p class="antetítulo">TALLAS · COLORES · EXISTENCIAS</p><h2>Variantes y stock</h2></div><button class="botón-texto" (click)="nuevo()">Nueva variante</button></div>
+    <div class="titulo-administracion"><div><h2>Variantes y stock</h2></div><button class="botón-texto" (click)="nuevo()">Nueva variante</button></div>
     <p class="nota-local">SKU del producto: referencia comercial. Cada variante tiene su propio SKU. Los saldos descargados pueden cambiar.</p>
     @if (estado.error()) { <p class="aviso-error" role="alert">{{estado.error()}}</p> }
     @if (estado.mensaje()) { <p class="mensaje-administracion" role="status">{{estado.mensaje()}}</p> }

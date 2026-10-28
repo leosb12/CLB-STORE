@@ -9,7 +9,7 @@ npx --yes npm@11.6.2 ci
 npm start
 ```
 
-Desarrollo: `http://127.0.0.1:4200`. El proxy remite `/api` a Inventario en `127.0.0.1:18080`.
+Desarrollo: `http://127.0.0.1:4200`. El proxy remite `/api` a la pasarela en `127.0.0.1:18000`.
 
 Para instalar y comprobar la PWA se necesita la compilación de producción:
 
@@ -36,6 +36,8 @@ npm run pruebas:pwa
 ```
 
 Las pruebas PWA usan Chrome instalado y sirven la compilación real en 14200. Validan REST, IndexedDB, requisitos de instalación, Service Worker, cierre y reapertura del navegador offline y reconexión. Usan un perfil temporal aislado; no modifican el perfil personal. Capturas y trazas quedan localmente en `test-results/`, excluido del versionado. Las pruebas unitarias de repositorio usan `fake-indexeddb`; la persistencia real se comprueba además en Chrome.
+
+Para ejecutar esas cinco pruebas sin depender del catálogo principal, usar desde la raíz `microservicios/inteligencia-artificial/.venv/Scripts/python.exe infraestructura/demostraciones/probar-pwa-aislada.py`. Requiere Docker y el stack local preparado; crea colección y contenedor temporales, siembra los SKU de demostración y usa puertos libres. La ingesta fotográfica tiene otro ensayo aislado: `infraestructura/demostraciones/probar-ingesta-fotografica.py`, con diez minutos de cámara offline. Operación y límites en `docs/probador.md`.
 
 ## Administración local de productos
 

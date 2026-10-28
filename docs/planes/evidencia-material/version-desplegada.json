@@ -1,0 +1,13 @@
+{
+  "version": "1.0.4+5",
+  "target": "lib/main.dart",
+  "bytes": 247861767,
+  "sha256": "fe3f67ae7392c5107357554a97c18822ca8809cd255ab05de2f5512d2ae5a5e4",
+  "instalacion_samsung": "verificada por preparar-movil.ps1 (hash remoto igual al local)",
+  "producto_version": 4,
+  "producto_sha256": "be81b468642f495ee3c76e8a3e481a3abba1301dd957e0232730a293a0478246",
+  "web": "http://127.0.0.1:14200",
+  "aceptacion_visual": "ABIERTA; no perfeccion universal",
+  "archivo_entregable": "temporales/apks/CLB-Store-1.0.4+5.apk",
+  "origen": "APK normal instalada en Samsung, extraída y cotejada con SHA-256 remoto; independiente de artefactos de integración del emulador"
+}

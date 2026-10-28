@@ -8,10 +8,21 @@
 *.pfx
 **/datos-locales/
 **/datos/
+# Estas carpetas contienen código y pruebas, no datos de ejecución.
+!aplicaciones/android/lib/datos/
+!aplicaciones/android/lib/datos/*.dart
+!aplicaciones/android/test/datos/
+!aplicaciones/android/test/datos/*.dart
+!microservicios/clientes/fuente/fidelizacion/datos/
+!microservicios/clientes/fuente/fidelizacion/datos/*.ts
+!microservicios/clientes/fuente/perfiles/datos/
+!microservicios/clientes/fuente/perfiles/datos/*.ts
 **/temporales/
 *.tmp
 *.log
 __pycache__/
+.ruff_cache/
+.pytest_cache/
 .DS_Store
 Thumbs.db
 .idea/
@@ -22,3 +33,10 @@ build/
 target/
 vendor/
 .venv/
+**/weights/
+**/resultados-vton/
+graphify-out/
+aplicaciones/web/test-results-material/
+
+# Salida local de la demo de la fase 8
+infraestructura/demostraciones/demo-reporte.xlsx

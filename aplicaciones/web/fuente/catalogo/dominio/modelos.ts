@@ -1,5 +1,8 @@
+import type { RecursoProbador, TexturaGuardada } from "./recurso-probador";
 import type { ConfirmacionExistencias, Variante } from "../../existencias/dominio/modelos";
+import type { ConfirmacionPedido, PedidoVenta } from "../../pedidos/dominio/modelos";
 export interface Producto {
+  recurso_probador?: RecursoProbador;
   identificador: string;
   sku: string;
   nombre: string;
@@ -45,6 +48,10 @@ export interface Operacion {
   versiónEsperada?: number | null;
   resultado?: Producto;
   resultadoExistencias?: Variante;
+  /** Titular (sub de Keycloak) que creó la operación: solo esa sesión la ve y la envía en un navegador compartido. */
+  titular?: string;
+  /** Último estado conocido del pedido en Ventas; se muestra sin conexión y se refresca al consultar. */
+  resultadoPedido?: PedidoVenta;
   dependencias?: string[];
   versiónDesde?: string;
   detalleError?: Record<string, unknown>;
@@ -62,6 +69,7 @@ export interface Metadato {
 }
 
 export interface FuenteCatalogo {
+  descargarRecursos?(productos: Producto[], guardadas?: TexturaGuardada[]): Promise<TexturaGuardada[]>;
   descargar(): Promise<Producto[]>;
   consultar(identificador: string): Promise<Producto>;
   disponible(): Promise<boolean>;
@@ -71,10 +79,12 @@ export interface FuenteCatalogo {
 export interface ProcesadorOperacion {
   tipo: string;
   endpoint: string;
+  /** Milisegundos antes de abortar el envío (predeterminado 10 s); la SAGA de Ventas necesita más. */
+  tiempoMáximo?: number;
   procesar(
     operación: Readonly<Operacion>,
     señal: AbortSignal,
-  ): Promise<void | Producto | ConfirmacionExistencias>;
+  ): Promise<void | Producto | ConfirmacionExistencias | ConfirmacionPedido>;
 }
 
 export class ErrorRemoto extends Error {

@@ -1,0 +1,8 @@
+[
+  {"sku":"CLB-FOTO-POL-GRI","nombre":"Polera gris jaspeada","categoria":"Poleras","color":"Gris","precio":"99.00","archivo":"polera-gris","fuente":"https://pngimg.com/image/5448","anclas":[180,715,105,1000],"tipo":"superior"},
+  {"sku":"CLB-FOTO-POL-ROJ","nombre":"Polera roja de cuello redondo","categoria":"Poleras","color":"Rojo","precio":"99.00","archivo":"polera-roja","fuente":"https://pngimg.com/image/5449","anclas":[150,720,100,1005],"tipo":"superior"},
+  {"sku":"CLB-FOTO-CAM-NEG","nombre":"Camisa negra de manga larga","categoria":"Camisas","color":"Negro","precio":"219.00","archivo":"camisa","fuente":"https://pngimg.com/image/8117","anclas":[260,700,160,920],"tipo":"superior"},
+  {"sku":"CLB-FOTO-CHA-ROJ","nombre":"Chaqueta roja con cierre","categoria":"Chaquetas","color":"Rojo","precio":"319.00","archivo":"chaqueta-roja","fuente":"https://pngimg.com/image/8058","anclas":[240,735,180,920],"tipo":"superior"},
+  {"sku":"CLB-FOTO-CHA-AZU","nombre":"Chaqueta deportiva azul y blanca","categoria":"Chaquetas","color":"Azul y blanco","precio":"289.00","archivo":"chaqueta-azul","fuente":"https://pngimg.com/image/8056","anclas":[260,790,190,930],"tipo":"superior"},
+  {"sku":"CLB-FOTO-VES-BUR","nombre":"Vestido corto negro y burdeos","categoria":"Vestidos","color":"Negro y burdeos","precio":"279.00","archivo":"vestido","fuente":"https://pngimg.com/image/56194","anclas":[130,245,110,460],"tipo":"vestido"}
+]

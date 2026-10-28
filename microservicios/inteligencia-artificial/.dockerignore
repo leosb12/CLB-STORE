@@ -1,0 +1,12 @@
+.venv
+weights
+resultados-vton
+pruebas
+**/__pycache__
+.pytest_cache
+.env
+.env.*
+*.log
+
+modelos-prendas/*.onnx
+modelos-prendas/*.tmp

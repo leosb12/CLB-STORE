@@ -1,6 +1,7 @@
 import { Component, inject, input } from "@angular/core";
 import { RouterLink } from "@angular/router";
 import type { Producto } from "../dominio/modelos";
+import { fotografiaPrenda } from "../dominio/imagen-prenda";
 import {
   EstadoCatalogo,
   ilustraciónProducto,
@@ -17,8 +18,8 @@ import {
         [attr.aria-label]="'Ver ' + producto().nombre"
       >
         <img
-          [src]="this['ilustración'](producto()['categoría'])"
-          alt="Ilustración de referencia de la prenda"
+          [src]="estado.imagen(producto())"
+          [alt]="(producto().recurso_probador || esFoto(producto().sku)) ? producto().nombre : 'Ilustración de referencia de la prenda'"
           width="420"
           height="460"
         />
@@ -40,7 +41,7 @@ import {
           />
         </svg>
       </button>
-      <span class="etiqueta-imagen">Ilustración</span>
+      <span class="etiqueta-imagen">{{ (producto().recurso_probador || esFoto(producto().sku)) ? 'Fotografía' : 'Ilustración' }}</span>
     </div>
     <div class="datos-producto">
       <span class="categoría-producto">{{ producto()["categoría"] }}</span>
@@ -55,5 +56,6 @@ export class TarjetaProducto {
   readonly producto = input.required<Producto>();
   readonly estado = inject(EstadoCatalogo);
   readonly ilustración = ilustraciónProducto;
+  readonly esFoto = fotografiaPrenda;
   readonly precio = precioEnBob;
 }

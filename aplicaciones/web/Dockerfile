@@ -8,6 +8,7 @@ RUN npm run build
 
 FROM nginx:stable-alpine AS aplicacion
 COPY infraestructura/nginx.conf /etc/nginx/nginx.conf
+COPY infraestructura/cabeceras-seguridad.conf /etc/nginx/cabeceras-seguridad.conf
 COPY --from=compilacion /aplicacion/clb_web/dist/clb-store/browser /usr/share/nginx/html
 USER nginx
 EXPOSE 8080

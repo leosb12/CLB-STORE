@@ -8,6 +8,7 @@ use Clb\Inventario\Adaptadores\Salida\AdaptadorProductosMongoDB;
 use Clb\Inventario\Aplicacion\RegistrarProducto;
 use Clb\Inventario\Puertos\Entrada\PuertoRegistrarProducto;
 use Clb\Inventario\Puertos\Salida\RepositorioProductos;
+use Clb\Inventario\Adaptadores\Entrada\{AccesoOidc, LlavesIdentidad};
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 
@@ -15,12 +16,21 @@ final class ProveedorInventario extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoGestionarRecursosProbador::class, \Clb\Inventario\Aplicacion\GestionarRecursosProbador::class);
+        $this->app->bind(\Clb\Inventario\Puertos\Salida\RepositorioRecursosProbador::class, fn () => new \Clb\Inventario\Adaptadores\Salida\RecursosProbadorMongoDB(DB::connection('mongodb')->getCollection(config('inventario.colección'))));
+        $this->app->bind(\Clb\Inventario\Puertos\Salida\AlmacenRecursosProbador::class, fn () => new \Clb\Inventario\Adaptadores\Salida\ArchivosRecursosProbador(config('recursos_probador.directorio')));
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoGestionarExistencias::class, \Clb\Inventario\Aplicacion\GestionarExistencias::class);
-        $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoInternoInventario::class, \Clb\Inventario\Adaptadores\Entrada\AccesoInternoLocal::class);
+        // Fase 7: por defecto los puertos de acceso usan tokens de Keycloak; el modo local queda solo para pruebas.
+        $this->app->singleton(LlavesIdentidad::class, fn () => new LlavesIdentidad(config('administracion.identidad_jwks')));
+        $oidc = fn ($aplicación, array $roles) => new AccesoOidc($aplicación->make(\Illuminate\Http\Request::class),
+            $aplicación->make(LlavesIdentidad::class), config('administracion.identidad_emisor'), $roles);
+        $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoInternoInventario::class, fn ($aplicación) => config('administracion.acceso') === 'local'
+            ? $aplicación->make(\Clb\Inventario\Adaptadores\Entrada\AccesoInternoLocal::class) : $oidc($aplicación, ['servicio', 'admin']));
         $this->app->bind(\Clb\Inventario\Puertos\Salida\RepositorioExistencias::class, fn () => new \Clb\Inventario\Adaptadores\Salida\AdaptadorExistenciasMongoDB(DB::connection('mongodb')->getCollection(config('inventario.colección'))));
         $this->app->bind(PuertoRegistrarProducto::class, RegistrarProducto::class);
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoModificarProducto::class, \Clb\Inventario\Aplicacion\ModificarProducto::class);
-        $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoAdministrativo::class, \Clb\Inventario\Adaptadores\Entrada\AccesoAdministrativoLocal::class);
+        $this->app->bind(\Clb\Inventario\Puertos\Entrada\AccesoAdministrativo::class, fn ($aplicación) => config('administracion.acceso') === 'local'
+            ? $aplicación->make(\Clb\Inventario\Adaptadores\Entrada\AccesoAdministrativoLocal::class) : $oidc($aplicación, ['admin']));
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoListarProductos::class, \Clb\Inventario\Aplicacion\ListarProductos::class);
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoConsultarProducto::class, \Clb\Inventario\Aplicacion\ConsultarProducto::class);
         $this->app->bind(RepositorioProductos::class, function () {

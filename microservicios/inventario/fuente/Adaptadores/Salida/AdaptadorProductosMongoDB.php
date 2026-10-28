@@ -34,6 +34,7 @@ final readonly class AdaptadorProductosMongoDB implements RepositorioProductos
                 'fecha_creación' => new UTCDateTime($producto->fechaCreación),
                 'fecha_actualización' => new UTCDateTime($producto->fechaActualización),
                 'versión_sincronización' => $producto->versiónSincronización,
+            'recurso_probador' => $producto->recursoProbador,
             ]);
         } catch (BulkWriteException $error) {
             foreach ($error->getWriteResult()->getWriteErrors() as $fallo) {
@@ -171,6 +172,7 @@ final readonly class AdaptadorProductosMongoDB implements RepositorioProductos
             'fecha_creación' => new UTCDateTime($producto->fechaCreación),
             'fecha_actualización' => new UTCDateTime($producto->fechaActualización),
             'versión_sincronización' => $producto->versiónSincronización,
+            'recurso_probador' => $producto->recursoProbador,
         ];
     }
 
@@ -187,6 +189,7 @@ final readonly class AdaptadorProductosMongoDB implements RepositorioProductos
             $documento['fecha_creación']->toDateTimeImmutable(),
             ($documento['fecha_actualización'] ?? $documento['fecha_creación'])->toDateTimeImmutable(),
             (int) ($documento['versión_sincronización'] ?? 1),
+            isset($documento['recurso_probador']) ? json_decode(json_encode($documento['recurso_probador'], JSON_THROW_ON_ERROR), true) : null,
         );
     }
 }

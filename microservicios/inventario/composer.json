@@ -8,6 +8,7 @@
         "php": "^8.4",
         "ext-mbstring": "*",
         "ext-mongodb": "^2.5",
+        "firebase/php-jwt": "^7.2",
         "laravel/framework": "^13.0",
         "mongodb/laravel-mongodb": "^5.11"
     },

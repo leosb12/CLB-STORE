@@ -1,0 +1,31 @@
+{
+  "backend": "webgl",
+  "memoriaInicial": 284,
+  "mediciones": [
+    {
+      "segundos": 2.91589999999851,
+      "error_maximo": 0.000027418136596679688,
+      "error_medio": 3.4234796667901673e-7,
+      "acuerdo_clases": 1,
+      "tensores": 284
+    },
+    {
+      "segundos": 0.7844000000022352,
+      "error_maximo": 0.000027418136596679688,
+      "error_medio": 3.4234796667901673e-7,
+      "acuerdo_clases": 1,
+      "tensores": 284
+    },
+    {
+      "segundos": 0.9083000000007451,
+      "error_maximo": 0.000027418136596679688,
+      "error_medio": 3.4234796667901673e-7,
+      "acuerdo_clases": 1,
+      "tensores": 284
+    }
+  ],
+  "webgl_float32": true,
+  "agente": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+  "tensoresAlCerrar": 0,
+  "hardware": "Chromium Windows con SwiftShader: WebGL emulado, no Samsung ni GPU física"
+}

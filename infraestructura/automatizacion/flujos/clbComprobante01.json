@@ -1,0 +1,476 @@
+{
+ "id": "clbComprobante01",
+ "name": "CLB · Pedido confirmado → comprobante de venta",
+ "active": false,
+ "nodes": [
+  {
+   "id": "a0000000-0000-4000-8000-000000000001",
+   "name": "Cada 20 segundos",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "seconds",
+       "secondsInterval": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a0000000-0000-4000-8000-000000000002",
+   "name": "Cursor de Ventas",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\nreturn [{ json: { desde: datos.cursorVentas ?? 0 } }];"
+   }
+  },
+  {
+   "id": "a0000000-0000-4000-8000-000000000003",
+   "name": "Token de servicio",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_IDENTIDAD_TOKEN_URL }}",
+    "sendBody": true,
+    "contentType": "form-urlencoded",
+    "specifyBody": "keypair",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "grant_type",
+       "value": "client_credentials"
+      },
+      {
+       "name": "client_id",
+       "value": "clb-n8n"
+      },
+      {
+       "name": "client_secret",
+       "value": "={{ $env.CLB_N8N_SECRETO }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    }
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000004",
+   "name": "Eventos de Ventas",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_VENTAS_URL }}/api/v1/interno/eventos",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "desde",
+       "value": "={{ $('Cursor de Ventas').first().json.desde }}"
+      },
+      {
+       "name": "límite",
+       "value": "20"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000005",
+   "name": "Solo pedidos confirmados",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    880,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\nconst { eventos, siguiente } = $input.first().json;\nconst confirmados = eventos.filter((e) => e.tipo === 'pedido_confirmado');\nif (!confirmados.length) { datos.cursorVentas = siguiente; return []; }\nreturn confirmados.map((e) => ({ json: { pedido: e.datos, siguiente } }));"
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000006",
+   "name": "Un pedido a la vez",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    1100,
+    0
+   ],
+   "parameters": {
+    "batchSize": 1,
+    "options": {}
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000007",
+   "name": "Puntos del cliente",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1320,
+    120
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_CLIENTES_URL }}/api/v1/interno/fidelizacion/clientes/{{ $json.pedido.identificador_cliente }}",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "pedido",
+       "value": "={{ $json.pedido.identificador }}"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000008",
+   "name": "Productos de Inventario",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1540,
+    120
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_INVENTARIO_URL }}/api/v1/productos",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "límite",
+       "value": "100"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000009",
+   "name": "Filas del comprobante",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1760,
+    120
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const registrarRechazo = (r) => {\n  const datosRechazos = $getWorkflowStaticData('global');\n  datosRechazos.rechazados = [{ ...r, fecha: new Date().toISOString() },\n    ...(datosRechazos.rechazados ?? []).filter((x) => x.evento !== r.evento)].slice(0, 100);\n};\nconst { pedido } = $('Un pedido a la vez').first().json;\nconst puntos = $('Puntos del cliente').first().json;\nconst catálogo = new Map(($('Productos de Inventario').first().json.productos ?? []).map((p) => [p.identificador, p]));\n// Lectura consistente por pedido (M05). Un pedido confirmado siempre fue acreditado antes (SAGA): si falta, se reintenta\n// en el siguiente ciclo en vez de emitir un comprobante incompleto que Ventas conservaría para siempre.\nconst acreditación = puntos.pedido?.['acreditación'];\n// Tras 10 min sin acreditación (anomalía de datos, p. ej. Clientes restaurado) no se bloquea la cola: el comprobante\n// dice «no disponible» y el pedido queda en la lista de rechazados para revisarlo.\nconst vencido = Date.now() - new Date(pedido['fecha_creación']).getTime() > 10 * 60 * 1000;\nif (!acreditación && !vencido) throw new Error(`Clientes todavía no muestra la acreditación del pedido ${pedido.identificador}: se reintentará.`);\nif (!acreditación) registrarRechazo({ evento: `pedido#${pedido.identificador}`, destino: 'Clientes', estado: 0, motivo: 'Pedido confirmado sin acreditación visible.' });\nconst fila = (concepto, detalle = '', cantidad = '', precio = '', subtotal = '') =>\n  ({ json: { Concepto: concepto, Detalle: detalle, Cantidad: cantidad, 'Precio (Bs)': precio, 'Subtotal (Bs)': subtotal } });\nreturn [\n  fila('Comprobante de venta', 'CLB Store · comprobante, no es factura fiscal'),\n  fila('Pedido', pedido.identificador),\n  fila('Fecha', new Date(pedido['fecha_creación']).toLocaleString('es-BO', { timeZone: 'America/La_Paz' })),\n  fila('Cliente', pedido.identificador_cliente),\n  ...pedido['líneas'].map((l) => fila(l.nombre,\n    [l.sku, `talla ${l.talla}`, l.color, catálogo.get(l.identificador_producto)?.['descripción']].filter(Boolean).join(' · '),\n    l.cantidad, Number(l.precio), Number(l.subtotal))),\n  fila('Total', pedido.moneda, '', '', Number(pedido.total)),\n  fila('Puntos ganados', acreditación ? String(acreditación.puntos) : 'No disponible (en revisión)'),\n  fila('Saldo de puntos', String(puntos.saldo ?? 0)),\n];"
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000010",
+   "name": "Comprobante xlsx",
+   "type": "n8n-nodes-base.convertToFile",
+   "typeVersion": 1.1,
+   "position": [
+    1980,
+    120
+   ],
+   "parameters": {
+    "operation": "xlsx",
+    "binaryPropertyName": "data",
+    "options": {
+     "fileName": "={{ 'comprobante-' + $('Un pedido a la vez').first().json.pedido.identificador + '.xlsx' }}",
+     "sheetName": "Comprobante"
+    }
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000011",
+   "name": "Registrar en Ventas",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2200,
+    120
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_VENTAS_URL }}/api/v1/interno/pedidos/{{ $('Un pedido a la vez').first().json.pedido.identificador }}/comprobante",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      },
+      {
+       "name": "X-Nombre-Archivo",
+       "value": "={{ 'comprobante-' + $('Un pedido a la vez').first().json.pedido.identificador + '.xlsx' }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    },
+    "sendBody": true,
+    "contentType": "binaryData",
+    "inputDataFieldName": "data"
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000012",
+   "name": "Verificar respuesta de Ventas",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2420,
+    120
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const registrarRechazo = (r) => {\n  const datosRechazos = $getWorkflowStaticData('global');\n  datosRechazos.rechazados = [{ ...r, fecha: new Date().toISOString() },\n    ...(datosRechazos.rechazados ?? []).filter((x) => x.evento !== r.evento)].slice(0, 100);\n};\nconst definitivos = [];\nfor (const [i, r] of $input.all().entries()) {\n  const estado = r.json.statusCode;\n  if (estado >= 500 || [401, 403, 408, 425, 429].includes(estado)) throw new Error(`Ventas respondió ${estado}: se reintentará.`);\n  if (estado >= 400) {\n    definitivos.push({ indice: i, estado });\n    registrarRechazo({ evento: `pedido#${$('Un pedido a la vez').first().json.pedido.identificador}`, destino: 'Ventas', estado,\n      motivo: String(r.json.body?.mensaje ?? r.json.body?.detail ?? '').slice(0, 200) });\n  }\n}\nreturn [{ json: { procesados: $input.all().length, rechazados_definitivos: definitivos } }];"
+   }
+  },
+  {
+   "id": "a2000000-0000-4000-8000-000000000013",
+   "name": "Avanzar cursor",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1320,
+    -120
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\ndatos.cursorVentas = $('Solo pedidos confirmados').first().json.siguiente;\nreturn [{ json: { cursor: datos.cursorVentas } }];"
+   }
+  }
+ ],
+ "connections": {
+  "Cada 20 segundos": {
+   "main": [
+    [
+     {
+      "node": "Cursor de Ventas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Cursor de Ventas": {
+   "main": [
+    [
+     {
+      "node": "Token de servicio",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Token de servicio": {
+   "main": [
+    [
+     {
+      "node": "Eventos de Ventas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Eventos de Ventas": {
+   "main": [
+    [
+     {
+      "node": "Solo pedidos confirmados",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Solo pedidos confirmados": {
+   "main": [
+    [
+     {
+      "node": "Un pedido a la vez",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Un pedido a la vez": {
+   "main": [
+    [
+     {
+      "node": "Avanzar cursor",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Puntos del cliente",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Puntos del cliente": {
+   "main": [
+    [
+     {
+      "node": "Productos de Inventario",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Productos de Inventario": {
+   "main": [
+    [
+     {
+      "node": "Filas del comprobante",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Filas del comprobante": {
+   "main": [
+    [
+     {
+      "node": "Comprobante xlsx",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Comprobante xlsx": {
+   "main": [
+    [
+     {
+      "node": "Registrar en Ventas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Registrar en Ventas": {
+   "main": [
+    [
+     {
+      "node": "Verificar respuesta de Ventas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verificar respuesta de Ventas": {
+   "main": [
+    [
+     {
+      "node": "Un pedido a la vez",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all",
+  "saveManualExecutions": false,
+  "timezone": "America/La_Paz"
+ },
+ "pinData": {},
+ "meta": {
+  "descripcion": "Flujo B (fase 10): pedido_confirmado de Ventas → puntos (Clientes) → productos (Inventario) → xlsx → Ventas."
+ }
+}

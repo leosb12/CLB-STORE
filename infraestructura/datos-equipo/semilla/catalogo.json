@@ -1,0 +1,2822 @@
+{
+  "version": 1,
+  "stock_inicial": 10,
+  "productos": [
+    {
+      "identificador": "610886fa2697649fc966a9ae2828ae20",
+      "sku": "CLB-FOTO-POL-GRI",
+      "nombre": "Polera gris jaspeada",
+      "descripción": "Colección fotográfica de demostración. Color: Gris. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/5448). Precio y stock de prueba.",
+      "categoría": "Poleras",
+      "precio_centavos": 9900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 837824,
+        "sha256": "ad3ff0218b8db365e6b9167a931e7ee07b2d16366c6bf38037a0dc27f798d02e",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Gris",
+        "maestro_sha256": "ad3ff0218b8db365e6b9167a931e7ee07b2d16366c6bf38037a0dc27f798d02e",
+        "ruta": "/api/v1/recursos-probador/ad3ff0218b8db365e6b9167a931e7ee07b2d16366c6bf38037a0dc27f798d02e.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "c6ba59332daa98921974b8063612e0c8",
+      "sku": "CLB-FOTO-POL-ROJ",
+      "nombre": "Polera roja de cuello redondo",
+      "descripción": "Colección fotográfica de demostración. Color: Rojo. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/5449). Precio y stock de prueba.",
+      "categoría": "Poleras",
+      "precio_centavos": 9900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 725286,
+        "sha256": "84e526d8cf76dec362be91aa3163cbda1b541b3132a6d227ef5427889ffd4d36",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Rojo",
+        "maestro_sha256": "84e526d8cf76dec362be91aa3163cbda1b541b3132a6d227ef5427889ffd4d36",
+        "ruta": "/api/v1/recursos-probador/84e526d8cf76dec362be91aa3163cbda1b541b3132a6d227ef5427889ffd4d36.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "83a74096bde83092ab324774d7a2f628",
+      "sku": "CLB-FOTO-CAM-NEG",
+      "nombre": "Camisa negra de manga larga",
+      "descripción": "Colección fotográfica de demostración. Color: Negro. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/8117). Precio y stock de prueba.",
+      "categoría": "Camisas",
+      "precio_centavos": 21900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 671965,
+        "sha256": "47e30663c74af42a72fe16dbd33107d1926bcce68c141a2465d26651c82e2f62",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Negro",
+        "maestro_sha256": "47e30663c74af42a72fe16dbd33107d1926bcce68c141a2465d26651c82e2f62",
+        "ruta": "/api/v1/recursos-probador/47e30663c74af42a72fe16dbd33107d1926bcce68c141a2465d26651c82e2f62.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "d2b07183c1442761a3e606b4c101090a",
+      "sku": "CLB-FOTO-CHA-ROJ",
+      "nombre": "Chaqueta roja con cierre",
+      "descripción": "Colección fotográfica de demostración. Color: Rojo. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/8058). Precio y stock de prueba.",
+      "categoría": "Chaquetas",
+      "precio_centavos": 31900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 693341,
+        "sha256": "c4de9ee216c7ab8d43e26658b72c26f992c6a539a6e343e4e476ea7110382f4e",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Rojo",
+        "maestro_sha256": "c4de9ee216c7ab8d43e26658b72c26f992c6a539a6e343e4e476ea7110382f4e",
+        "ruta": "/api/v1/recursos-probador/c4de9ee216c7ab8d43e26658b72c26f992c6a539a6e343e4e476ea7110382f4e.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "c51aeba93c27c341976a1035f1532a7b",
+      "sku": "CLB-FOTO-CHA-AZU",
+      "nombre": "Chaqueta deportiva azul y blanca",
+      "descripción": "Colección fotográfica de demostración. Color: Azul y blanco. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/8056). Precio y stock de prueba.",
+      "categoría": "Chaquetas",
+      "precio_centavos": 28900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 851708,
+        "sha256": "9c4a225a51027241a716c29ae10f560b14023ae8e013dd248896869615b17c1c",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Azul y blanco",
+        "maestro_sha256": "9c4a225a51027241a716c29ae10f560b14023ae8e013dd248896869615b17c1c",
+        "ruta": "/api/v1/recursos-probador/9c4a225a51027241a716c29ae10f560b14023ae8e013dd248896869615b17c1c.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "f61c9ad66edef649a62e0be2942bb089",
+      "sku": "CLB-FOTO-VES-BUR",
+      "nombre": "Vestido corto negro y burdeos",
+      "descripción": "Colección fotográfica de demostración. Color: Negro y burdeos. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/56194). Precio y stock de prueba.",
+      "categoría": "Vestidos",
+      "precio_centavos": 27900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "completo",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 559306,
+        "sha256": "28e563c66fbf1701059ca844b7ccf240b5f7628d2f1ff41e146aca3f13d2f951",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "color": "Negro y burdeos",
+        "maestro_sha256": "28e563c66fbf1701059ca844b7ccf240b5f7628d2f1ff41e146aca3f13d2f951",
+        "ruta": "/api/v1/recursos-probador/28e563c66fbf1701059ca844b7ccf240b5f7628d2f1ff41e146aca3f13d2f951.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "a7e05794f003fe3776648a07840c0236",
+      "sku": "CLB-ING-JEA-CEL",
+      "nombre": "Jean celeste recto",
+      "descripción": "Color: Celeste. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/5766). Precio y stock de prueba.",
+      "categoría": "Pantalones",
+      "precio_centavos": 24900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "inferior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 933101,
+        "sha256": "46352c0d21d1f2655f140b66bb74226f728aef4754c93f066203607fd7bc1502",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "inferior",
+          "espalda": "deducida",
+          "color": [
+            127,
+            158,
+            182
+          ],
+          "inferior": {
+            "cintura": 0.0312,
+            "entrepierna": 0.3906,
+            "cadera": [
+              [
+                0.0312,
+                0.4661,
+                0.4779
+              ],
+              [
+                0.1211,
+                0.224,
+                0.737
+              ],
+              [
+                0.2109,
+                0.2005,
+                0.7682
+              ],
+              [
+                0.3008,
+                0.1849,
+                0.7891
+              ],
+              [
+                0.3906,
+                0.1719,
+                0.8021
+              ]
+            ],
+            "piernas": [
+              {
+                "lado": -1,
+                "eje": [
+                  [
+                    0.3199,
+                    0.3911,
+                    0.1373
+                  ],
+                  [
+                    0.2943,
+                    0.4712,
+                    0.1238
+                  ],
+                  [
+                    0.2728,
+                    0.5517,
+                    0.1077
+                  ],
+                  [
+                    0.2596,
+                    0.633,
+                    0.1011
+                  ],
+                  [
+                    0.2481,
+                    0.7146,
+                    0.099
+                  ],
+                  [
+                    0.2375,
+                    0.7962,
+                    0.0976
+                  ],
+                  [
+                    0.2284,
+                    0.878,
+                    0.0968
+                  ],
+                  [
+                    0.2179,
+                    0.9596,
+                    0.0959
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "eje": [
+                  [
+                    0.6584,
+                    0.3897,
+                    0.1318
+                  ],
+                  [
+                    0.6905,
+                    0.4667,
+                    0.1209
+                  ],
+                  [
+                    0.7165,
+                    0.5445,
+                    0.1072
+                  ],
+                  [
+                    0.7325,
+                    0.6236,
+                    0.1014
+                  ],
+                  [
+                    0.7461,
+                    0.7031,
+                    0.0993
+                  ],
+                  [
+                    0.7601,
+                    0.7825,
+                    0.0979
+                  ],
+                  [
+                    0.7718,
+                    0.8622,
+                    0.0958
+                  ],
+                  [
+                    0.7848,
+                    0.9417,
+                    0.0936
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "add5a0a57a6dc6364ed978e8f76eb2778cf81653eb834af78a0bd6d16a0c86b5",
+          "bytes": 932479,
+          "ruta": "/api/v1/recursos-probador/add5a0a57a6dc6364ed978e8f76eb2778cf81653eb834af78a0bd6d16a0c86b5.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.63,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 1249,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.64,
+              "umbral": "1.0–3.6"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.904,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.004,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            }
+          ]
+        },
+        "color": "Celeste",
+        "maestro_sha256": "46352c0d21d1f2655f140b66bb74226f728aef4754c93f066203607fd7bc1502",
+        "ruta": "/api/v1/recursos-probador/46352c0d21d1f2655f140b66bb74226f728aef4754c93f066203607fd7bc1502.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "1461d23bbec59379e3d370a5b850fe7d",
+      "sku": "CLB-ING-JEA-GAS",
+      "nombre": "Jean claro gastado",
+      "descripción": "Color: Azul claro. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/5767). Precio y stock de prueba.",
+      "categoría": "Pantalones",
+      "precio_centavos": 23900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "inferior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 663649,
+        "sha256": "e32a6c2e94d68b5aacb99d5dde7e0812b7dd516d1abe56ce4a1ef11abe67ce23",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "inferior",
+          "espalda": "deducida",
+          "color": [
+            93,
+            117,
+            137
+          ],
+          "inferior": {
+            "cintura": 0.0312,
+            "entrepierna": 0.29,
+            "cadera": [
+              [
+                0.0957,
+                0.2643,
+                0.7318
+              ],
+              [
+                0.1602,
+                0.2565,
+                0.7396
+              ],
+              [
+                0.2246,
+                0.2474,
+                0.7539
+              ],
+              [
+                0.29,
+                0.2383,
+                0.7669
+              ]
+            ],
+            "piernas": [
+              {
+                "lado": -1,
+                "eje": [
+                  [
+                    0.3523,
+                    0.2924,
+                    0.107
+                  ],
+                  [
+                    0.3224,
+                    0.386,
+                    0.0914
+                  ],
+                  [
+                    0.2982,
+                    0.4803,
+                    0.079
+                  ],
+                  [
+                    0.2814,
+                    0.5752,
+                    0.0743
+                  ],
+                  [
+                    0.2674,
+                    0.6705,
+                    0.0711
+                  ],
+                  [
+                    0.2548,
+                    0.7658,
+                    0.068
+                  ],
+                  [
+                    0.2432,
+                    0.8613,
+                    0.072
+                  ],
+                  [
+                    0.2307,
+                    0.9567,
+                    0.0721
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "eje": [
+                  [
+                    0.6448,
+                    0.2919,
+                    0.1148
+                  ],
+                  [
+                    0.6784,
+                    0.3848,
+                    0.0979
+                  ],
+                  [
+                    0.7048,
+                    0.4785,
+                    0.0822
+                  ],
+                  [
+                    0.723,
+                    0.573,
+                    0.0756
+                  ],
+                  [
+                    0.7364,
+                    0.668,
+                    0.0736
+                  ],
+                  [
+                    0.7452,
+                    0.7634,
+                    0.0743
+                  ],
+                  [
+                    0.7572,
+                    0.8585,
+                    0.0724
+                  ],
+                  [
+                    0.7688,
+                    0.9537,
+                    0.07
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "a0c49679b485e6fc270b041a14e13abe1c92f85386d3cf6c1dcb8c8b399b27ae",
+          "bytes": 664262,
+          "ruta": "/api/v1/recursos-probador/a0c49679b485e6fc270b041a14e13abe1c92f85386d3cf6c1dcb8c8b399b27ae.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.544,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 1120,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.829,
+              "umbral": "1.0–3.6"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.944,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.006,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0.001,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            }
+          ]
+        },
+        "color": "Azul claro",
+        "maestro_sha256": "e32a6c2e94d68b5aacb99d5dde7e0812b7dd516d1abe56ce4a1ef11abe67ce23",
+        "ruta": "/api/v1/recursos-probador/e32a6c2e94d68b5aacb99d5dde7e0812b7dd516d1abe56ce4a1ef11abe67ce23.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "69d94ebf47229c0345dcb2c57469acaf",
+      "sku": "CLB-ING-JEA-IND",
+      "nombre": "Jean índigo",
+      "descripción": "Color: Índigo. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/5776). Precio y stock de prueba.",
+      "categoría": "Pantalones",
+      "precio_centavos": 26900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "inferior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 650386,
+        "sha256": "394c73b7c71c6903226164f6c31c48a786088756d4523b6270b1abc3835cb0df",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "inferior",
+          "espalda": "deducida",
+          "color": [
+            39,
+            48,
+            63
+          ],
+          "inferior": {
+            "cintura": 0.0312,
+            "entrepierna": 0.3213,
+            "cadera": [
+              [
+                0.0312,
+                0.2604,
+                0.6654
+              ],
+              [
+                0.1035,
+                0.2487,
+                0.7201
+              ],
+              [
+                0.1758,
+                0.2409,
+                0.7279
+              ],
+              [
+                0.248,
+                0.2318,
+                0.7396
+              ],
+              [
+                0.3213,
+                0.2201,
+                0.7552
+              ]
+            ],
+            "piernas": [
+              {
+                "lado": -1,
+                "eje": [
+                  [
+                    0.3427,
+                    0.3237,
+                    0.1162
+                  ],
+                  [
+                    0.3131,
+                    0.4129,
+                    0.1021
+                  ],
+                  [
+                    0.2876,
+                    0.5025,
+                    0.0897
+                  ],
+                  [
+                    0.273,
+                    0.5933,
+                    0.0883
+                  ],
+                  [
+                    0.2612,
+                    0.6843,
+                    0.086
+                  ],
+                  [
+                    0.2486,
+                    0.7752,
+                    0.0848
+                  ],
+                  [
+                    0.2397,
+                    0.8665,
+                    0.0831
+                  ],
+                  [
+                    0.2264,
+                    0.9574,
+                    0.0839
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "eje": [
+                  [
+                    0.6393,
+                    0.3237,
+                    0.1082
+                  ],
+                  [
+                    0.6691,
+                    0.4124,
+                    0.0967
+                  ],
+                  [
+                    0.6922,
+                    0.5019,
+                    0.0903
+                  ],
+                  [
+                    0.7101,
+                    0.592,
+                    0.0874
+                  ],
+                  [
+                    0.7252,
+                    0.6825,
+                    0.0851
+                  ],
+                  [
+                    0.7422,
+                    0.7727,
+                    0.0825
+                  ],
+                  [
+                    0.7594,
+                    0.8629,
+                    0.0808
+                  ],
+                  [
+                    0.7729,
+                    0.9535,
+                    0.0835
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "3fee5c96051582a54882bc9d89ef4b50770d233ca65d4761b3f6af489ec30762",
+          "bytes": 644980,
+          "ruta": "/api/v1/recursos-probador/3fee5c96051582a54882bc9d89ef4b50770d233ca65d4761b3f6af489ec30762.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.565,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 1181,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.734,
+              "umbral": "1.0–3.6"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.879,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.006,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            }
+          ]
+        },
+        "color": "Índigo",
+        "maestro_sha256": "394c73b7c71c6903226164f6c31c48a786088756d4523b6270b1abc3835cb0df",
+        "ruta": "/api/v1/recursos-probador/394c73b7c71c6903226164f6c31c48a786088756d4523b6270b1abc3835cb0df.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "96ab3aaab51774331ce745cfecee2f1d",
+      "sku": "CLB-ING-BUZ-GRI",
+      "nombre": "Buzo gris con capucha",
+      "descripción": "Color: Gris oscuro. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/104424). Precio y stock de prueba.",
+      "categoría": "Buzos",
+      "precio_centavos": 22900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 413290,
+        "sha256": "f8f30ed24bd77f45765be920325b4f3030cd8683264371ffc6bc175314ef1bd9",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "superior",
+          "espalda": "deducida",
+          "color": [
+            69,
+            68,
+            73
+          ],
+          "superior": {
+            "axila": 0.1465,
+            "cuello": [
+              0.0352,
+              0.4987,
+              0.4987,
+              0.0361
+            ],
+            "torso": [
+              [
+                0.0811,
+                0.2904,
+                0.7096
+              ],
+              [
+                0.1484,
+                0.2852,
+                0.7227
+              ],
+              [
+                0.2168,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.2842,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.3525,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.4199,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.4883,
+                0.2376,
+                0.7539
+              ],
+              [
+                0.5557,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.624,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.6914,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.7598,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.8271,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.8955,
+                0.2376,
+                0.7611
+              ],
+              [
+                0.9639,
+                0.4993,
+                0.4993
+              ]
+            ],
+            "mangas": [
+              {
+                "lado": -1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.1882,
+                    0.207,
+                    0.0485
+                  ],
+                  [
+                    0.169,
+                    0.3128,
+                    0.0653
+                  ],
+                  [
+                    0.1554,
+                    0.4189,
+                    0.0782
+                  ],
+                  [
+                    0.1476,
+                    0.5254,
+                    0.0851
+                  ],
+                  [
+                    0.1438,
+                    0.6321,
+                    0.0892
+                  ],
+                  [
+                    0.1425,
+                    0.7389,
+                    0.0906
+                  ],
+                  [
+                    0.1373,
+                    0.8455,
+                    0.0909
+                  ],
+                  [
+                    0.1042,
+                    0.9506,
+                    0.0522
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.8169,
+                    0.2046,
+                    0.0559
+                  ],
+                  [
+                    0.8326,
+                    0.3103,
+                    0.0691
+                  ],
+                  [
+                    0.8425,
+                    0.4163,
+                    0.0783
+                  ],
+                  [
+                    0.8487,
+                    0.5225,
+                    0.0845
+                  ],
+                  [
+                    0.8525,
+                    0.6289,
+                    0.0881
+                  ],
+                  [
+                    0.855,
+                    0.7353,
+                    0.0907
+                  ],
+                  [
+                    0.8599,
+                    0.8415,
+                    0.0924
+                  ],
+                  [
+                    0.896,
+                    0.9461,
+                    0.0464
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "06761b27395cc4b180088aefef89ca939ec38378e8a467c32e739316074c2402",
+          "bytes": 411617,
+          "ruta": "/api/v1/recursos-probador/06761b27395cc4b180088aefef89ca939ec38378e8a467c32e739316074c2402.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.615,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 838,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.354,
+              "umbral": "0.6–2.2"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.976,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.005,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "MANGAS",
+              "nivel": "ok",
+              "mensaje": "Se reconocen las dos mangas.",
+              "valor": 2,
+              "umbral": "2"
+            }
+          ]
+        },
+        "color": "Gris oscuro",
+        "maestro_sha256": "f8f30ed24bd77f45765be920325b4f3030cd8683264371ffc6bc175314ef1bd9",
+        "ruta": "/api/v1/recursos-probador/f8f30ed24bd77f45765be920325b4f3030cd8683264371ffc6bc175314ef1bd9.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "8d306374e9d31d61ab8554a356ccb2ab",
+      "sku": "CLB-ING-BUZ-AZU",
+      "nombre": "Buzo azul con capucha",
+      "descripción": "Color: Azul. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/104416). Precio y stock de prueba.",
+      "categoría": "Buzos",
+      "precio_centavos": 22900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 544964,
+        "sha256": "b6257f68e6f8e3288a5ed196fda7591e040fd18278670317bb087c4d3a045832",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "superior",
+          "espalda": "deducida",
+          "color": [
+            21,
+            104,
+            171
+          ],
+          "superior": {
+            "axila": 0.1797,
+            "cuello": [
+              0.0791,
+              0.4974,
+              0.4974,
+              0.0801
+            ],
+            "torso": [
+              [
+                0.1211,
+                0.263,
+                0.7148
+              ],
+              [
+                0.1826,
+                0.2448,
+                0.724
+              ],
+              [
+                0.2441,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.3057,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.3672,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.4287,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.4902,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.5518,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.6133,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.6748,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.7363,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.7979,
+                0.2214,
+                0.7643
+              ],
+              [
+                0.8594,
+                0.2207,
+                0.7676
+              ],
+              [
+                0.9209,
+                0.4941,
+                0.4941
+              ]
+            ],
+            "mangas": [
+              {
+                "lado": -1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.1805,
+                    0.2573,
+                    0.0389
+                  ],
+                  [
+                    0.1655,
+                    0.349,
+                    0.0521
+                  ],
+                  [
+                    0.1531,
+                    0.4408,
+                    0.0639
+                  ],
+                  [
+                    0.1413,
+                    0.5327,
+                    0.0751
+                  ],
+                  [
+                    0.1325,
+                    0.6247,
+                    0.0835
+                  ],
+                  [
+                    0.1328,
+                    0.7171,
+                    0.083
+                  ],
+                  [
+                    0.1283,
+                    0.8093,
+                    0.0731
+                  ],
+                  [
+                    0.1304,
+                    0.9018,
+                    0.0646
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.8073,
+                    0.24,
+                    0.04
+                  ],
+                  [
+                    0.8241,
+                    0.3339,
+                    0.0547
+                  ],
+                  [
+                    0.8376,
+                    0.428,
+                    0.0676
+                  ],
+                  [
+                    0.8477,
+                    0.5222,
+                    0.0772
+                  ],
+                  [
+                    0.8564,
+                    0.6166,
+                    0.0855
+                  ],
+                  [
+                    0.8606,
+                    0.7112,
+                    0.0896
+                  ],
+                  [
+                    0.8682,
+                    0.8055,
+                    0.0786
+                  ],
+                  [
+                    0.8651,
+                    0.9005,
+                    0.0659
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "78c0c74c318687f4a2574f10518124ea6e2a1c855366c6fc1a6ff04b69d9fb45",
+          "bytes": 533295,
+          "ruta": "/api/v1/recursos-probador/78c0c74c318687f4a2574f10518124ea6e2a1c855366c6fc1a6ff04b69d9fb45.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.469,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 693,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.228,
+              "umbral": "0.6–2.2"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.969,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.01,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "MANGAS",
+              "nivel": "ok",
+              "mensaje": "Se reconocen las dos mangas.",
+              "valor": 2,
+              "umbral": "2"
+            }
+          ]
+        },
+        "color": "Azul",
+        "maestro_sha256": "b6257f68e6f8e3288a5ed196fda7591e040fd18278670317bb087c4d3a045832",
+        "ruta": "/api/v1/recursos-probador/b6257f68e6f8e3288a5ed196fda7591e040fd18278670317bb087c4d3a045832.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "42da914917b803b55f5f3a37d041a52e",
+      "sku": "CLB-ING-POL-VER",
+      "nombre": "Polerón verde cuello redondo",
+      "descripción": "Color: Verde. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/104430). Precio y stock de prueba.",
+      "categoría": "Buzos",
+      "precio_centavos": 19900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 683043,
+        "sha256": "c083de009983cd480577d68b93e03fb38f401243bc1bf1f1b51cb6cfcfa9913f",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "superior",
+          "espalda": "deducida",
+          "color": [
+            2,
+            146,
+            74
+          ],
+          "superior": {
+            "axila": 0.4717,
+            "cuello": [
+              0.1357,
+              0.401,
+              0.4961,
+              0.1562
+            ],
+            "torso": [
+              [
+                0.1719,
+                0.2891,
+                0.7135
+              ],
+              [
+                0.2246,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.2773,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.3311,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.3838,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.4375,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.4902,
+                0.2383,
+                0.7539
+              ],
+              [
+                0.5439,
+                0.2344,
+                0.7539
+              ],
+              [
+                0.5967,
+                0.2357,
+                0.7435
+              ],
+              [
+                0.6504,
+                0.2318,
+                0.7526
+              ],
+              [
+                0.7031,
+                0.2253,
+                0.7526
+              ],
+              [
+                0.7568,
+                0.2253,
+                0.7539
+              ],
+              [
+                0.8096,
+                0.2292,
+                0.7539
+              ],
+              [
+                0.8633,
+                0.457,
+                0.5091
+              ]
+            ],
+            "mangas": [
+              {
+                "lado": -1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.1872,
+                    0.2179,
+                    0.0385
+                  ],
+                  [
+                    0.1678,
+                    0.303,
+                    0.0556
+                  ],
+                  [
+                    0.1536,
+                    0.3884,
+                    0.0689
+                  ],
+                  [
+                    0.1405,
+                    0.4739,
+                    0.0813
+                  ],
+                  [
+                    0.1323,
+                    0.5597,
+                    0.0831
+                  ],
+                  [
+                    0.1252,
+                    0.6457,
+                    0.0757
+                  ],
+                  [
+                    0.1146,
+                    0.7313,
+                    0.0663
+                  ],
+                  [
+                    0.1073,
+                    0.8173,
+                    0.0461
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.8047,
+                    0.2116,
+                    0.0506
+                  ],
+                  [
+                    0.8256,
+                    0.2982,
+                    0.0688
+                  ],
+                  [
+                    0.8393,
+                    0.3853,
+                    0.0818
+                  ],
+                  [
+                    0.8489,
+                    0.4726,
+                    0.09
+                  ],
+                  [
+                    0.8663,
+                    0.5594,
+                    0.0835
+                  ],
+                  [
+                    0.8696,
+                    0.6472,
+                    0.0761
+                  ],
+                  [
+                    0.8731,
+                    0.7349,
+                    0.0688
+                  ],
+                  [
+                    0.8743,
+                    0.8228,
+                    0.0484
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "ae0af897e4445bda77e1799d77b1c50ca18cae0df363ce2f0840fb11a4224101",
+          "bytes": 652628,
+          "ruta": "/api/v1/recursos-probador/ae0af897e4445bda77e1799d77b1c50ca18cae0df363ce2f0840fb11a4224101.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.818,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 1165,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.058,
+              "umbral": "0.6–2.2"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.941,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.003,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "MANGAS",
+              "nivel": "ok",
+              "mensaje": "Se reconocen las dos mangas.",
+              "valor": 2,
+              "umbral": "2"
+            }
+          ]
+        },
+        "color": "Verde",
+        "maestro_sha256": "c083de009983cd480577d68b93e03fb38f401243bc1bf1f1b51cb6cfcfa9913f",
+        "ruta": "/api/v1/recursos-probador/c083de009983cd480577d68b93e03fb38f401243bc1bf1f1b51cb6cfcfa9913f.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "b0279a6a07932ffec6b6613c66a6316d",
+      "sku": "CLB-ING-SUE-GRI",
+      "nombre": "Suéter gris cuello en V",
+      "descripción": "Color: Gris. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/104437). Precio y stock de prueba.",
+      "categoría": "Suéteres",
+      "precio_centavos": 21900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 558947,
+        "sha256": "b0ddb623db28fb989c7a2f6b92e9006611f189c07ff4bf559b1045d0d1835d8d",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "superior",
+          "espalda": "deducida",
+          "color": [
+            115,
+            115,
+            115
+          ],
+          "superior": {
+            "axila": 0.1992,
+            "cuello": [
+              0.1055,
+              0.4271,
+              0.5833,
+              0.1113
+            ],
+            "torso": [
+              [
+                0.1445,
+                0.2826,
+                0.7448
+              ],
+              [
+                0.2021,
+                0.1973,
+                0.832
+              ],
+              [
+                0.2598,
+                0.1973,
+                0.8535
+              ],
+              [
+                0.3174,
+                0.1973,
+                0.8535
+              ],
+              [
+                0.375,
+                0.1973,
+                0.8535
+              ],
+              [
+                0.4326,
+                0.1973,
+                0.8535
+              ],
+              [
+                0.4902,
+                0.2279,
+                0.7812
+              ],
+              [
+                0.5479,
+                0.2292,
+                0.7812
+              ],
+              [
+                0.6055,
+                0.2344,
+                0.7799
+              ],
+              [
+                0.6631,
+                0.2396,
+                0.7773
+              ],
+              [
+                0.7207,
+                0.1973,
+                0.7747
+              ],
+              [
+                0.7783,
+                0.1973,
+                0.8535
+              ],
+              [
+                0.8359,
+                0.5254,
+                0.5254
+              ],
+              [
+                0.8936,
+                0.5254,
+                0.5254
+              ]
+            ],
+            "mangas": [
+              {
+                "lado": -1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.1745,
+                    0.2224,
+                    0.021
+                  ],
+                  [
+                    0.1569,
+                    0.303,
+                    0.0376
+                  ],
+                  [
+                    0.1404,
+                    0.3837,
+                    0.0534
+                  ],
+                  [
+                    0.1269,
+                    0.4644,
+                    0.0656
+                  ],
+                  [
+                    0.1102,
+                    0.545,
+                    0.0638
+                  ],
+                  [
+                    0.1242,
+                    0.6262,
+                    0.0674
+                  ],
+                  [
+                    0.1437,
+                    0.7075,
+                    0.0505
+                  ],
+                  [
+                    0.1672,
+                    0.7888,
+                    0.0278
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.8674,
+                    0.2733,
+                    0.0135
+                  ],
+                  [
+                    0.8807,
+                    0.3501,
+                    0.0262
+                  ],
+                  [
+                    0.8921,
+                    0.4268,
+                    0.0371
+                  ],
+                  [
+                    0.9009,
+                    0.5036,
+                    0.0455
+                  ],
+                  [
+                    0.905,
+                    0.5805,
+                    0.0494
+                  ],
+                  [
+                    0.9012,
+                    0.6574,
+                    0.0459
+                  ],
+                  [
+                    0.89,
+                    0.7344,
+                    0.0352
+                  ],
+                  [
+                    0.874,
+                    0.8114,
+                    0.0199
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "a0663ee018cebc6a1cadd32927f3a026754bfc7f7383e1199c00609051d2ee70",
+          "bytes": 541018,
+          "ruta": "/api/v1/recursos-probador/a0663ee018cebc6a1cadd32927f3a026754bfc7f7383e1199c00609051d2ee70.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.757,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 949,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 1.146,
+              "umbral": "0.6–2.2"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.907,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0.004,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "MANGAS",
+              "nivel": "ok",
+              "mensaje": "Se reconocen las dos mangas.",
+              "valor": 2,
+              "umbral": "2"
+            }
+          ]
+        },
+        "color": "Gris",
+        "maestro_sha256": "b0ddb623db28fb989c7a2f6b92e9006611f189c07ff4bf559b1045d0d1835d8d",
+        "ruta": "/api/v1/recursos-probador/b0ddb623db28fb989c7a2f6b92e9006611f189c07ff4bf559b1045d0d1835d8d.png",
+        "version": 2
+      }
+    },
+    {
+      "identificador": "29a37feda898f7a8fd6e7b1cdd26be53",
+      "sku": "CLB-ING-SUE-BUR",
+      "nombre": "Suéter burdeos",
+      "descripción": "Color: Burdeos. Fotografía: PNGimg.com, CC BY-NC 4.0 (https://pngimg.com/image/104434). Precio y stock de prueba.",
+      "categoría": "Suéteres",
+      "precio_centavos": 23900,
+      "moneda": "BOB",
+      "activo": true,
+      "recurso_probador": {
+        "esquema": 2,
+        "tipo": "superior",
+        "vista": "frontal",
+        "ancho": 768,
+        "alto": 1024,
+        "mime": "image/png",
+        "bytes": 645606,
+        "sha256": "1e9cf78c62fd50b020ef390e4c800f26807cdde5d967073d2f80745056aceb44",
+        "metodo": "u2net-vton-1",
+        "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+        "modelo3d": {
+          "version": 1,
+          "tipo": "superior",
+          "espalda": "deducida",
+          "color": [
+            75,
+            30,
+            40
+          ],
+          "superior": {
+            "axila": 0.3867,
+            "cuello": [
+              0.2188,
+              0.4206,
+              0.5911,
+              0.2344
+            ],
+            "torso": [
+              [
+                0.2461,
+                0.3516,
+                0.668
+              ],
+              [
+                0.2871,
+                0.2935,
+                0.713
+              ],
+              [
+                0.3281,
+                0.2935,
+                0.713
+              ],
+              [
+                0.3691,
+                0.2935,
+                0.713
+              ],
+              [
+                0.4102,
+                0.2935,
+                0.713
+              ],
+              [
+                0.4512,
+                0.2935,
+                0.713
+              ],
+              [
+                0.4922,
+                0.2935,
+                0.713
+              ],
+              [
+                0.5332,
+                0.2935,
+                0.713
+              ],
+              [
+                0.5742,
+                0.2935,
+                0.713
+              ],
+              [
+                0.6152,
+                0.2935,
+                0.713
+              ],
+              [
+                0.6562,
+                0.2935,
+                0.713
+              ],
+              [
+                0.6973,
+                0.2935,
+                0.713
+              ],
+              [
+                0.7383,
+                0.2943,
+                0.713
+              ],
+              [
+                0.7793,
+                0.5033,
+                0.5033
+              ]
+            ],
+            "mangas": [
+              {
+                "lado": -1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.2453,
+                    0.2824,
+                    0.0467
+                  ],
+                  [
+                    0.2248,
+                    0.3421,
+                    0.0654
+                  ],
+                  [
+                    0.2022,
+                    0.4017,
+                    0.087
+                  ],
+                  [
+                    0.1787,
+                    0.4613,
+                    0.1097
+                  ],
+                  [
+                    0.1685,
+                    0.5218,
+                    0.1196
+                  ],
+                  [
+                    0.1783,
+                    0.5837,
+                    0.1102
+                  ],
+                  [
+                    0.1908,
+                    0.6458,
+                    0.0985
+                  ],
+                  [
+                    0.2073,
+                    0.7082,
+                    0.0832
+                  ]
+                ]
+              },
+              {
+                "lado": 1,
+                "larga": true,
+                "eje": [
+                  [
+                    0.7514,
+                    0.2842,
+                    0.0392
+                  ],
+                  [
+                    0.7756,
+                    0.3453,
+                    0.0613
+                  ],
+                  [
+                    0.7976,
+                    0.4066,
+                    0.0822
+                  ],
+                  [
+                    0.8185,
+                    0.4681,
+                    0.1023
+                  ],
+                  [
+                    0.8329,
+                    0.5301,
+                    0.1162
+                  ],
+                  [
+                    0.8277,
+                    0.5938,
+                    0.1113
+                  ],
+                  [
+                    0.8175,
+                    0.6581,
+                    0.102
+                  ],
+                  [
+                    0.8023,
+                    0.7227,
+                    0.086
+                  ]
+                ]
+              }
+            ]
+          }
+        },
+        "espalda": {
+          "sha256": "33bf41d0c28bdaa9dbb7bbe83334d37ec0811ed7506cee17cadc5b9c00029580",
+          "bytes": 598752,
+          "ruta": "/api/v1/recursos-probador/33bf41d0c28bdaa9dbb7bbe83334d37ec0811ed7506cee17cadc5b9c00029580.png"
+        },
+        "calidad": {
+          "nivel": "apta",
+          "puntuacion": 100,
+          "comprobaciones": [
+            {
+              "codigo": "PRENDA_NO_ENCONTRADA",
+              "nivel": "ok",
+              "mensaje": "Se encontró la prenda.",
+              "valor": 0.54,
+              "umbral": "≥ 0.03"
+            },
+            {
+              "codigo": "VARIAS_PIEZAS",
+              "nivel": "ok",
+              "mensaje": "Hay una sola prenda.",
+              "valor": 0,
+              "umbral": "≤ 0.08"
+            },
+            {
+              "codigo": "RECORTADA",
+              "nivel": "ok",
+              "mensaje": "La prenda entra completa en la foto.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "RESOLUCION",
+              "nivel": "ok",
+              "mensaje": "Resolución suficiente.",
+              "valor": 1553,
+              "umbral": "≥ 500 px"
+            },
+            {
+              "codigo": "FORMA",
+              "nivel": "ok",
+              "mensaje": "La forma corresponde a la categoría.",
+              "valor": 0.816,
+              "umbral": "0.6–2.2"
+            },
+            {
+              "codigo": "SIMETRIA",
+              "nivel": "ok",
+              "mensaje": "La prenda está extendida y de frente.",
+              "valor": 0.939,
+              "umbral": "≥ 0.75"
+            },
+            {
+              "codigo": "FONDO",
+              "nivel": "ok",
+              "mensaje": "El fondo se separó limpiamente.",
+              "valor": 0,
+              "umbral": "≤ 0.12"
+            },
+            {
+              "codigo": "PERSONA",
+              "nivel": "ok",
+              "mensaje": "La prenda está sola, sin persona.",
+              "valor": 0,
+              "umbral": "≤ 0.015"
+            },
+            {
+              "codigo": "MODELO_3D",
+              "nivel": "ok",
+              "mensaje": "Modelo 3D listo para realidad aumentada.",
+              "valor": null,
+              "umbral": ""
+            },
+            {
+              "codigo": "MANGAS",
+              "nivel": "ok",
+              "mensaje": "Se reconocen las dos mangas.",
+              "valor": 2,
+              "umbral": "2"
+            }
+          ]
+        },
+        "color": "Burdeos",
+        "maestro_sha256": "1e9cf78c62fd50b020ef390e4c800f26807cdde5d967073d2f80745056aceb44",
+        "ruta": "/api/v1/recursos-probador/1e9cf78c62fd50b020ef390e4c800f26807cdde5d967073d2f80745056aceb44.png",
+        "version": 2
+      }
+    }
+  ],
+  "variantes": [
+    {
+      "sku": "CLB-FOTO-POL-GRI-S",
+      "talla": "S",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "94115017-0c45-4d4f-bd7e-49906f9f3b55",
+      "identificador_producto": "610886fa2697649fc966a9ae2828ae20",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-GRI-M",
+      "talla": "M",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "cdbbf295-8bcd-446c-a1b2-60891bd95a4a",
+      "identificador_producto": "610886fa2697649fc966a9ae2828ae20",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-GRI-L",
+      "talla": "L",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "d858999e-7be1-4493-92b0-23287a916e59",
+      "identificador_producto": "610886fa2697649fc966a9ae2828ae20",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-GRI-XL",
+      "talla": "XL",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "c9a957ed-c1c9-4b54-b292-3da0106c0499",
+      "identificador_producto": "610886fa2697649fc966a9ae2828ae20",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-ROJ-S",
+      "talla": "S",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "d2382950-f348-467a-a2d8-ad2470ab2d87",
+      "identificador_producto": "c6ba59332daa98921974b8063612e0c8",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-ROJ-M",
+      "talla": "M",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "449ca89c-f5bd-4c51-a0e1-e5bb439fb078",
+      "identificador_producto": "c6ba59332daa98921974b8063612e0c8",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-ROJ-L",
+      "talla": "L",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "81f8ccc4-86cd-453f-a3a3-866a708c2ee7",
+      "identificador_producto": "c6ba59332daa98921974b8063612e0c8",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-POL-ROJ-XL",
+      "talla": "XL",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "f77c0f87-c5bf-4ada-b084-ca660d16a51a",
+      "identificador_producto": "c6ba59332daa98921974b8063612e0c8",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CAM-NEG-S",
+      "talla": "S",
+      "color": "Negro",
+      "activo": true,
+      "identificador": "fa6e4eaa-960d-48ed-bee1-75bb497178e8",
+      "identificador_producto": "83a74096bde83092ab324774d7a2f628",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CAM-NEG-M",
+      "talla": "M",
+      "color": "Negro",
+      "activo": true,
+      "identificador": "22a78173-2774-4278-ae7d-af82c8b4d056",
+      "identificador_producto": "83a74096bde83092ab324774d7a2f628",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CAM-NEG-L",
+      "talla": "L",
+      "color": "Negro",
+      "activo": true,
+      "identificador": "460e26d2-65f3-4b3d-9978-b044630272c3",
+      "identificador_producto": "83a74096bde83092ab324774d7a2f628",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CAM-NEG-XL",
+      "talla": "XL",
+      "color": "Negro",
+      "activo": true,
+      "identificador": "9f389af5-a78d-4df1-bcd0-a2a2fd669846",
+      "identificador_producto": "83a74096bde83092ab324774d7a2f628",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-ROJ-S",
+      "talla": "S",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "a3b15d14-ca0c-4160-b789-16ff35c874c1",
+      "identificador_producto": "d2b07183c1442761a3e606b4c101090a",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-ROJ-M",
+      "talla": "M",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "0b13b6e1-0ee0-4a9d-9c5b-575cac868c45",
+      "identificador_producto": "d2b07183c1442761a3e606b4c101090a",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-ROJ-L",
+      "talla": "L",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "5e2995da-8651-4ac1-9070-ae43504a10e3",
+      "identificador_producto": "d2b07183c1442761a3e606b4c101090a",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-ROJ-XL",
+      "talla": "XL",
+      "color": "Rojo",
+      "activo": true,
+      "identificador": "ec6961db-9324-45d0-b2c4-17de61edcf16",
+      "identificador_producto": "d2b07183c1442761a3e606b4c101090a",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-AZU-S",
+      "talla": "S",
+      "color": "Azul y blanco",
+      "activo": true,
+      "identificador": "dd521114-1af0-4759-afa0-5203a0b2e950",
+      "identificador_producto": "c51aeba93c27c341976a1035f1532a7b",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-AZU-M",
+      "talla": "M",
+      "color": "Azul y blanco",
+      "activo": true,
+      "identificador": "ad1f78df-6fc4-46db-b6b3-a3700efe4a68",
+      "identificador_producto": "c51aeba93c27c341976a1035f1532a7b",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-AZU-L",
+      "talla": "L",
+      "color": "Azul y blanco",
+      "activo": true,
+      "identificador": "4ce89287-5511-4064-9a4e-65ed622a5f92",
+      "identificador_producto": "c51aeba93c27c341976a1035f1532a7b",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-CHA-AZU-XL",
+      "talla": "XL",
+      "color": "Azul y blanco",
+      "activo": true,
+      "identificador": "317c689d-5520-4513-b270-72886f040ccc",
+      "identificador_producto": "c51aeba93c27c341976a1035f1532a7b",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-VES-BUR-S",
+      "talla": "S",
+      "color": "Negro y burdeos",
+      "activo": true,
+      "identificador": "164ce4f6-72eb-4748-9196-4ce3b4dd7842",
+      "identificador_producto": "f61c9ad66edef649a62e0be2942bb089",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-VES-BUR-M",
+      "talla": "M",
+      "color": "Negro y burdeos",
+      "activo": true,
+      "identificador": "51ecce07-7686-4002-bed0-d06c6add8943",
+      "identificador_producto": "f61c9ad66edef649a62e0be2942bb089",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-VES-BUR-L",
+      "talla": "L",
+      "color": "Negro y burdeos",
+      "activo": true,
+      "identificador": "b7a2404a-9d92-4f0d-bd3a-02aa9a09663d",
+      "identificador_producto": "f61c9ad66edef649a62e0be2942bb089",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-FOTO-VES-BUR-XL",
+      "talla": "XL",
+      "color": "Negro y burdeos",
+      "activo": true,
+      "identificador": "36299a3c-cf77-44a4-99bf-8c40a76c53ba",
+      "identificador_producto": "f61c9ad66edef649a62e0be2942bb089",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-CEL-S",
+      "talla": "S",
+      "color": "Celeste",
+      "activo": true,
+      "identificador": "ac1045f4-f7be-4ad6-b57f-db5cf184306b",
+      "identificador_producto": "a7e05794f003fe3776648a07840c0236",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-CEL-M",
+      "talla": "M",
+      "color": "Celeste",
+      "activo": true,
+      "identificador": "01ee69c5-082b-41e1-b499-3df96ce838d4",
+      "identificador_producto": "a7e05794f003fe3776648a07840c0236",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-CEL-L",
+      "talla": "L",
+      "color": "Celeste",
+      "activo": true,
+      "identificador": "6fbfa960-3a10-410f-9ba1-a2fbe30b496b",
+      "identificador_producto": "a7e05794f003fe3776648a07840c0236",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-CEL-XL",
+      "talla": "XL",
+      "color": "Celeste",
+      "activo": true,
+      "identificador": "9bb12861-6e21-4bfc-9673-b0b5782b09c1",
+      "identificador_producto": "a7e05794f003fe3776648a07840c0236",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-GAS-S",
+      "talla": "S",
+      "color": "Azul claro",
+      "activo": true,
+      "identificador": "7ac8b0d3-db39-4872-929a-689bfe668a6c",
+      "identificador_producto": "1461d23bbec59379e3d370a5b850fe7d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-GAS-M",
+      "talla": "M",
+      "color": "Azul claro",
+      "activo": true,
+      "identificador": "a69961f9-9567-46c2-a1ec-0aed372355f4",
+      "identificador_producto": "1461d23bbec59379e3d370a5b850fe7d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-GAS-L",
+      "talla": "L",
+      "color": "Azul claro",
+      "activo": true,
+      "identificador": "cc541593-50f3-4eb4-bf32-6feb899b6e58",
+      "identificador_producto": "1461d23bbec59379e3d370a5b850fe7d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-GAS-XL",
+      "talla": "XL",
+      "color": "Azul claro",
+      "activo": true,
+      "identificador": "9b83ca84-6118-4aa6-ad76-af15668e687d",
+      "identificador_producto": "1461d23bbec59379e3d370a5b850fe7d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-IND-S",
+      "talla": "S",
+      "color": "Índigo",
+      "activo": true,
+      "identificador": "7ed20745-26c5-4efa-ba0d-64287812bd75",
+      "identificador_producto": "69d94ebf47229c0345dcb2c57469acaf",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-IND-M",
+      "talla": "M",
+      "color": "Índigo",
+      "activo": true,
+      "identificador": "213ba79f-3860-417b-9bb8-e3eb626b05eb",
+      "identificador_producto": "69d94ebf47229c0345dcb2c57469acaf",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-IND-L",
+      "talla": "L",
+      "color": "Índigo",
+      "activo": true,
+      "identificador": "6a296a99-0f38-420b-ad8c-5c34f017df30",
+      "identificador_producto": "69d94ebf47229c0345dcb2c57469acaf",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-JEA-IND-XL",
+      "talla": "XL",
+      "color": "Índigo",
+      "activo": true,
+      "identificador": "c1a719a0-2ed7-4d75-9799-88ffbf56b598",
+      "identificador_producto": "69d94ebf47229c0345dcb2c57469acaf",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-GRI-S",
+      "talla": "S",
+      "color": "Gris oscuro",
+      "activo": true,
+      "identificador": "6fe8dfa1-9241-479a-9b02-508bbeb8e974",
+      "identificador_producto": "96ab3aaab51774331ce745cfecee2f1d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-GRI-M",
+      "talla": "M",
+      "color": "Gris oscuro",
+      "activo": true,
+      "identificador": "1d546415-67de-4e3d-b868-acf8a43ba99f",
+      "identificador_producto": "96ab3aaab51774331ce745cfecee2f1d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-GRI-L",
+      "talla": "L",
+      "color": "Gris oscuro",
+      "activo": true,
+      "identificador": "8803a35f-6358-4108-8039-4be79443cf2b",
+      "identificador_producto": "96ab3aaab51774331ce745cfecee2f1d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-GRI-XL",
+      "talla": "XL",
+      "color": "Gris oscuro",
+      "activo": true,
+      "identificador": "195ce946-0b5f-4965-b449-0e2693f51180",
+      "identificador_producto": "96ab3aaab51774331ce745cfecee2f1d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-AZU-S",
+      "talla": "S",
+      "color": "Azul",
+      "activo": true,
+      "identificador": "1dd6009c-587b-4947-bc5b-d69b8f827af0",
+      "identificador_producto": "8d306374e9d31d61ab8554a356ccb2ab",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-AZU-M",
+      "talla": "M",
+      "color": "Azul",
+      "activo": true,
+      "identificador": "57638706-531d-4d81-91ae-df4631a1de60",
+      "identificador_producto": "8d306374e9d31d61ab8554a356ccb2ab",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-AZU-L",
+      "talla": "L",
+      "color": "Azul",
+      "activo": true,
+      "identificador": "fbbc5bf0-19d1-4e36-9868-8b746cf64d96",
+      "identificador_producto": "8d306374e9d31d61ab8554a356ccb2ab",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-BUZ-AZU-XL",
+      "talla": "XL",
+      "color": "Azul",
+      "activo": true,
+      "identificador": "2c36ac9b-2526-4fc6-b0eb-5c238a92b4c9",
+      "identificador_producto": "8d306374e9d31d61ab8554a356ccb2ab",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-POL-VER-S",
+      "talla": "S",
+      "color": "Verde",
+      "activo": true,
+      "identificador": "77f46a6b-f4e4-4b4f-a40d-25b1bb1769c1",
+      "identificador_producto": "42da914917b803b55f5f3a37d041a52e",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-POL-VER-M",
+      "talla": "M",
+      "color": "Verde",
+      "activo": true,
+      "identificador": "9c1ba099-ed87-444f-acf8-e968966fb442",
+      "identificador_producto": "42da914917b803b55f5f3a37d041a52e",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-POL-VER-L",
+      "talla": "L",
+      "color": "Verde",
+      "activo": true,
+      "identificador": "15d9c34e-8ce6-4d20-b865-94db256e2ed8",
+      "identificador_producto": "42da914917b803b55f5f3a37d041a52e",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-POL-VER-XL",
+      "talla": "XL",
+      "color": "Verde",
+      "activo": true,
+      "identificador": "e25645b2-b1b0-42f6-bcbf-a934bafd4a17",
+      "identificador_producto": "42da914917b803b55f5f3a37d041a52e",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-GRI-S",
+      "talla": "S",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "a79cb648-8f42-4099-aca4-d608d73faf9c",
+      "identificador_producto": "b0279a6a07932ffec6b6613c66a6316d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-GRI-M",
+      "talla": "M",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "38884c47-f30e-4f97-a7f2-e51776aa4083",
+      "identificador_producto": "b0279a6a07932ffec6b6613c66a6316d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-GRI-L",
+      "talla": "L",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "c2940d53-bdcb-4a12-b8dc-68daaa7f15b9",
+      "identificador_producto": "b0279a6a07932ffec6b6613c66a6316d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-GRI-XL",
+      "talla": "XL",
+      "color": "Gris",
+      "activo": true,
+      "identificador": "19e2dc14-06fd-4b07-8f67-261bcd85ec6e",
+      "identificador_producto": "b0279a6a07932ffec6b6613c66a6316d",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-BUR-S",
+      "talla": "S",
+      "color": "Burdeos",
+      "activo": true,
+      "identificador": "5f64191d-1396-42bd-aa1f-01e435fc2147",
+      "identificador_producto": "29a37feda898f7a8fd6e7b1cdd26be53",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-BUR-M",
+      "talla": "M",
+      "color": "Burdeos",
+      "activo": true,
+      "identificador": "353dea52-e0ec-43b5-88a4-0bb96432f96b",
+      "identificador_producto": "29a37feda898f7a8fd6e7b1cdd26be53",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-BUR-L",
+      "talla": "L",
+      "color": "Burdeos",
+      "activo": true,
+      "identificador": "a1559179-e3cf-4f77-8077-a56ae25f6d21",
+      "identificador_producto": "29a37feda898f7a8fd6e7b1cdd26be53",
+      "mínimo": 0
+    },
+    {
+      "sku": "CLB-ING-SUE-BUR-XL",
+      "talla": "XL",
+      "color": "Burdeos",
+      "activo": true,
+      "identificador": "3b100a7b-ac03-49a3-87a1-501b42d2ad0f",
+      "identificador_producto": "29a37feda898f7a8fd6e7b1cdd26be53",
+      "mínimo": 0
+    }
+  ]
+}

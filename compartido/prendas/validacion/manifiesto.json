@@ -1,0 +1,232 @@
+{
+  "origen": "sintetico-programatico",
+  "semilla": 20261023,
+  "alcance": "12 variantes procedurales de silueta frontal, 4 entradas inválidas; NO demuestra generalización a fotos reales",
+  "generador": "compartido/prendas/generar-validacion.py",
+  "casos": [
+    {
+      "id": "valida-01",
+      "archivo": "valida-01.png",
+      "mascara": "valida-01-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          145,
+          90
+        ],
+        "hombro_derecho": [
+          367,
+          90
+        ],
+        "borde_inferior": 570
+      }
+    },
+    {
+      "id": "valida-02",
+      "archivo": "valida-02.png",
+      "mascara": "valida-02-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          155,
+          88
+        ],
+        "hombro_derecho": [
+          357,
+          88
+        ],
+        "borde_inferior": 566
+      }
+    },
+    {
+      "id": "valida-03",
+      "archivo": "valida-03.png",
+      "mascara": "valida-03-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          150,
+          92
+        ],
+        "hombro_derecho": [
+          362,
+          92
+        ],
+        "borde_inferior": 571
+      }
+    },
+    {
+      "id": "valida-04",
+      "archivo": "valida-04.png",
+      "mascara": "valida-04-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          140,
+          98
+        ],
+        "hombro_derecho": [
+          372,
+          98
+        ],
+        "borde_inferior": 571
+      }
+    },
+    {
+      "id": "valida-05",
+      "archivo": "valida-05.png",
+      "mascara": "valida-05-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          141,
+          86
+        ],
+        "hombro_derecho": [
+          371,
+          86
+        ],
+        "borde_inferior": 568
+      }
+    },
+    {
+      "id": "valida-06",
+      "archivo": "valida-06.png",
+      "mascara": "valida-06-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          154,
+          97
+        ],
+        "hombro_derecho": [
+          358,
+          97
+        ],
+        "borde_inferior": 582
+      }
+    },
+    {
+      "id": "valida-07",
+      "archivo": "valida-07.png",
+      "mascara": "valida-07-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          154,
+          93
+        ],
+        "hombro_derecho": [
+          358,
+          93
+        ],
+        "borde_inferior": 571
+      }
+    },
+    {
+      "id": "valida-08",
+      "archivo": "valida-08.png",
+      "mascara": "valida-08-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          154,
+          89
+        ],
+        "hombro_derecho": [
+          358,
+          89
+        ],
+        "borde_inferior": 581
+      }
+    },
+    {
+      "id": "valida-09",
+      "archivo": "valida-09.png",
+      "mascara": "valida-09-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          146,
+          89
+        ],
+        "hombro_derecho": [
+          366,
+          89
+        ],
+        "borde_inferior": 576
+      }
+    },
+    {
+      "id": "valida-10",
+      "archivo": "valida-10.png",
+      "mascara": "valida-10-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          143,
+          87
+        ],
+        "hombro_derecho": [
+          369,
+          87
+        ],
+        "borde_inferior": 567
+      }
+    },
+    {
+      "id": "valida-11",
+      "archivo": "valida-11.png",
+      "mascara": "valida-11-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          155,
+          98
+        ],
+        "hombro_derecho": [
+          357,
+          98
+        ],
+        "borde_inferior": 574
+      }
+    },
+    {
+      "id": "valida-12",
+      "archivo": "valida-12.png",
+      "mascara": "valida-12-mascara.png",
+      "valida": true,
+      "anclas_pixeles": {
+        "hombro_izquierdo": [
+          139,
+          95
+        ],
+        "hombro_derecho": [
+          373,
+          95
+        ],
+        "borde_inferior": 573
+      }
+    },
+    {
+      "id": "invalida-cortada",
+      "archivo": "invalida-cortada.png",
+      "valida": false
+    },
+    {
+      "id": "invalida-maniqui",
+      "archivo": "invalida-maniqui.png",
+      "valida": false
+    },
+    {
+      "id": "invalida-multiples",
+      "archivo": "invalida-multiples.png",
+      "valida": false
+    },
+    {
+      "id": "invalida-contraste",
+      "archivo": "invalida-contraste.png",
+      "valida": false
+    }
+  ]
+}

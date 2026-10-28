@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 
-const origen = "http://127.0.0.1:14200";
+const origen = process.env["CLB_PWA_BASEURL"] ?? "http://127.0.0.1:14200";
 
 async function sincronizar(página: Page): Promise<void> {
   await página.goto("/catalogo");
@@ -68,6 +68,7 @@ test("REST real → tarjetas, búsqueda, categoría y detalle", async ({
   );
   expect(respuesta.ok()).toBe(true);
   const datos = await respuesta.json();
+  // El arnés aislado (probar-pwa-aislada.py) siembra `clb:catalogo-demostracion`: solo prendas CLB-DEMO-*.
   const producto = datos.productos.find(
     (prenda: { sku: string }) => prenda.sku === "CLB-DEMO-01",
   );

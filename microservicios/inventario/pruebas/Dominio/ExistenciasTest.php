@@ -60,7 +60,7 @@ final class ExistenciasTest extends TestCase
     {
         [$dominio, $id] = $this->preparada();
         $reserva = Existencias::uuid();
-        $dominio->ejecutar('RESERVAR', ['identificador' => $reserva, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 4, 'versión_esperada' => 2]]], Existencias::uuid(), 'fecha');
+        $dominio->ejecutar('RESERVAR', ['identificador' => $reserva, 'identificador_pedido' => 'pedido-externo', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 4]]], Existencias::uuid(), 'fecha');
         self::assertSame(6, $dominio->pública($id)['disponible']);
         foreach ([1, 2] as $_) $dominio->ejecutar('CONSUMIR_RESERVA', ['identificador_reserva' => $reserva], Existencias::uuid(), 'fecha');
         self::assertSame(6, $dominio->pública($id)['física']);
@@ -68,6 +68,31 @@ final class ExistenciasTest extends TestCase
         self::assertCount(2, $dominio->variante($id)['movimientos']);
         $this->expectException(ErrorDeExistencias::class);
         $dominio->ejecutar('LIBERAR_RESERVA', ['identificador_reserva' => $reserva], Existencias::uuid(), 'fecha');
+    }
+    public function test_reserva_sin_version_tolera_movimientos_ajenos_sin_sobrevender(): void
+    {
+        [$dominio, $id] = $this->preparada();
+        // Otro cliente movió la variante: con versión obligatoria esta compra legítima fallaría.
+        $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido-a', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 6]]], Existencias::uuid(), 'fecha');
+        $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido-b', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 4]]], Existencias::uuid(), 'fecha');
+        self::assertSame(0, $dominio->pública($id)['disponible']);
+        try {
+            $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido-c', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 1]]], Existencias::uuid(), 'fecha');
+            self::fail('No debe reservar más de lo disponible.');
+        } catch (ErrorDeExistencias $error) { self::assertSame(409, $error->estado); }
+    }
+    public function test_reserva_rechaza_version_porque_no_forma_parte_del_contrato(): void
+    {
+        [$dominio, $id] = $this->preparada();
+        try {
+            // Hay stock de sobra: el rechazo solo puede deberse al campo no admitido.
+            $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 1, 'versión_esperada' => 2]]], Existencias::uuid(), 'fecha');
+            self::fail('Debe rechazar la versión en una línea de reserva.');
+        } catch (ErrorDeExistencias $error) {
+            self::assertSame(422, $error->estado);
+            self::assertSame('Línea de reserva inválida.', $error->getMessage());
+            self::assertSame(10, $dominio->pública($id)['disponible']);
+        }
     }
     public function test_identidad_no_cambia_con_historial(): void
     {
@@ -79,7 +104,7 @@ final class ExistenciasTest extends TestCase
     {
         [$dominio, $id] = $this->preparada();
         try {
-            $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 2, 'versión_esperada' => 2], ['identificador_variante' => Existencias::uuid(), 'cantidad' => 2, 'versión_esperada' => 1]]], Existencias::uuid(), 'fecha');
+            $dominio->ejecutar('RESERVAR', ['identificador' => Existencias::uuid(), 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 2], ['identificador_variante' => Existencias::uuid(), 'cantidad' => 2]]], Existencias::uuid(), 'fecha');
             self::fail('Debió rechazar la reserva.');
         } catch (ErrorDeExistencias) { self::assertSame(0, $dominio->pública($id)['reservada']); }
     }
@@ -96,7 +121,7 @@ final class ExistenciasTest extends TestCase
         [$dominio, $id] = $this->preparada();
         for ($versión = 2; $versión < 254; $versión++) $dominio->ejecutar('CONFIGURAR_MINIMO', ['identificador_variante' => $id, 'mínimo' => 0, 'versión_esperada' => $versión], Existencias::uuid(), 'fecha');
         $reserva = Existencias::uuid();
-        $dominio->ejecutar('RESERVAR', ['identificador' => $reserva, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 1, 'versión_esperada' => 254]]], Existencias::uuid(), 'fecha');
+        $dominio->ejecutar('RESERVAR', ['identificador' => $reserva, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 1]]], Existencias::uuid(), 'fecha');
         try {
             $dominio->ejecutar('CONFIGURAR_MINIMO', ['identificador_variante' => $id, 'mínimo' => 0, 'versión_esperada' => 255], Existencias::uuid(), 'fecha');
             self::fail('Debe reservar espacio para la compensación.');

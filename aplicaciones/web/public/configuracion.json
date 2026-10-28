@@ -1,1 +1,5 @@
-{ "apiInventario": "/api/v1" }
+{
+  "apiInventario": "/api/v1",
+  "apiVentas": "/api/v1",
+  "identidad": { "autoridad": "http://127.0.0.1:18000/identidad/realms/clb", "cliente": "clb-web" }
+}

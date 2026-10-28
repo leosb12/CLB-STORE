@@ -1,0 +1,13 @@
+{
+  "entorno": "emulador propio, qemu=1 comprobado",
+  "operaciones": [
+    "crear marcador privado",
+    "tar en memoria",
+    "desinstalar APK de ensayo",
+    "instalar APK normal",
+    "restaurar via Base64+tar como harness",
+    "comparar bytes y retirar solo marcador"
+  ],
+  "resultado": "APROBADO",
+  "limitacion": "prueba mecanismo de archivos; no demuestra todas las sesiones OIDC ni migraciones posibles"
+}

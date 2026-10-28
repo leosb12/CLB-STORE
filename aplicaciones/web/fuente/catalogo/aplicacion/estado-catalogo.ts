@@ -7,8 +7,10 @@ import {
   signal,
 } from "@angular/core";
 import type { FuenteCatalogo, Producto } from "../dominio/modelos";
+import { recursoFotografia } from "../dominio/imagen-prenda";
 import { RepositorioLocal } from "../adaptadores/repositorio-local";
 import { Sincronizador } from "./sincronizador";
+import { VENTAS_REST } from "../../pedidos/adaptadores/ventas-rest";
 import { ADMINISTRACION_REST } from "../../administracion/adaptadores/administracion-rest";
 
 export const FUENTE_CATALOGO = new InjectionToken<FuenteCatalogo>(
@@ -20,14 +22,28 @@ export class EstadoCatalogo {
   readonly local = new RepositorioLocal();
   private readonly remoto = inject(FUENTE_CATALOGO);
   private readonly administración = inject(ADMINISTRACION_REST);
+  private readonly ventas = inject(VENTAS_REST);
   private readonly motor = new Sincronizador(
     this.local,
     this.remoto,
-    this.administración.procesadores(),
+    [...this.administración.procesadores(), ...this.ventas.procesadores()],
   );
   readonly revisiónLocal = signal(0);
   readonly errorAdministracion = signal("");
   readonly productos = signal<Producto[]>([]);
+  private readonly fotos = signal(new Map<string,string>());
+  imagen(producto: Producto, probador = false, color?: string): string {
+    if (color && producto.recurso_probador && color !== producto.recurso_probador.color) return ilustraciónProducto(producto.categoría);
+    const hash = producto.recurso_probador?.sha256;
+    return hash && this.fotos().get(hash) || ilustraciónProducto(producto.categoría,producto.sku,probador);
+  }
+  tieneTextura(producto: Producto): boolean { return !!producto.recurso_probador && this.fotos().has(producto.recurso_probador.sha256); }
+  /** Modelo 3D y espalda guardada en este dispositivo para la realidad aumentada; undefined si la prenda no los tiene. */
+  modelo3d(producto: Producto): { modelo: unknown; espalda: string } | undefined {
+    const r = producto.recurso_probador;
+    const espalda = r?.esquema === 2 && r.espalda ? this.fotos().get(r.espalda.sha256) : undefined;
+    return r?.esquema === 2 && r.modelo3d && espalda ? { modelo: r.modelo3d, espalda } : undefined;
+  }
   readonly favoritos = signal<Set<string>>(new Set());
   readonly pendientes = signal(0);
   readonly cargando = signal(true);
@@ -63,6 +79,7 @@ export class EstadoCatalogo {
       clearInterval(intervalo);
       window.removeEventListener("online", recuperar);
       window.removeEventListener("offline", desconectar);
+      for (const url of this.fotos().values()) URL.revokeObjectURL(url);
       void this.local.cerrar();
     });
   }
@@ -72,6 +89,7 @@ export class EstadoCatalogo {
   }
 
   private async cargarInicial(): Promise<void> {
+    if (navigator.storage?.persist) void navigator.storage.persist().catch(() => false);
     try {
       await this.leerLocal();
     } catch {
@@ -84,6 +102,11 @@ export class EstadoCatalogo {
   }
 
   private async leerLocal(): Promise<void> {
+    const guardadas = await this.local.texturas();
+    const nuevas = new Map<string,string>();
+    for (const t of guardadas) nuevas.set(t.sha256,this.fotos().get(t.sha256) ?? URL.createObjectURL(t.blob));
+    for (const [hash,url] of this.fotos()) if (!nuevas.has(hash)) URL.revokeObjectURL(url);
+    this.fotos.set(nuevas);
     const [productos, favoritos, operaciones, fecha] = await Promise.all([
       this.local.productos(),
       this.local.favoritos(),
@@ -108,8 +131,12 @@ export class EstadoCatalogo {
     this.revisiónLocal.update((valor) => valor + 1);
   }
 
+  private repetición?: Promise<void>;
+
   async sincronizar(forzar = false): Promise<void> {
-    if (this.sincronizando()) return;
+    // Una pasada en curso leyó la cola antes de esta llamada (p. ej., un pedido recién confirmado):
+    // se encadena una sola pasada adicional al terminar, en vez de descartar la solicitud.
+    if (this.sincronizando()) return (this.repetición ??= this.repetirAlTerminar(forzar));
     if (!navigator.onLine) {
       this.desdeCaché.set(true);
       this.disponible.set(false);
@@ -155,6 +182,12 @@ export class EstadoCatalogo {
     }
   }
 
+  private async repetirAlTerminar(forzar: boolean): Promise<void> {
+    while (this.sincronizando()) await new Promise((resolver) => setTimeout(resolver, 200));
+    this.repetición = undefined;
+    return this.sincronizar(forzar);
+  }
+
   async alternarFavorito(identificador: string): Promise<void> {
     try {
       await this.local.alternarFavorito(identificador);
@@ -171,6 +204,11 @@ export class EstadoCatalogo {
     if (navigator.onLine && this.disponible()) {
       try {
         const producto = await this.remoto.consultar(identificador);
+        if (producto.recurso_probador) {
+          // Un detalle nuevo no activa referencias antes de descargar su generación completa.
+          await this.sincronizar(true);
+          return await this.local.producto(identificador) ?? producto;
+        }
         await this.local.guardarProducto(producto);
         return producto;
       } catch (error) {
@@ -187,7 +225,9 @@ export class EstadoCatalogo {
   }
 }
 
-export function ilustraciónProducto(categoría: string): string {
+export function ilustraciónProducto(categoría: string, sku?: string, probador = false): string {
+  const foto = recursoFotografia(sku, probador);
+  if (foto) return foto;
   const nombre = categoría.toLocaleLowerCase("es");
   if (nombre.includes("pantal")) return "/ilustraciones/pantalon.svg";
   if (nombre.includes("vestid")) return "/ilustraciones/vestido.svg";

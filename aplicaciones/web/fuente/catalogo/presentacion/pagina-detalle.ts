@@ -5,6 +5,9 @@ import { ADMINISTRACION_REST } from "../../administracion/adaptadores/administra
 import { EstadoCarrito } from "../../existencias/aplicacion/estado-carrito";
 import type { Variante } from "../../existencias/dominio/modelos";
 import type { Producto } from "../dominio/modelos";
+import { fotografiaPrenda } from "../dominio/imagen-prenda";
+import { varianteDeTalla } from "../../probador/aplicacion/talla-sugerida";
+import { prepararProbador } from "../../probador/adaptadores/cargador-probador";
 import {
   EstadoCatalogo,
   ilustraciónProducto,
@@ -17,17 +20,21 @@ import {
   template: ` <a class="volver" routerLink="/catalogo">← Volver al catálogo</a>
     @if (producto(); as prenda) {
       <article class="detalle">
-        <div class="imagen-detalle">
+        <div class="imagen-detalle" [class.fotografica]="(prenda.recurso_probador || esFoto(prenda.sku))">
           <img
-            [src]="this['ilustración'](prenda['categoría'])"
-            alt="Ilustración de referencia de la prenda"
+            [src]="estado.imagen(prenda, false, elegida()?.color)"
+            [alt]="(prenda.recurso_probador || esFoto(prenda.sku)) ? prenda.nombre : 'Ilustración de referencia de la prenda'"
             width="420"
             height="460"
-          /><span>Ilustración de referencia</span>
+          /><span>{{ prenda.recurso_probador ? 'Fotografía de la prenda · color ' + prenda.recurso_probador.color : esFoto(prenda.sku) ? 'Fotografía de la colección de demostración' : 'Ilustración de referencia' }}</span>
         </div>
         <div class="información-detalle">
-          <p class="antetítulo">{{ prenda["categoría"] }}</p>
+          <span class="categoría-detalle">{{ prenda["categoría"] }}</span>
           <h1>{{ prenda.nombre }}</h1>
+          @if (prenda.recurso_probador) { <p>Fotografía disponible en color {{prenda.recurso_probador.color}}. @if (elegida() && elegida()?.color !== prenda.recurso_probador.color) { La variante seleccionada usa una ilustración de referencia. }</p> }
+          @if (!prenda.recurso_probador && esFoto(prenda.sku)) {
+            <p><a href="/prendas/CREDITOS.txt" target="_blank" rel="noopener">Fotos: PNGimg.com · CC BY-NC 4.0</a></p>
+          }
           <p class="precio-detalle">{{ precio(prenda.precio) }}</p>
           <p class="descripción">
             {{
@@ -45,6 +52,7 @@ import {
                 : "♡ Guardar en favoritos"
             }}
           </button>
+          <a class="botón-secundario probar-virtualmente" [routerLink]="['/productos', prenda.identificador, 'probador']">Probar virtualmente</a>
           <dl>
             <div>
               <dt>SKU</dt>
@@ -94,6 +102,7 @@ export class PaginaDetalle {
   readonly producto = signal<Producto | undefined>(undefined);
   readonly error = signal("");
   readonly ilustración = ilustraciónProducto;
+  readonly esFoto = fotografiaPrenda;
   readonly precio = precioEnBob;
   private readonly remotoVariantes = inject(ADMINISTRACION_REST);
   private readonly carrito = inject(EstadoCarrito);
@@ -105,6 +114,14 @@ export class PaginaDetalle {
   cantidad = 1;
   private consulta = 0;
   private productoVariantes = "";
+  /** Talla sugerida por el probador (?talla=M): se preselecciona su variante si aún no hay una elegida. */
+  private tallaSugerida: string | null = null;
+  private colorSugerido: string | null = null;
+  private preseleccionar(): void {
+    if (this.seleccion) return;
+    const variante = varianteDeTalla(this.variantes().filter(v => !this.colorSugerido || v.color === this.colorSugerido), this.tallaSugerida);
+    if (variante) this.seleccion = variante.identificador;
+  }
   elegida(): Variante | undefined { return this.variantes().find(v => v.identificador === this.seleccion); }
   async agregar(): Promise<void> {
     const producto = this.producto(), variante = this.elegida();
@@ -120,6 +137,7 @@ export class PaginaDetalle {
       const locales = await this.estado.local.variantes(id);
       if (turno !== this.consulta) return;
       this.variantes.set(locales);
+      this.preseleccionar();
       if (!locales.length) this.avisoVariantes.set(navigator.onLine ? "Consultando variantes en Inventario…" : "No hay variantes descargadas. Conéctate para consultar tallas, colores y existencias.");
       if (navigator.onLine) {
         const variantes = await this.remotoVariantes.variantes(id);
@@ -127,6 +145,7 @@ export class PaginaDetalle {
         await this.estado.local.guardarVariantes(id, variantes);
         this.variantes.set(variantes); this.guardadas.set(false); this.avisoVariantes.set("");
         if (!variantes.some(variante => variante.identificador === this.seleccion)) this.seleccion = "";
+        this.preseleccionar();
       }
     } catch { this.avisoVariantes.set("No se pudieron consultar variantes actuales. Solo se muestran las descargadas."); }
   }
@@ -137,11 +156,15 @@ export class PaginaDetalle {
       const producto = this.producto();
       if (producto) void this.cargarVariantes(producto.identificador);
     });
+    ruta.queryParamMap.subscribe((consulta) => { this.tallaSugerida = consulta.get("talla"); this.colorSugerido = consulta.get("color"); });
     ruta.paramMap.subscribe((parámetros) => {
       this.producto.set(undefined);
       void this.estado
         .consultar(parámetros.get("identificador") ?? "")
-        .then((producto) => this.producto.set(producto))
+        .then((producto) => {
+          this.producto.set(producto);
+          prepararProbador();
+        })
         .catch(() =>
           this.error.set(
             "El producto no existe, no está activo o aún no fue descargado para usarlo sin conexión.",

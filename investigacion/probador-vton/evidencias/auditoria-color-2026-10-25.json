@@ -1,0 +1,183 @@
+{
+  "medidas": [
+    {
+      "rgb": [
+        255,
+        0,
+        0
+      ],
+      "pixel": [
+        255,
+        0,
+        0,
+        255
+      ],
+      "variantesLuz": [
+        [
+          255,
+          0,
+          0,
+          255
+        ],
+        [
+          255,
+          0,
+          0,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true,
+      "alfaCanvasPredeterminado": 255
+    },
+    {
+      "rgb": [
+        0,
+        255,
+        0
+      ],
+      "pixel": [
+        0,
+        255,
+        0,
+        255
+      ],
+      "variantesLuz": [
+        [
+          0,
+          255,
+          0,
+          255
+        ],
+        [
+          0,
+          255,
+          0,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true
+    },
+    {
+      "rgb": [
+        0,
+        0,
+        255
+      ],
+      "pixel": [
+        0,
+        0,
+        255,
+        255
+      ],
+      "variantesLuz": [
+        [
+          0,
+          0,
+          255,
+          255
+        ],
+        [
+          0,
+          0,
+          255,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true
+    },
+    {
+      "rgb": [
+        128,
+        128,
+        128
+      ],
+      "pixel": [
+        128,
+        128,
+        128,
+        255
+      ],
+      "variantesLuz": [
+        [
+          128,
+          128,
+          128,
+          255
+        ],
+        [
+          128,
+          128,
+          128,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true
+    },
+    {
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "pixel": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "variantesLuz": [
+        [
+          255,
+          255,
+          255,
+          255
+        ],
+        [
+          255,
+          255,
+          255,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true
+    },
+    {
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "pixel": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "variantesLuz": [
+        [
+          0,
+          0,
+          0,
+          255
+        ],
+        [
+          0,
+          0,
+          0,
+          255
+        ]
+      ],
+      "alfaFueraAlAlejar": 0,
+      "contextoPerdido": true
+    }
+  ],
+  "errores": [],
+  "fecha": "2026-10-26",
+  "alcance": "WebGL real; no es métrica de fidelidad de difusión",
+  "error_maximo_rgb": 0
+}

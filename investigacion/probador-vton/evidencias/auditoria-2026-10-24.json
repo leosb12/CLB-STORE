@@ -1,0 +1,72 @@
+{
+  "gpu_inicial_v4": {
+    "motor": "CatVTON",
+    "categoria": "upper",
+    "carga_segundos": 151.79,
+    "inferencia_segundos": [
+      56.38,
+      29.42
+    ],
+    "cuda": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "vram_pico_mib": 3907.69,
+    "vram_reservada_pico_mib": 4232.0,
+    "resultado_sha256": "1cb14674d6d8950ea1995ed30eaef87cbba8d809c8fc2965e6511539cdb405ca",
+    "offline": true,
+    "pasos": 24,
+    "safety_checker": false,
+    "dispositivos": {
+      "unet": "cuda:0",
+      "vae": "cuda:0",
+      "densepose": "cuda:0",
+      "schp_atr": "cuda:0",
+      "schp_lip": "cuda:0",
+      "objetos": "cuda:0"
+    }
+  },
+  "red_errores": {
+    "preflight": 204,
+    "worker_apagado": 503,
+    "exceso_18_mib": 413,
+    "cors_en_errores": true,
+    "origen_externo_rechazado": true
+  },
+  "web_v5": {
+    "csp_produccion": true,
+    "prenda_blob": true,
+    "offline_ms": 226,
+    "borrado_remoto_http": 404,
+    "regeneracion_ms": 28527,
+    "solicitudes_post": 2
+  },
+  "offline_final_v7": {
+    "interfaces": [
+      "lo"
+    ],
+    "estado": "LISTO",
+    "bytes_png": 441989,
+    "sha256": "d4108fff0460b73e0d89158cead672ec897c4784b1f3029cbccacfd5a82e4c97",
+    "version_motor": "catvton-7818397-residente-v7-24-2.5-768x1024",
+    "segundos_aislado": 28.31
+  },
+  "selfie_final_v7": {
+    "foto": "selfie",
+    "segundos_con_cola": 52.39,
+    "manos_iguales": true,
+    "rostro_lip_igual": true,
+    "telefono_igual": true
+  },
+  "shell_final_v7": {
+    "shell": "Angular desplegado",
+    "microfrontend": "React desplegado",
+    "csp_real": true,
+    "prenda_blob": true,
+    "violaciones_csp": 0,
+    "generacion_ms": 28712
+  },
+  "apk_final": {
+    "version": "1.0.7+8",
+    "motor_v7_en_binario": true,
+    "sha256": "a978f10211511bbf31d1aae054646bea5deee18d32d9ada75e1a514d7a4db846",
+    "instalada": false
+  }
+}

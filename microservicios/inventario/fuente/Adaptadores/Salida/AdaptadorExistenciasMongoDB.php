@@ -70,6 +70,15 @@ final readonly class AdaptadorExistenciasMongoDB implements RepositorioExistenci
         }
     }
 
+    public function eventos(int $desde, int $límite): array
+    {
+        $documentos = $this->colección->aggregate([
+            ['$match' => ['_id' => self::IDENTIFICADOR]],
+            ['$project' => ['_id' => 0, 'total' => ['$size' => '$eventos'], 'eventos' => ['$slice' => ['$eventos', $desde, $límite]]]],
+        ], ['typeMap' => ['root' => 'array', 'document' => 'array', 'array' => 'array']])->toArray();
+        return $documentos[0] ?? ['total' => 0, 'eventos' => []];
+    }
+
     public function migrar(): int
     {
         // SKU continúa siendo la referencia comercial del producto. No se infieren atributos ni saldos.

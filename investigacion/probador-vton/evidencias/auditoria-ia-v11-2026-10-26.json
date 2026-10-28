@@ -1,0 +1,73 @@
+{
+  "sku": "CLB-FOTO-CAM-NEG",
+  "version_motor": "catvton-7818397-residente-v11-24-2.5-768x1024",
+  "movil_sin_desborde": true,
+  "shell": "Angular desplegado",
+  "microfrontend": "React desplegado",
+  "csp_real": true,
+  "prenda_blob": true,
+  "violaciones_csp": 0,
+  "generacion_ms": 55445,
+  "fecha_revision": "2026-10-26",
+  "dimensiones": [
+    1200,
+    1798
+  ],
+  "region_rostro_verificada": [
+    460,
+    240,
+    680,
+    430
+  ],
+  "error_maximo_rgb_region_rostro": 17,
+  "aceptacion_visual": false,
+  "defectos_visuales": [
+    "Halo claro alrededor del contorno",
+    "Restos de camiseta anterior en cuello y borde inferior"
+  ],
+  "alcance": "Una persona frontal de demostración; no certifica conservación universal ni fidelidad de prenda.",
+  "referencia_comparacion": "Entrada decodificada por leer_imagen; JPEG sin perfil ICC",
+  "pixeles_distintos_region_rostro": 525,
+  "pixeles_region_rostro": 41800,
+  "region_central_rostro": [
+    500,
+    260,
+    650,
+    400
+  ],
+  "error_maximo_rgb_region_central": 0,
+  "ensayos_adicionales": [
+    {
+      "sku": "CLB-FOTO-POL-ROJ",
+      "version_motor": "catvton-7818397-residente-v11-24-2.5-768x1024",
+      "movil_sin_desborde": true,
+      "shell": "Angular desplegado",
+      "microfrontend": "React desplegado",
+      "csp_real": true,
+      "prenda_blob": true,
+      "violaciones_csp": 0,
+      "generacion_ms": 65828,
+      "aceptacion_visual": false,
+      "defectos_visuales": [
+        "Halo claro exterior visible"
+      ],
+      "fecha_revision": "2026-10-26"
+    },
+    {
+      "sku": "CLB-FOTO-POL-GRI",
+      "version_motor": "catvton-7818397-residente-v11-24-2.5-768x1024",
+      "movil_sin_desborde": true,
+      "shell": "Angular desplegado",
+      "microfrontend": "React desplegado",
+      "csp_real": true,
+      "prenda_blob": true,
+      "violaciones_csp": 0,
+      "generacion_ms": 39504,
+      "aceptacion_visual": false,
+      "defectos_visuales": [
+        "Halo claro exterior visible"
+      ],
+      "fecha_revision": "2026-10-26"
+    }
+  ]
+}

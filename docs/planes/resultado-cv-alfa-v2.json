@@ -1,0 +1,151 @@
+{
+  "origen": "sintetico-programatico",
+  "modelo_sha256": "8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491",
+  "validas_aprobadas": 12,
+  "invalidas_rechazadas": 4,
+  "p95_segundos": 0.89715,
+  "cumple_conjunto_sintetico": true,
+  "generalizacion_fotografica_demostrada": false,
+  "resultados": [
+    {
+      "id": "valida-01",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9892255007432105,
+      "error_anclas_maximo": 0.006535947712418277,
+      "cumple": true,
+      "segundos": 0.584
+    },
+    {
+      "id": "valida-02",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9961329144728109,
+      "error_anclas_maximo": 0.006550218340611369,
+      "cumple": true,
+      "segundos": 0.5392
+    },
+    {
+      "id": "valida-03",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9930601256356566,
+      "error_anclas_maximo": 0.0065359477124183885,
+      "cumple": true,
+      "segundos": 0.5039
+    },
+    {
+      "id": "valida-04",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9917281430209766,
+      "error_anclas_maximo": 0.006535947712418305,
+      "cumple": true,
+      "segundos": 0.604
+    },
+    {
+      "id": "valida-05",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9940208430051067,
+      "error_anclas_maximo": 0.008733624454148492,
+      "cumple": true,
+      "segundos": 0.7969
+    },
+    {
+      "id": "valida-06",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9841442844167639,
+      "error_anclas_maximo": 0.006521739130434856,
+      "cumple": true,
+      "segundos": 0.8301
+    },
+    {
+      "id": "valida-07",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9877779723340921,
+      "error_anclas_maximo": 0.006521739130434856,
+      "cumple": true,
+      "segundos": 0.7772
+    },
+    {
+      "id": "valida-08",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9965726655041789,
+      "error_anclas_maximo": 0.008733624454148381,
+      "cumple": true,
+      "segundos": 0.8326
+    },
+    {
+      "id": "valida-09",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9916284469297493,
+      "error_anclas_maximo": 0.0065359477124183885,
+      "cumple": true,
+      "segundos": 0.8938
+    },
+    {
+      "id": "valida-10",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9919131125999708,
+      "error_anclas_maximo": 0.006535947712418277,
+      "cumple": true,
+      "segundos": 0.8727
+    },
+    {
+      "id": "valida-11",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9946220656645782,
+      "error_anclas_maximo": 0.006578947368421073,
+      "cumple": true,
+      "segundos": 0.9072
+    },
+    {
+      "id": "valida-12",
+      "valida": true,
+      "estado": "LISTO",
+      "iou": 0.9840887289217279,
+      "error_anclas_maximo": 0.006521739130434745,
+      "cumple": true,
+      "segundos": 0.8881
+    },
+    {
+      "id": "invalida-cortada",
+      "valida": false,
+      "estado": "REQUIERE_REVISION",
+      "motivo": "La prenda está cortada o toca los bordes.",
+      "cumple": true,
+      "segundos": 0.8733
+    },
+    {
+      "id": "invalida-maniqui",
+      "valida": false,
+      "estado": "REQUIERE_REVISION",
+      "motivo": "La prenda toca el borde: deja margen alrededor de toda la prenda.",
+      "cumple": true,
+      "segundos": 0.8674
+    },
+    {
+      "id": "invalida-multiples",
+      "valida": false,
+      "estado": "REQUIERE_REVISION",
+      "motivo": "Hay varios objetos: fotografía una sola prenda.",
+      "cumple": true,
+      "segundos": 0.8557
+    },
+    {
+      "id": "invalida-contraste",
+      "valida": false,
+      "estado": "REQUIERE_REVISION",
+      "motivo": "La prenda está cortada o toca los bordes.",
+      "cumple": true,
+      "segundos": 0.8524
+    }
+  ]
+}

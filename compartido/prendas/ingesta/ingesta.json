@@ -1,0 +1,10 @@
+[
+  {"sku":"CLB-ING-JEA-CEL","nombre":"Jean celeste recto","categoria":"Pantalones","color":"Celeste","precio":"249.00","archivo":"jean-celeste-recto","fuente":"https://pngimg.com/image/5766"},
+  {"sku":"CLB-ING-JEA-GAS","nombre":"Jean claro gastado","categoria":"Pantalones","color":"Azul claro","precio":"239.00","archivo":"jean-claro-gastado","fuente":"https://pngimg.com/image/5767"},
+  {"sku":"CLB-ING-JEA-IND","nombre":"Jean índigo","categoria":"Pantalones","color":"Índigo","precio":"269.00","archivo":"jean-indigo","fuente":"https://pngimg.com/image/5776"},
+  {"sku":"CLB-ING-BUZ-GRI","nombre":"Buzo gris con capucha","categoria":"Buzos","color":"Gris oscuro","precio":"229.00","archivo":"buzo-gris-capucha","fuente":"https://pngimg.com/image/104424"},
+  {"sku":"CLB-ING-BUZ-AZU","nombre":"Buzo azul con capucha","categoria":"Buzos","color":"Azul","precio":"229.00","archivo":"buzo-azul-capucha","fuente":"https://pngimg.com/image/104416"},
+  {"sku":"CLB-ING-POL-VER","nombre":"Polerón verde cuello redondo","categoria":"Buzos","color":"Verde","precio":"199.00","archivo":"poleron-verde","fuente":"https://pngimg.com/image/104430"},
+  {"sku":"CLB-ING-SUE-GRI","nombre":"Suéter gris cuello en V","categoria":"Suéteres","color":"Gris","precio":"219.00","archivo":"sueter-gris-cuello-v","fuente":"https://pngimg.com/image/104437"},
+  {"sku":"CLB-ING-SUE-BUR","nombre":"Suéter burdeos","categoria":"Suéteres","color":"Burdeos","precio":"239.00","archivo":"sueter-burdeos","fuente":"https://pngimg.com/image/104434"}
+]

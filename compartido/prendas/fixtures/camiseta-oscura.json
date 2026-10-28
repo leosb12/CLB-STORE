@@ -1,0 +1,18 @@
+{
+  "descripcion": "Fixture sintético de regresión: camiseta y pantalón, estampado anterior, mano y teléfono. No demuestra realismo fotográfico.",
+  "ancho": 256,
+  "alto": 320,
+  "fondo": [23, 25, 30],
+  "formas": [
+    {"caja": [70, 80, 190, 230], "color": [48, 58, 60], "clase": 4},
+    {"caja": [45, 90, 215, 130], "color": [48, 58, 60], "clase": 4},
+    {"caja": [45, 40, 70, 110], "color": [48, 58, 60], "clase": 4},
+    {"caja": [75, 230, 185, 280], "color": [30, 42, 65], "clase": 4},
+    {"caja": [90, 115, 108, 126], "color": [220, 220, 220], "clase": 4},
+    {"caja": [123, 112, 146, 162], "color": [15, 18, 19], "clase": 5},
+    {"caja": [137, 145, 170, 172], "color": [180, 130, 100], "clase": 2}
+  ],
+  "puntos": [[5, 75, 90], [6, 185, 90], [7, 55, 50], [8, 205, 150], [11, 90, 205], [12, 170, 205]],
+  "inalterados": [[10, 20], [135, 120], [160, 160], [125, 250]],
+  "cubiertos": [[55, 55], [85, 190], [55, 110], [205, 110]]
+}

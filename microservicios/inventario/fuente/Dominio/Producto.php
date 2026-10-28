@@ -27,6 +27,7 @@ final readonly class Producto
         public DateTimeImmutable $fechaCreación,
         ?DateTimeImmutable $fechaActualización = null,
         public int $versiónSincronización = 1,
+        public ?array $recursoProbador = null,
     ) {
         if ($versiónSincronización < 1) {
             throw new ReglaDeProductoIncumplida('versión', 'La versión debe ser un entero positivo.');
@@ -54,6 +55,6 @@ final readonly class Producto
     public function modificar(CodigoSku $sku, string $nombre, string $descripción, string $categoría, PrecioEnBolivianos $precio, bool $activo, DateTimeImmutable $fecha): self
     {
         return new self($this->identificador, $sku, $nombre, $descripción, $categoría, $precio, $activo,
-            $this->fechaCreación, $fecha, $this->versiónSincronización + 1);
+            $this->fechaCreación, $fecha, $this->versiónSincronización + 1, $this->recursoProbador);
     }
 }

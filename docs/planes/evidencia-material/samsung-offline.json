@@ -1,0 +1,166 @@
+{
+  "modelo": "SM-S911U",
+  "android": "16",
+  "ajustes_originales": {
+    "airplane_mode_on": "0",
+    "wifi_on": "1",
+    "mobile_data": "1"
+  },
+  "antes": {
+    "bateria_c": 41.0,
+    "estado_termico": 2,
+    "utc": "2026-10-24T03:02:38.535384+00:00"
+  },
+  "muestras_termicas": [
+    {
+      "bateria_c": 40.8,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:02:41.010284+00:00"
+    },
+    {
+      "bateria_c": 40.8,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:02:46.240861+00:00"
+    },
+    {
+      "bateria_c": 40.7,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:02:51.550837+00:00"
+    },
+    {
+      "bateria_c": 40.7,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:02:56.766318+00:00"
+    },
+    {
+      "bateria_c": 40.7,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:02.035916+00:00"
+    },
+    {
+      "bateria_c": 40.7,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:07.298890+00:00"
+    },
+    {
+      "bateria_c": 40.6,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:12.563293+00:00"
+    },
+    {
+      "bateria_c": 40.6,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:17.808929+00:00"
+    },
+    {
+      "bateria_c": 40.4,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:23.088311+00:00"
+    },
+    {
+      "bateria_c": 40.4,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:28.317729+00:00"
+    },
+    {
+      "bateria_c": 40.6,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:33.535865+00:00"
+    },
+    {
+      "bateria_c": 40.6,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:38.765005+00:00"
+    },
+    {
+      "bateria_c": 41.1,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:44.035971+00:00"
+    },
+    {
+      "bateria_c": 41.1,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:49.964271+00:00"
+    },
+    {
+      "bateria_c": 41.3,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:03:55.221460+00:00"
+    },
+    {
+      "bateria_c": 41.3,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:00.443293+00:00"
+    },
+    {
+      "bateria_c": 41.4,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:05.630943+00:00"
+    },
+    {
+      "bateria_c": 41.4,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:10.837499+00:00"
+    },
+    {
+      "bateria_c": 41.2,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:16.041432+00:00"
+    },
+    {
+      "bateria_c": 41.2,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:21.204002+00:00"
+    },
+    {
+      "bateria_c": 40.9,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:26.354971+00:00"
+    },
+    {
+      "bateria_c": 40.9,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:31.522595+00:00"
+    },
+    {
+      "bateria_c": 40.6,
+      "estado_termico": 2,
+      "utc": "2026-10-24T03:04:36.682925+00:00"
+    }
+  ],
+  "pruebas": [
+    {
+      "archivo": "fotos_privadas_test.dart",
+      "codigo_salida": 0,
+      "composiciones_ms": [
+        3439,
+        2865,
+        2812,
+        2811
+      ]
+    },
+    {
+      "archivo": "dispositivo_test.dart",
+      "codigo_salida": 0
+    }
+  ],
+  "apk_normal_restaurada": true,
+  "sin_red": {
+    "airplane_mode_on": "1",
+    "wifi_on": "0",
+    "mobile_data": "0"
+  },
+  "reverse_api_ausente": true,
+  "resultados_recogidos": true,
+  "despues": {
+    "bateria_c": 40.7,
+    "estado_termico": 2,
+    "utc": "2026-10-24T03:04:41.856141+00:00"
+  },
+  "reverse_api_restaurado": true,
+  "ajustes_finales": {
+    "airplane_mode_on": "0",
+    "wifi_on": "1",
+    "mobile_data": "1"
+  }
+}

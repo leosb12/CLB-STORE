@@ -11,6 +11,7 @@ final class RepresentacionProducto
     public static function de(Producto $producto): array
     {
         return [
+            ...($producto->recursoProbador === null ? [] : ['recurso_probador' => $producto->recursoProbador]),
             'identificador' => $producto->identificador, 'sku' => $producto->sku->valor,
             'nombre' => $producto->nombre, 'descripción' => $producto->descripción,
             'categoría' => $producto->categoría, 'precio' => $producto->precio->comoTexto(),

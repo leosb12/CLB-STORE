@@ -32,3 +32,20 @@ Route::middleware(\Clb\Inventario\Adaptadores\Entrada\RestringirAdministracion::
 });
 Route::get('/v1/productos', [\Clb\Inventario\Adaptadores\Entrada\ControladorConsultaProductosHttp::class, 'listar']);
 Route::get('/v1/productos/{identificador}', [\Clb\Inventario\Adaptadores\Entrada\ControladorConsultaProductosHttp::class, 'consultar']);
+
+// Preparación fotográfica: los middleware existentes verifican identidad y rol en el servicio.
+Route::middleware(\Clb\Inventario\Adaptadores\Entrada\RestringirAdministracion::class)->group(function () {
+    $c=\Clb\Inventario\Adaptadores\Entrada\ControladorRecursosProbadorHttp::class;
+    Route::get('/v1/administracion/recursos-probador/capacidades',[$c,'capacidades']);
+    Route::post('/v1/productos/{id}/recursos-probador',[$c,'cargar']);
+    Route::get('/v1/productos/{id}/recursos-probador/{trabajo}',[$c,'consultar']);
+    Route::get('/v1/productos/{id}/recursos-probador/{trabajo}/previsualizacion',[$c,'previsualizar']);
+    Route::post('/v1/productos/{id}/recursos-probador/{trabajo}/publicar',[$c,'publicar']);
+});
+Route::middleware(\Clb\Inventario\Adaptadores\Entrada\RestringirReservas::class)->group(function () {
+    $c=\Clb\Inventario\Adaptadores\Entrada\ControladorRecursosProbadorHttp::class;
+    Route::post('/v1/interno/recursos-probador/reclamar',[$c,'reclamar']);
+    Route::get('/v1/interno/recursos-probador/{id}/{trabajo}/original',[$c,'original']);
+    Route::post('/v1/interno/recursos-probador/{id}/{trabajo}/resultado',[$c,'finalizar']);
+});
+Route::get('/v1/recursos-probador/{hash}.png',[\Clb\Inventario\Adaptadores\Entrada\ControladorRecursosProbadorHttp::class,'publico'])->where('hash','[a-f0-9]{64}');
