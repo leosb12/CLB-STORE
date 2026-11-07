@@ -69,6 +69,18 @@ final class ExistenciasTest extends TestCase
         $this->expectException(ErrorDeExistencias::class);
         $dominio->ejecutar('LIBERAR_RESERVA', ['identificador_reserva' => $reserva], Existencias::uuid(), 'fecha');
     }
+    public function test_variante_importada_sin_contador_conserva_limite_y_puede_reservarse(): void
+    {
+        [$dominio, $id] = $this->preparada();
+        unset($dominio->variantes[$id]['operaciones']);
+        $reserva = Existencias::uuid();
+        $dominio->ejecutar('RESERVAR', ['identificador' => $reserva, 'identificador_pedido' => 'pedido', 'líneas' => [['identificador_variante' => $id, 'cantidad' => 1]]], Existencias::uuid(), 'fecha');
+        self::assertSame(3, $dominio->variante($id)['operaciones']);
+        self::assertSame(9, $dominio->pública($id)['disponible']);
+        $dominio->ejecutar('CONSUMIR_RESERVA', ['identificador_reserva' => $reserva], Existencias::uuid(), 'fecha');
+        self::assertSame(4, $dominio->variante($id)['operaciones']);
+        self::assertSame(9, $dominio->pública($id)['física']);
+    }
     public function test_reserva_sin_version_tolera_movimientos_ajenos_sin_sobrevender(): void
     {
         [$dominio, $id] = $this->preparada();

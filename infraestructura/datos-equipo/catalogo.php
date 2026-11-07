@@ -64,7 +64,7 @@ foreach ($s['variantes'] as $v) {
     if (!isset($ids[$v['identificador_producto']]) || isset($variantes[$v['identificador']])) throw new RuntimeException('Variante inválida');
     $v['física'] = $s['stock_inicial']; $v['reservada'] = 0; $v['disponible'] = $s['stock_inicial'];
     $v['fecha_creación'] = $ahora->toDateTime()->format('Y-m-d\TH:i:s.v\Z'); $v['fecha_actualización'] = $v['fecha_creación'];
-    $v['versión_sincronización'] = 1; $v['movimientos'] = [];
+    $v['versión_sincronización'] = 1; $v['movimientos'] = []; $v['operaciones'] = 1;
     $variantes[$v['identificador']] = $v;
 }
 // Validar todos los archivos y documentos antes de la primera mutación.

@@ -37,6 +37,7 @@ vendor/
 **/resultados-vton/
 graphify-out/
 aplicaciones/web/test-results-material/
+docs/bshadow/
 
 # Salida local de la demo de la fase 8
 infraestructura/demostraciones/demo-reporte.xlsx

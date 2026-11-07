@@ -130,6 +130,9 @@ final class Existencias
     private function guardarCambio(string $id, array $variante, string $fecha, int $antes, string $operación, int $margenAdicional = 0): void
     {
         $this->saldo($variante);
+        // Las variantes de semillas anteriores no incluían este contador. La versión
+        // empieza en 1 y aumenta una vez por operación, así que conserva el límite.
+        $variante['operaciones'] ??= $variante['versión_sincronización'];
         // No se borran comprobantes, movimientos ni eventos para eludir los límites locales.
         $terminacionesPendientes = $margenAdicional;
         foreach ($this->reservas as $reserva) {

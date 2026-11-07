@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
@@ -99,6 +100,18 @@ class _VistaRAState extends State<VistaRA> {
       if (web.platform case final AndroidWebViewController android) {
         await AndroidWebViewController.enableDebugging(kDebugMode);
         await android.setMediaPlaybackRequiresUserGesture(false);
+        // El <input type="file"> del probador necesita un selector explícito en Android.
+        await android.setOnShowFileSelector((_) async {
+          final foto = await ImagePicker().pickImage(
+            source: ImageSource.gallery,
+            maxWidth: 1600,
+            maxHeight: 1600,
+            imageQuality: 92,
+          );
+          return foto == null
+              ? <String>[]
+              : <String>[Uri.file(foto.path).toString()];
+        });
       }
       await web.setJavaScriptMode(JavaScriptMode.unrestricted);
       await web.setBackgroundColor(Clb.crema);
