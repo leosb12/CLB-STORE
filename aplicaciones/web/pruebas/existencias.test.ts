@@ -90,16 +90,18 @@ test("confirmación incierta impide propuesta nueva sobre la misma variante", ()
   await local.guardarOperacion({ ...operación(), estado: "REQUIERE_REVISION", motivoRevision: "REINTENTOS_AGOTADOS" });
   await assert.rejects(local.encolarExistencias(operación()), /incierta/);
 }));
-test("REST envía UUID estable, clave y versión y rechaza confirmación inválida", async () => {
-  const op = operación(); let cuerpo: Record<string, unknown> = {}, clave = "";
+test("GraphQL de gestión envía UUID estable, clave y versión y rechaza confirmación inválida", async () => {
+  const op = operación(); let cuerpo: Record<string, unknown> = {}, clave = "", consulta = "";
+  const respuesta = (datos: unknown) => new Response(JSON.stringify({ data: { registrarMovimiento: datos } }));
   const remoto = new AdministracionRest("/api/v1", undefined, async (_url, opciones) => {
-    cuerpo = JSON.parse(String(opciones?.body)); clave = (opciones?.headers as Record<string, string>)["Idempotency-Key"];
-    return new Response(JSON.stringify({ variante: { ...variante, versión_sincronización: 3 } }), { status: 201 });
+    const envío = JSON.parse(String(opciones?.body)); consulta = envío.query; cuerpo = envío.variables.d; clave = envío.variables.c;
+    return respuesta({ variante: { ...variante, versión_sincronización: 3 } });
   });
   await remoto.enviarExistencias(op, new AbortController().signal); assert.equal(cuerpo["versión_esperada"], 2); assert.equal(clave, op.claveIdempotencia);
-  const inválido = new AdministracionRest("/api/v1", undefined, async () => new Response(JSON.stringify({ variante: { ...variante, disponible: -1 } })));
+  assert.match(consulta, /^mutation/);
+  const inválido = new AdministracionRest("/api/v1", undefined, async () => respuesta({ variante: { ...variante, disponible: -1 } }));
   await assert.rejects(inválido.enviarExistencias(op, new AbortController().signal), /confirmación válida/);
-  const sinCambio = new AdministracionRest("/api/v1", undefined, async () => new Response(JSON.stringify({ variante })));
+  const sinCambio = new AdministracionRest("/api/v1", undefined, async () => respuesta({ variante }));
   await assert.rejects(sinCambio.enviarExistencias(op, new AbortController().signal), /confirmación válida/);
 });
 test("reintento transitorio conserva clave, datos y versión resuelta", () => conBase(async local => {

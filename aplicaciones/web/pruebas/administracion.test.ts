@@ -127,28 +127,38 @@ test("dos pestañas no preparan duplicaciones locales del mismo producto pendien
     }
   }));
 
-test("REST conserva Idempotency-Key y versión esperada entre reintentos de escritura", async () => {
-  const solicitudes: RequestInit[] = [];
+test("GraphQL de gestión conserva Idempotency-Key y versión esperada entre reintentos de escritura", async () => {
+  const solicitudes: { url: string; cuerpo: { query: string; variables: { c: string; d: Record<string, unknown> } } }[] = [];
   const remoto = new AdministracionRest(
     "/api/v1",
     undefined,
-    async (_, opciones) => {
-      solicitudes.push(opciones!);
-      return Response.json({
-        producto: { ...producto, versión_sincronización: 2 },
-      });
+    async (url, opciones) => {
+      solicitudes.push({ url: String(url), cuerpo: JSON.parse(String(opciones!.body)) });
+      return Response.json({ data: { modificarProducto: { producto: { ...producto, versión_sincronización: 2 } } } });
     },
   );
   const operación = propuesta();
   await remoto.enviar(operación, new AbortController().signal);
   await remoto.enviar(operación, new AbortController().signal);
-  assert.deepEqual(solicitudes[0].headers, solicitudes[1].headers);
-  assert.equal(
-    (solicitudes[0].headers as Record<string, string>)["Idempotency-Key"],
-    operación.identificador,
-  );
-  assert.equal(JSON.parse(String(solicitudes[0].body))["versión_esperada"], 1);
-  assert.equal(solicitudes[0].body, solicitudes[1].body);
+  assert.equal(solicitudes[0].url, "/api/v1/graphql");
+  assert.match(solicitudes[0].cuerpo.query, /modificarProducto\(producto: \$p, clave: \$c, datos: \$d\)/);
+  assert.equal(solicitudes[0].cuerpo.variables.c, operación.identificador);
+  assert.equal(solicitudes[0].cuerpo.variables.d["versión_esperada"], 1);
+  assert.deepEqual(solicitudes[0].cuerpo, solicitudes[1].cuerpo);
+});
+
+test("GraphQL de gestión: un rechazo del propietario llega con su estado y su cuerpo (conflicto 409)", async () => {
+  const actual = { ...producto, versión_sincronización: 2 };
+  const remoto = new AdministracionRest("/api/v1", undefined, async () => Response.json({
+    data: null, errors: [{ message: "Otra escritura ganó.", extensions: { codigo: "CONFLICTO_VERSION", estado_http: 409,
+      cuerpo: { código: "CONFLICTO_VERSION", producto_actual: actual } } }],
+  }));
+  await assert.rejects(remoto.enviar(propuesta(), new AbortController().signal),
+    (error: ErrorRemoto) => error.estado === 409 && (error.detalles?.["producto_actual"] as typeof actual)?.versión_sincronización === 2);
+  const caído = new AdministracionRest("/api/v1", undefined, async () => Response.json({
+    data: null, errors: [{ message: "Inventario no disponible", extensions: { codigo: "SERVICIO_NO_DISPONIBLE", estado_http: 503 } }],
+  }));
+  await assert.rejects(caído.enviar(propuesta(), new AbortController().signal), (error: ErrorRemoto) => error.estado === 503);
 });
 
 test("conflicto 409 conserva propuesta, UUID y versión del servidor para revisión", async () =>

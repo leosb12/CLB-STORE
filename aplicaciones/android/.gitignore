@@ -46,3 +46,6 @@ app.*.map.json
 
 # Probador RA generado por preparar-probador.ps1 (build del microfrontend React y BlazePose).
 /assets/probador/
+
+# Configuración local de Firebase (push). Ver LEEME.md; sin este archivo la app compila sin push.
+/android/app/google-services.json

@@ -7,6 +7,7 @@ import 'estado_tienda.dart';
 import 'microfono.dart';
 import 'pantalla_existencias.dart';
 import 'tema.dart';
+import 'reporte_v2.dart';
 
 String _bs(Object? monto) => '${'$monto'.replaceAll('.', ',')} Bs';
 
@@ -459,7 +460,12 @@ class PantallaReportes extends StatefulWidget {
 }
 
 class _PantallaReportesState extends State<PantallaReportes> {
-  final _peticion = TextEditingController(text: 'Ventas por talla esta semana');
+  final _peticion = TextEditingController(
+    text: 'Ventas de esta semana por producto',
+  );
+
+  /// Salida elegida en la pantalla (índice de `salidasReporte`); la última elección explícita prevalece sobre el texto.
+  int _salida = 0;
 
   @override
   void dispose() {
@@ -467,20 +473,23 @@ class _PantallaReportesState extends State<PantallaReportes> {
     super.dispose();
   }
 
-  Future<void> _compartir() async {
-    final datos = await widget.g.excel();
+  Future<void> _compartir(String formato) async {
+    final pdf = formato.toLowerCase() == 'pdf';
+    final datos = await widget.g.archivo(pdf ? 'pdf' : 'excel');
     if (datos == null || !mounted) return;
+    final nombre = pdf ? 'reporte-clb.pdf' : 'reporte-clb.xlsx';
     await SharePlus.instance.share(
       ShareParams(
         files: [
           XFile.fromData(
             datos,
-            name: 'reporte-clb.xlsx',
-            mimeType:
-                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            name: nombre,
+            mimeType: pdf
+                ? 'application/pdf'
+                : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           ),
         ],
-        fileNameOverrides: const ['reporte-clb.xlsx'],
+        fileNameOverrides: [nombre],
       ),
     );
   }
@@ -493,7 +502,10 @@ class _PantallaReportesState extends State<PantallaReportes> {
       listenable: g,
       builder: (context, _) {
         final datos = (g.reporte?['datos'] as Map?) ?? const {};
-        final filas = ((datos['filas'] as List?) ?? const []).cast<Map>();
+        // Filas v1 (mapas clave/valor); un reporte v2 trae listas y lo dibuja ResultadoReporteV2.
+        final filas = esReporteV2(g.reporte)
+            ? const <Map>[]
+            : ((datos['filas'] as List?) ?? const []).cast<Map>();
         final maximo = filas.fold<num>(
           0,
           (m, f) => (f['valor'] as num) > m ? f['valor'] as num : m,
@@ -510,18 +522,35 @@ class _PantallaReportesState extends State<PantallaReportes> {
                 decoration: InputDecoration(
                   labelText: '¿Qué quieres ver?',
                   helperText:
-                      'Por ejemplo: «monto por categoría este mes» o «pedidos de hoy».',
+                      'Ej.: «ventas de esta semana con cliente, producto, cantidad, precio unitario y total, solo PDF».',
+                  helperMaxLines: 2,
                   suffixIcon: widget.microfono?.call(
                     (texto) => setState(() => _peticion.text = texto),
                   ),
                 ),
               ),
               const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                initialValue: _salida,
+                decoration: const InputDecoration(labelText: 'Salida'),
+                items: [
+                  for (var i = 0; i < salidasReporte.length; i++)
+                    DropdownMenuItem(
+                      value: i,
+                      child: Text(salidasReporte[i].$1),
+                    ),
+                ],
+                onChanged: (v) => setState(() => _salida = v ?? 0),
+              ),
+              const SizedBox(height: 12),
               FilledButton(
                 onPressed:
                     g.ocupado || !g.conectada || _peticion.text.trim().isEmpty
                     ? null
-                    : () => g.generarReporte(_peticion.text.trim()),
+                    : () => g.generarReporte(
+                        _peticion.text.trim(),
+                        formatos: salidasReporte[_salida].$2,
+                      ),
                 child: const Text('Generar reporte'),
               ),
               if (!g.conectada)
@@ -532,10 +561,21 @@ class _PantallaReportesState extends State<PantallaReportes> {
                   ),
                 ),
               if (g.ocupado)
-                const Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: LinearProgressIndicator(
-                    semanticsLabel: 'Generando el reporte',
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const LinearProgressIndicator(
+                        semanticsLabel: 'Generando el reporte',
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'El modelo de lenguaje del servidor interpreta la petición (no corre en este teléfono); '
+                        'si no responde, se usan reglas limitadas y se indica.',
+                        style: t.textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 ),
               if (g.aviso != null)
@@ -543,12 +583,25 @@ class _PantallaReportesState extends State<PantallaReportes> {
                   padding: const EdgeInsets.only(top: 12),
                   child: avisoEnLinea(context, g.aviso!),
                 ),
-              if (g.reporte != null) ...[
+              if (esReporteV2(g.reporte)) ...[
+                const SizedBox(height: 24),
+                ResultadoReporteV2(
+                  reporte: g.reporte!,
+                  deCopia: g.reporteDeCopia,
+                  conectada: g.conectada,
+                  compartir: _compartir,
+                ),
+              ] else if (g.reporte != null) ...[
                 const SizedBox(height: 24),
                 Text(
                   '${datos['titulo'] ?? 'Reporte'}',
                   style: t.textTheme.titleLarge,
                 ),
+                if (g.reporte!['interpretacion'] is String)
+                  Text(
+                    '${g.reporte!['interpretacion']}',
+                    style: t.textTheme.bodyMedium,
+                  ),
                 Text(
                   'Total: ${datos['total']} ${datos['unidad'] ?? ''} · Datos al '
                   '${fechaCorta(DateTime.tryParse('${datos['datos_al'] ?? g.reporte!['datos_al']}') ?? DateTime.now())}',
@@ -596,10 +649,21 @@ class _PantallaReportesState extends State<PantallaReportes> {
                     ),
                   ),
                 const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: g.conectada ? _compartir : null,
-                  icon: const Icon(Icons.ios_share),
-                  label: const Text('Compartir Excel'),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: g.conectada ? () => _compartir('excel') : null,
+                      icon: const Icon(Icons.table_chart_outlined),
+                      label: const Text('Compartir Excel'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: g.conectada ? () => _compartir('pdf') : null,
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('Compartir PDF'),
+                    ),
+                  ],
                 ),
               ],
             ],

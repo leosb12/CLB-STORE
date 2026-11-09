@@ -1,5 +1,5 @@
 import { Component, computed, input } from "@angular/core";
-import { compacto, formatoValor, marcasEje, type DatosReporte, type Visualizacion } from "../dominio/modelos";
+import { METRICAS, compacto, formatoValor, marcasEje, type DatosReporte, type Metrica, type Visualizacion } from "../dominio/modelos";
 
 const ANCHO = 680;
 const ETIQUETAS = 190;    // columna de nombres en barras horizontales
@@ -56,14 +56,19 @@ const MARGEN = { arriba: 16, derecha: 64, abajo: 34, izquierda: 52 };
         </svg>
       }
     }
-    @if (datos().filas.length || visualizacion() === "TABLA") {
+    @if (tabla() && (datos().filas.length || visualizacion() === "TABLA")) {
       <details class="tabla-reporte" [open]="visualizacion() === 'TABLA'">
         <summary>{{ visualizacion() === "TABLA" ? "Tabla del reporte" : "Ver como tabla" }}</summary>
         <div class="tabla-administracion"><table>
-          <thead><tr><th scope="col">{{ grupo() }}</th><th scope="col" class="numero">{{ datos().unidad }}</th></tr></thead>
+          <thead><tr><th scope="col">{{ grupo() }}</th>
+            @for (m of columnas(); track m) { <th scope="col" class="numero">{{ nombres[m] }}</th> }</tr></thead>
           <tbody>
-            @for (fila of datos().filas; track fila.clave) { <tr><td>{{ fila.clave }}</td><td class="numero">{{ texto(fila.valor) }}</td></tr> }
-            <tr class="total"><td>Total del periodo</td><td class="numero">{{ total() }}</td></tr>
+            @for (fila of datos().filas; track fila.clave) {
+              <tr><td>{{ fila.clave }}</td>
+                @for (m of columnas(); track m) { <td class="numero">{{ cifra(fila.valores?.[m] ?? (m === columnas()[0] ? fila.valor : 0), m) }}</td> }</tr>
+            }
+            <tr class="total"><td>Total del periodo</td>
+              @for (m of columnas(); track m) { <td class="numero">{{ cifra(datos().totales?.[m] ?? (m === columnas()[0] ? datos().total : 0), m) }}</td> }</tr>
           </tbody>
         </table></div>
       </details>
@@ -73,6 +78,8 @@ export class GraficoReporte {
   readonly datos = input.required<DatosReporte>();
   readonly visualizacion = input.required<Visualizacion>();
   readonly grupo = input("Grupo");
+  /** Los reportes v2 dibujan su propia tabla con las columnas pedidas: aquí solo el gráfico. */
+  readonly tabla = input(true);
   protected readonly ancho = ANCHO;
   protected readonly etiquetas = ETIQUETAS;
   protected readonly fila = FILA;
@@ -81,6 +88,17 @@ export class GraficoReporte {
   protected readonly margen = MARGEN;
 
   protected readonly total = computed(() => this.texto(this.datos().total));
+  protected readonly nombres = METRICAS;
+  /** Columnas pedidas; un reporte anterior a la ampliación solo trae la métrica principal. */
+  protected readonly columnas = computed<Metrica[]>(() => this.datos().columnas ?? [this.metricaPrincipal()]);
+
+  private metricaPrincipal(): Metrica {
+    return this.datos().unidad === "Bs" ? "MONTO" : this.datos().unidad === "pedidos" ? "PEDIDOS" : "UNIDADES";
+  }
+
+  protected cifra(valor: number, metrica: Metrica): string {
+    return formatoValor(valor, metrica === "MONTO" ? "Bs" : "");
+  }
   protected readonly descripcion = computed(() => `${this.datos().titulo}: ` +
     this.datos().filas.map(f => `${f.clave} ${this.texto(f.valor)}`).join(", "));
 

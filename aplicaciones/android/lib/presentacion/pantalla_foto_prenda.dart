@@ -111,9 +111,8 @@ class _PantallaFotoPrendaState extends State<PantallaFotoPrenda> {
   }
 
   Future<String> _token() async {
-    final token = await widget.tienda.tokenAdmin();
-    if (token == null || widget.tienda.ingesta == null) throw SinConexion();
-    return token;
+    if (widget.tienda.ingesta == null) throw SinConexion();
+    return widget.tienda.exigirTokenAdmin();
   }
 
   Future<void> _elegir(bool camara) async {

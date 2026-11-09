@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
 const raiz = fileURLToPath(new URL('../../../', import.meta.url));
-const flujos = ['clbStockBajo0001', 'clbComprobante01'].map(id =>
+const flujos = ['clbStockBajo0001', 'clbComprobante01', 'clbAvisosPedido1'].map(id =>
   JSON.parse(readFileSync(new URL(`../flujos/${id}.json`, import.meta.url), 'utf8')));
 const codigo = (flujo, nombre) => flujo.nodes.find(n => n.name === nombre).parameters.jsCode;
 const ejecutar = (js, contexto) => vm.runInNewContext(`(function () { ${js}\n})()`, contexto);
@@ -24,7 +24,7 @@ test('Git admite los adaptadores y sus pruebas, pero sigue excluyendo secretos y
 
 test('los JSON importados coinciden exactamente con el generador revisado', () => {
   const salida = execFileSync('python', ['-X', 'utf8', '-c',
-    "import runpy,json; m=runpy.run_path('infraestructura/automatizacion/generar-flujos.py'); print(json.dumps([m['flujo_stock_bajo'](),m['flujo_comprobante']()]))"], {cwd: raiz});
+    "import runpy,json; m=runpy.run_path('infraestructura/automatizacion/generar-flujos.py'); print(json.dumps([m['flujo_stock_bajo'](),m['flujo_comprobante'](),m['flujo_notificaciones']()]))"], {cwd: raiz});
   assert.deepEqual(flujos, JSON.parse(salida));
 });
 
@@ -40,6 +40,32 @@ for (const [i, destino] of ['IA', 'Ventas'].entries()) {
     assert.equal(entrada.main[0][0].node, i === 0 ? 'Avanzar cursor' : 'Un pedido a la vez');
   });
 }
+
+test('avisos: el cursor avanza solo tras el registro durable en Clientes; error temporal reintenta el mismo lote', () => {
+  const flujo = flujos[2];
+  const orden = Object.fromEntries(Object.entries(flujo.connections).map(([o, c]) => [o, c.main[0][0].node]));
+  assert.equal(orden['Registrar en Clientes'], 'Verificar registro');
+  assert.equal(orden['Verificar registro'], 'Avanzar cursor');
+  assert.equal(orden['Avanzar cursor'], 'Enviar avisos pendientes');
+  const estatico = {avisosDesde: '2026-11-09T12:00:00Z'};
+  const lote = ejecutar(codigo(flujo, 'Lote de avisos'), {$getWorkflowStaticData: () => estatico, $input: {first: () => ({json: {siguiente: 9, eventos: [
+    {identificador: 6, tipo: 'pedido_confirmado', fecha: '2026-11-08T10:00:00Z', datos: {identificador: 'antiguo', identificador_cliente: 'c0'}},
+    {identificador: 7, tipo: 'pedido_confirmado', fecha: '2026-11-09T12:00:01Z', datos: {identificador: 'p1', identificador_cliente: 'c1', email: 'no-viaja@x.bo', total: '1.00'}},
+    {identificador: 8, tipo: 'otro', fecha: '2026-11-09T12:00:02Z', datos: {}}]}})}});
+  assert.deepEqual(JSON.parse(JSON.stringify(lote[0].json)), {siguiente: 9, eventos: [{evento: 'ventas:7', tipo: 'pedido_confirmado', cliente: 'c1', pedido: 'p1'}]});
+  const verificar = codigo(flujo, 'Verificar registro');
+  const contexto = (statusCode, estatico = {}) => ({$input: {first: () => ({json: {statusCode, body: {mensaje: 'x'}}})},
+    $getWorkflowStaticData: () => estatico, $: () => ({first: () => ({json: {desde: 3}})})});
+  for (const statusCode of [401, 403, 429, 500, 503]) assert.throws(() => ejecutar(verificar, contexto(statusCode)), /se reintentará/);
+  assert.equal(ejecutar(verificar, contexto(202))[0].json.estado, 202);
+  const rechazos = {};
+  ejecutar(verificar, contexto(422, rechazos));
+  assert.equal(rechazos.rechazados[0].destino, 'Clientes');
+  const primero = {};
+  ejecutar(codigo(flujo, 'Lote de avisos'), {$getWorkflowStaticData: () => primero, $input: {first: () => ({json: {siguiente: 1, eventos: []}})}});
+  assert.ok(primero.avisosDesde, 'el primer arranque fija desde cuándo se avisa');
+  assert.ok(!JSON.stringify(flujo).includes('CLB_FIREBASE') && !JSON.stringify(flujo).includes('CLB_RESEND'), 'los secretos de envío no pasan por n8n');
+});
 
 test('el comprobante conserva como datos los nombres con fórmulas y expresiones n8n', () => {
   const nombre = '=HYPERLINK("https://ejemplo.invalid", "abrir")';

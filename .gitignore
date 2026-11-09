@@ -17,6 +17,8 @@
 !microservicios/clientes/fuente/fidelizacion/datos/*.ts
 !microservicios/clientes/fuente/perfiles/datos/
 !microservicios/clientes/fuente/perfiles/datos/*.ts
+!microservicios/clientes/fuente/notificaciones/datos/
+!microservicios/clientes/fuente/notificaciones/datos/*.ts
 **/temporales/
 *.tmp
 *.log

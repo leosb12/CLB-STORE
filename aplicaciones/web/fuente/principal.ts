@@ -16,7 +16,7 @@ import { PaginaCarrito } from "./existencias/presentacion/pagina-carrito";
 import { VENTAS_REST, VentasRest } from "./pedidos/adaptadores/ventas-rest";
 import { PaginaPedidos } from "./pedidos/presentacion/pagina-pedidos";
 import { SESION, SesionOidc, type ConfiguracionIdentidad } from "./sesion/adaptadores/sesion-oidc";
-import { LIMPIEZAS_AL_CERRAR, soloAdministradores } from "./sesion/aplicacion/estado-sesion";
+import { AL_INICIAR_SESION, LIMPIEZAS_AL_CERRAR, soloAdministradores } from "./sesion/aplicacion/estado-sesion";
 import { borrarClavesFotografia } from "./administracion/presentacion/panel-fotografia";
 import { PaginaRetorno } from "./sesion/presentacion/pagina-retorno";
 import { GESTION_REST, GestionRest } from "./gestion/adaptadores/gestion-rest";
@@ -41,6 +41,9 @@ async function iniciar(): Promise<void> {
       { provide: VENTAS_REST, useValue: new VentasRest(configuración.apiVentas ?? configuración.apiInventario, sesión) },
       { provide: SESION, useValue: sesión },
       { provide: LIMPIEZAS_AL_CERRAR, useValue: [borrarDatosProbador, async () => borrarClavesFotografia()] },
+      // Clientes toma correo y nombre del token verificado (sin cuerpo): avisos de pedido y nombre del comprador en reportes.
+      { provide: AL_INICIAR_SESION, useValue: [async () => { await fetch(configuración.apiInventario + "/perfiles/yo/contacto",
+        { method: "PUT", headers: await sesión.cabeceras() }); }] },
       // La gestión empresarial (IA) entra por la misma pasarela: /api/v1/{agentes,reportes,graphql,voz}.
       { provide: GESTION_REST, useValue: new GestionRest(configuración.apiInventario, sesión) },
       {

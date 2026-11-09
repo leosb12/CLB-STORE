@@ -1456,7 +1456,7 @@ footer {
 .destino { display: flex; align-items: center; gap: 8px; }
 .botón-secundario.grabando { background: #f4ead7; border-color: #aa703b; color: #67491f; }
 .reporte-panel { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(260px, 1fr); gap: 36px; padding: 26px 0 34px; border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); align-items: start; }
-.reporte-especificacion { background: var(--superficie-suave); padding: 20px; font-size: 12px; }
+.reporte-especificacion { background: var(--superficie-suave); padding: 20px; font-size: 12px; min-width: 0; }
 .reporte-especificacion h3 { font-size: 12px; margin-top: 16px; }
 .reporte-especificacion pre { background: #fff; }
 .acciones-especificacion { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; align-items: center; }
@@ -1501,7 +1501,7 @@ footer {
 .evidencia-reporte { margin-top: 26px; font-size: 12px; }
 @media (max-width: 820px) {
   main:has(.gestion) { padding-inline: 16px; }
-  .reporte-panel { grid-template-columns: 1fr; }
+  .reporte-panel { grid-template-columns: minmax(0, 1fr); }
   .campo-accion { flex-direction: column; }
   .acciones-reporte .botón-principal { margin-left: 0; }
   .titulo-gestion h1 { font-size: 30px; }
@@ -1526,3 +1526,35 @@ footer {
   color: #43533e;
   margin-bottom: 8px;
 }
+/* Reportes: interpretación editable, ambigüedad y frescura de los datos. */
+.reporte-grafico > .meta + .meta { margin-top: -4px; }
+.aviso-ambigua { margin-top: 16px; padding: 16px 18px; background: #f3eadb; color: #5c3f16; font-size: 13px; line-height: 1.6; max-width: 80ch; }
+.aviso-ambigua .nota-agente { color: #5c3f16; }
+.aviso-ambigua .sugerencias { margin-bottom: 0; }
+.aviso-datos { margin: 6px 0 10px; padding: 10px 12px; background: #f3eadb; color: #5c3f16; font-size: 12px; line-height: 1.55; max-width: 72ch; }
+.reporte-especificacion > details { margin-top: 16px; }
+.detalle-ajuste[open] > summary { margin-bottom: 10px; }
+.ajuste-reporte { display: grid; gap: 14px; }
+.ajuste-reporte fieldset { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px 12px; }
+.ajuste-reporte legend { font-size: 12px; font-weight: bold; color: #222e29; padding: 0; margin-bottom: 6px; }
+.ajuste-reporte .opcional { font-weight: normal; color: var(--tenue); }
+.ajuste-reporte .campo { display: grid; gap: 4px; align-content: start; }
+.ajuste-reporte input:not([type="checkbox"]), .ajuste-reporte select { width: 100%; min-width: 0; padding: 9px 10px; }
+.ajuste-reporte select:disabled, .ajuste-reporte input:disabled { color: #7b857e; background: #f4f4f0; }
+.columnas-extra { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: end; padding-bottom: 6px; }
+.ajuste-reporte .casilla { display: flex; gap: 8px; align-items: center; color: #222e29; }
+.ajuste-reporte .casilla input { width: 16px; height: 16px; accent-color: var(--verde); }
+.aviso-ajuste { font-size: 12px; color: #8a2f22; }
+.acciones-ajuste { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.acciones-ajuste .botón-principal { font-size: 13px; }
+.tabla-reporte th.numero { white-space: normal; }
+/* Reportes v2: notas de interpretación, salida solo-archivo, columnas del catálogo y tabla tipada. */
+.notas-reporte { margin: 10px 0 0; padding-left: 18px; font-size: 12px; line-height: 1.6; color: var(--tenue); max-width: 72ch; }
+.notas-reporte li + li { margin-top: 4px; }
+.aviso-ambigua .notas-reporte { color: #5c3f16; }
+.archivo-listo { margin-top: 14px; padding: 18px 20px; border: 1px solid var(--borde); background: #fff; font-size: 14px; line-height: 1.6; max-width: 64ch; }
+.archivo-listo .acciones-especificacion { margin-top: 12px; }
+.ajuste-reporte .columnas-v2 { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.ajuste-reporte .columnas-v2 legend { flex-basis: 100%; }
+.tabla-reporte-v2 { margin-top: 18px; }
+.tabla-reporte-v2 td { font-variant-numeric: tabular-nums; }

@@ -142,11 +142,17 @@ class SesionKeycloak implements Sesion {
     });
     if (generacion != _generacion) return;
     try {
+      // Endpoints explícitos, sin descubrimiento: AppAuth descarga la configuración del `issuer` con un conector que exige
+      // HTTPS e ignora allowInsecureConnections, y su excepción en un hilo nativo cerraba la app (pasarela HTTP local).
       await _appAuth.endSession(
         EndSessionRequest(
           idTokenHint: idToken,
           postLogoutRedirectUrl: redireccion,
-          issuer: emisor,
+          serviceConfiguration: const AuthorizationServiceConfiguration(
+            authorizationEndpoint: '$emisor/protocol/openid-connect/auth',
+            tokenEndpoint: '$emisor/protocol/openid-connect/token',
+            endSessionEndpoint: '$emisor/protocol/openid-connect/logout',
+          ),
           allowInsecureConnections: _inseguro,
         ),
       );

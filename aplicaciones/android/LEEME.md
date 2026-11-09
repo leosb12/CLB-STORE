@@ -38,11 +38,22 @@ muestra su bienvenida la primera vez: «Use without an account».
 ## Pruebas
 ```bash
 flutter analyze
-flutter test                                        # 52 aprobadas + una integración omitida en host al 23 oct
+flutter test                                        # 90 aprobadas + 3 omitidas en host (ejecutado 9-nov-2026)
 CLB_INTEGRACION=1 flutter test test/integracion     # contra el stack real: catálogo, SAGA y misma Idempotency-Key
 flutter test integration_test -d <dispositivo>      # en Android: MoveNet con TFLite real y SQLite del sistema
 ```
 La prueba contra el stack crea un pedido real de 1 unidad con `cliente.demo` (como las demostraciones).
+
+## Notificaciones push (Firebase)
+`android/app/google-services.json` es configuración local y no se versiona. Obtenerlo en Firebase Console → Configuración
+del proyecto → app Android `bo.clb.store` → descargar `google-services.json`, y copiarlo en `android/app/`. Sin ese
+archivo el plugin `google-services` no se aplica: la app compila y funciona igual, sin push. Para probar ese camino
+aunque el archivo exista: `flutter build apk --debug --android-project-arg=clbSinFirebase=true`.
+
+Firebase se inicializa en segundo plano después de `runApp`. Un fallo (sin configuración, sin Play Services o sin red,
+con límite de 10 s) deja el push no disponible y no retrasa el arranque ni el uso offline. No se usa FirebaseMessaging
+antes de que Firebase esté listo, el token no se escribe en logs y el permiso de notificaciones no se pide al abrir la
+app. El registro del token en el backend y las preferencias aún no están implementados (fase F2/F3 del plan).
 
 ## Guion de la demo
 ### Cola de fotografías (1.0.8+9)
@@ -90,7 +101,7 @@ prueba). Tipografía de títulos: Gelasio (SIL OFL 1.1, `assets/fuentes/OFL-Gela
   `preparar-probador.ps1` copia el build y BlazePose a `assets/probador/` y verifica los hashes; `preparar-movil.ps1` ya
   lo llama. Sin ese paso `flutter build` falla porque faltan las carpetas de assets.
 - **Pestaña «Gestión»** (solo rol admin): `pantalla_gestion.dart`, `pantalla_existencias.dart`, `pantalla_foto_prenda.dart`
-  y `microfono.dart`. Datos: `datos/administracion_rest.dart` (REST y GraphQL; procesadores de la cola).
+  y `microfono.dart`. Datos: `datos/administracion_rest.dart` (GraphQL de gestión para consultas, acciones y procesadores de la cola; REST solo para audio, foto, Excel y previsualización).
   Dominio: `dominio/administracion.dart` (operaciones de existencias y `resolverVersion`).
 - **Cola única:** pedidos y cambios de administración (`operaciones`, JSON compatible con las filas anteriores).
 - **Pruebas:**

@@ -1,0 +1,341 @@
+{
+ "id": "clbAvisosPedido1",
+ "name": "CLB · Pedido confirmado o cancelado → aviso al cliente (push y correo)",
+ "active": false,
+ "nodes": [
+  {
+   "id": "a0000000-0000-4000-8000-000000000001",
+   "name": "Cada 20 segundos",
+   "type": "n8n-nodes-base.scheduleTrigger",
+   "typeVersion": 1.2,
+   "position": [
+    0,
+    0
+   ],
+   "parameters": {
+    "rule": {
+     "interval": [
+      {
+       "field": "seconds",
+       "secondsInterval": 20
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000002",
+   "name": "Cursor de avisos",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    220,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\nreturn [{ json: { desde: datos.cursorAvisos ?? 0 } }];"
+   }
+  },
+  {
+   "id": "a0000000-0000-4000-8000-000000000003",
+   "name": "Token de servicio",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    440,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_IDENTIDAD_TOKEN_URL }}",
+    "sendBody": true,
+    "contentType": "form-urlencoded",
+    "specifyBody": "keypair",
+    "bodyParameters": {
+     "parameters": [
+      {
+       "name": "grant_type",
+       "value": "client_credentials"
+      },
+      {
+       "name": "client_id",
+       "value": "clb-n8n"
+      },
+      {
+       "name": "client_secret",
+       "value": "={{ $env.CLB_N8N_SECRETO }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    }
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000004",
+   "name": "Eventos de Ventas",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    660,
+    0
+   ],
+   "parameters": {
+    "method": "GET",
+    "url": "={{ $env.CLB_VENTAS_URL }}/api/v1/interno/eventos",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "desde",
+       "value": "={{ $('Cursor de avisos').first().json.desde }}"
+      },
+      {
+       "name": "límite",
+       "value": "20"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000005",
+   "name": "Lote de avisos",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    880,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const { eventos, siguiente } = $input.first().json;\n// Al activarse por primera vez el flujo solo avisa de lo nuevo: los pedidos anteriores ya ocurrieron sin aviso.\nconst datos = $getWorkflowStaticData('global');\ndatos.avisosDesde ??= new Date().toISOString();\nconst desde = new Date(datos.avisosDesde).getTime();\n// Solo identificadores: Clientes busca preferencias, correo y dispositivos del titular; nada personal viaja por n8n.\nconst avisos = eventos.filter((e) => ['pedido_confirmado', 'pedido_cancelado'].includes(e.tipo)\n  && new Date(e.fecha).getTime() >= desde).map((e) => ({\n  evento: `ventas:${e.identificador}`, tipo: e.tipo, cliente: e.datos.identificador_cliente, pedido: e.datos.identificador }));\nreturn [{ json: { eventos: avisos, siguiente } }];"
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000006",
+   "name": "Registrar en Clientes",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1100,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_CLIENTES_URL }}/api/v1/interno/notificaciones/registrar",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    },
+    "sendBody": true,
+    "contentType": "json",
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ eventos: $json.eventos }) }}"
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000007",
+   "name": "Verificar registro",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1320,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const registrarRechazo = (r) => {\n  const datosRechazos = $getWorkflowStaticData('global');\n  datosRechazos.rechazados = [{ ...r, fecha: new Date().toISOString() },\n    ...(datosRechazos.rechazados ?? []).filter((x) => x.evento !== r.evento)].slice(0, 100);\n};\nconst r = $input.first().json;\n// El cursor solo avanza con el lote ya guardado en Clientes (202). Caída o error temporal: el siguiente ciclo repite el\n// mismo lote y el registro es idempotente por evento. Un rechazo definitivo se registra para revisión sin frenar la cola.\nif (r.statusCode >= 500 || [401, 403, 408, 425, 429].includes(r.statusCode)) throw new Error(`Clientes respondió ${r.statusCode}: se reintentará.`);\nif (r.statusCode !== 202) registrarRechazo({ evento: `avisos#${$('Cursor de avisos').first().json.desde}`, destino: 'Clientes',\n  estado: r.statusCode, motivo: String(r.body?.mensaje ?? '').slice(0, 200) });\nreturn [{ json: { estado: r.statusCode } }];"
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000008",
+   "name": "Avanzar cursor",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1540,
+    0
+   ],
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "const datos = $getWorkflowStaticData('global');\ndatos.cursorAvisos = $('Lote de avisos').first().json.siguiente;\nreturn [{ json: { cursor: datos.cursorAvisos } }];"
+   }
+  },
+  {
+   "id": "a3000000-0000-4000-8000-000000000009",
+   "name": "Enviar avisos pendientes",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1760,
+    0
+   ],
+   "parameters": {
+    "method": "POST",
+    "url": "={{ $env.CLB_CLIENTES_URL }}/api/v1/interno/notificaciones/procesar",
+    "sendHeaders": true,
+    "specifyHeaders": "keypair",
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Authorization",
+       "value": "=Bearer {{ $('Token de servicio').first().json.access_token }}"
+      }
+     ]
+    },
+    "options": {
+     "response": {
+      "response": {
+       "fullResponse": true,
+       "neverError": true
+      }
+     },
+     "timeout": 10000
+    },
+    "sendQuery": true,
+    "specifyQuery": "keypair",
+    "queryParameters": {
+     "parameters": [
+      {
+       "name": "limite",
+       "value": "20"
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "connections": {
+  "Cada 20 segundos": {
+   "main": [
+    [
+     {
+      "node": "Cursor de avisos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Cursor de avisos": {
+   "main": [
+    [
+     {
+      "node": "Token de servicio",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Token de servicio": {
+   "main": [
+    [
+     {
+      "node": "Eventos de Ventas",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Eventos de Ventas": {
+   "main": [
+    [
+     {
+      "node": "Lote de avisos",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Lote de avisos": {
+   "main": [
+    [
+     {
+      "node": "Registrar en Clientes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Registrar en Clientes": {
+   "main": [
+    [
+     {
+      "node": "Verificar registro",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Verificar registro": {
+   "main": [
+    [
+     {
+      "node": "Avanzar cursor",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Avanzar cursor": {
+   "main": [
+    [
+     {
+      "node": "Enviar avisos pendientes",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ },
+ "settings": {
+  "executionOrder": "v1",
+  "saveDataSuccessExecution": "none",
+  "saveDataErrorExecution": "all",
+  "saveManualExecutions": false,
+  "timezone": "America/La_Paz"
+ },
+ "pinData": {},
+ "meta": {
+  "descripcion": "Flujo C: outbox de Ventas → registro durable en Clientes → envío por FCM y Resend con reintentos."
+ }
+}

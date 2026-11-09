@@ -50,6 +50,13 @@ class ErrorRemoto implements Exception {
   String toString() => mensaje;
 }
 
+/// Keycloak rechazó la renovación y la sesión local se borró: hay que volver a iniciar sesión. No es un fallo de red.
+class SesionVencida implements Exception {
+  const SesionVencida();
+  @override
+  String toString() => 'La sesión venció.';
+}
+
 /// Sin red, plazo vencido o respuesta ilegible: siempre reintentable.
 class SinConexion implements Exception {
   SinConexion([this.mensaje = 'Sin conexión con la tienda.']);

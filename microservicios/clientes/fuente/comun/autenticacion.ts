@@ -10,6 +10,10 @@ export type Rol = "cliente" | "admin" | "servicio";
 export interface Titular {
   sub: string;
   roles: Rol[];
+  /** Claim `email` del token verificado (solo para avisos al propio titular); nunca se acepta del cuerpo. */
+  correo?: string;
+  /** Claim `name` del token verificado: nombre de la cuenta (Keycloak). Solo identifica al comprador en reportes internos. */
+  nombre?: string;
 }
 
 export const VERIFICADOR_TOKENS = Symbol("VerificadorTokens");
@@ -29,7 +33,10 @@ export class VerificadorTokens {
     const { payload } = await jwtVerify(token, this.llaves, { issuer: this.emisor, audience: this.audiencia, algorithms: ["RS256"] });
     const roles = (payload["realm_access"] as { roles?: unknown } | undefined)?.roles;
     if (typeof payload.sub !== "string") throw new Error("El token no identifica al titular.");
-    return { sub: payload.sub, roles: Array.isArray(roles) ? roles.filter((rol): rol is Rol => ["cliente", "admin", "servicio"].includes(rol)) : [] };
+    const correo = typeof payload["email"] === "string" && /^[^\s@]+@[^\s@]+$/.test(payload["email"]) ? payload["email"] : undefined;
+    const nombre = typeof payload["name"] === "string" ? payload["name"].replace(/[\x00-\x1f<>]/g, "").trim().slice(0, 120) : "";
+    return { sub: payload.sub, roles: Array.isArray(roles) ? roles.filter((rol): rol is Rol => ["cliente", "admin", "servicio"].includes(rol)) : [],
+      ...(correo ? { correo } : {}), ...(nombre ? { nombre } : {}) };
   }
 }
 

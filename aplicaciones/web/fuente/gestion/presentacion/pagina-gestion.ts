@@ -2,8 +2,17 @@ import { Component, OnInit, inject, signal } from "@angular/core";
 import { DatePipe, JsonPipe } from "@angular/common";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { EstadoGestion } from "../aplicacion/estado-gestion";
-import { NOMBRES_AGENTE, PERIODOS, type Destino, type Propuesta, type Reporte } from "../dominio/modelos";
+import { NOMBRES_AGENTE, PERIODOS, minutosDesde, type Especificacion, type Propuesta, type Reporte } from "../dominio/modelos";
+import {
+  PROCEDENCIAS, SALIDAS, esV2, procedenciaDe, type EspecificacionV2, type Formato,
+} from "../dominio/reportes-v2";
+import { AjusteReporte } from "./ajuste-reporte";
+import { AjusteReporteV2 } from "./ajuste-reporte-v2";
 import { GraficoReporte } from "./grafico-reporte";
+import { ResultadoReporte } from "./resultado-reporte";
+
+/** La proyección se sincroniza cada 20 s: más de 15 min sin datos nuevos indica una fuente detenida o atrasada. */
+const MINUTOS_DESACTUALIZADO = 15;
 
 type Seccion = "monitoreo" | "reportes" | "inventario" | "clientes" | "auditoria";
 
@@ -13,17 +22,17 @@ const SECCIONES: { id: Seccion; nombre: string }[] = [
 ];
 
 const SUGERENCIAS = [
-  "Ventas por talla esta semana, barras en el panel",
-  "Monto vendido por categoría del mes en una tabla",
-  "Evolución diaria de pedidos del mes en líneas",
-  "¿Cuánto dinero ingresó hoy?",
+  "Ventas de esta semana con cliente, producto, cantidad, precio unitario y total comprado",
+  "Ventas por producto del mes con gráfico de barras",
+  "Top 5 clientes que más compraron este mes",
+  "Variantes con stock bajo en Excel",
 ];
 
 const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las variantes que lo necesiten.";
 
 @Component({
   selector: "clb-pagina-gestion",
-  imports: [DatePipe, JsonPipe, RouterLink, GraficoReporte],
+  imports: [DatePipe, JsonPipe, RouterLink, GraficoReporte, AjusteReporte, AjusteReporteV2, ResultadoReporte],
   template: `<section class="gestion">
     <div class="titulo-gestion">
       <h1>Gestión del negocio</h1>
@@ -117,38 +126,92 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
                 [attr.aria-pressed]="estado.ocupado() === 'grabando'">
                 {{ estado.ocupado() === "grabando" ? "Detener y transcribir" : estado.ocupado() === "voz" ? "Transcribiendo…" : "Dictar por voz" }}</button>
             }
-            <label class="destino">Destino
-              <select [value]="destino()" (change)="destino.set(valorDestino($event))">
-                <option value="">El que diga la petición</option>
-                <option value="PANEL">Panel</option><option value="VISTA">Vista dedicada</option><option value="HISTORIAL">Solo historial</option>
+            <label class="destino">Salida
+              <select (change)="salida.set(valor($event))">
+                @for (s of salidas; track s.id) { <option [value]="s.id" [selected]="s.id === salida()">{{ s.nombre }}</option> }
               </select></label>
             <button type="submit" class="botón-principal" [disabled]="!!estado.ocupado() || peticion().trim().length < 3">
               {{ estado.ocupado() === "reporte" ? "Generando…" : "Generar reporte" }}</button>
           </div>
+          @if (estado.ocupado() === "reporte") {
+            <p class="progreso" role="status">El modelo de lenguaje del servidor interpreta la petición (suele tardar menos de
+              15 s; si no responde, se usan reglas limitadas) y las cifras se calculan con los datos reales.</p>
+          }
+          @if (estado.noDisponible(); as motivos) {
+            <div class="aviso-ambigua" role="alert">
+              <p>Ese reporte no se puede armar con los datos que registra la tienda:</p>
+              <ul class="notas-reporte">@for (m of motivos; track $index) { <li>{{ m }}</li> }</ul>
+              <p class="nota-agente">Los reportes usan ventas (pedidos, clientes, productos y precios históricos) e inventario actual.</p>
+            </div>
+          }
+          @if (estado.ambigua(); as ambigua) {
+            <div class="aviso-ambigua" role="alert">
+              <p>{{ ambigua.mensaje }}</p>
+              @if (ambigua.sugerencias.length) {
+                <p class="nota-agente">Por ejemplo:</p>
+                <div class="sugerencias">
+                  @for (s of ambigua.sugerencias; track s) {
+                    <button type="button" class="botón-texto" (click)="peticion.set(s); estado.ambigua.set(null)">{{ s }}</button>
+                  }
+                </div>
+              }
+            </div>
+          }
         </form>
 
         @if (estado.reporte(); as reporte) {
-          @if (reporte.especificacion.destino === "HISTORIAL") {
+          @if (esV2(reporte.especificacion)) {
+            <clb-resultado-reporte [reporte]="reporte" [ocupado]="!!estado.ocupado()" (descargar)="descargar(reporte, $event)">
+              <a class="botón-texto" [routerLink]="['/gestion/reportes', reporte.identificador]">Abrir en vista dedicada</a>
+              <details class="detalle-ajuste" [open]="ajusteAbierto()" (toggle)="ajusteAbierto.set($any($event.target).open)">
+                <summary>Ajustar columnas, filtros, periodo y salida</summary>
+                <clb-ajuste-reporte-v2 [especificacion]="$any(reporte.especificacion)" [ocupado]="estado.ocupado() === 'reporte'"
+                  (actualizar)="ajustar($event)" />
+              </details>
+              <details><summary>Detalle técnico</summary>
+                <h3>Especificación validada</h3>
+                <pre>{{ reporte.especificacion | json }}</pre>
+                @if (reporte.salida_modelo) { <h3>Salida cruda del modelo</h3><pre>{{ reporte.salida_modelo }}</pre> }
+              </details>
+            </clb-resultado-reporte>
+          } @else if ($any(reporte.especificacion).destino === "HISTORIAL") {
             <p class="mensaje-administracion" role="status">«{{ reporte.especificacion.titulo }}» se guardó en el historial.</p>
           } @else {
             <div class="reporte-panel">
               <div class="reporte-grafico">
                 <h2>{{ reporte.especificacion.titulo }}</h2>
-                <p class="meta">{{ periodos[reporte.especificacion.periodo] }} · datos al {{ reporte.datos_al | date: "dd/MM/yyyy HH:mm" }}</p>
-                <clb-grafico-reporte [datos]="reporte.datos" [visualizacion]="reporte.especificacion.visualizacion" [grupo]="grupo(reporte)" />
+                <p class="meta">{{ reporte.interpretacion ?? $any(periodos)[$any(reporte.especificacion).periodo] }}</p>
+                <p class="meta">Datos al {{ reporte.datos_al ? (reporte.datos_al | date: "dd/MM/yyyy HH:mm") : "—" }}</p>
+                @let minutos = antiguedad(reporte);
+                @if (minutos === null) {
+                  <p class="aviso-datos" role="status">Todavía no llegaron datos de ventas al modelo de lectura: las cifras pueden estar vacías.</p>
+                } @else if (minutos > minutosDesactualizado) {
+                  <p class="aviso-datos" role="status">Los datos tienen {{ minutos }} min de antigüedad. La sincronización corre cada 20 s;
+                    si Ventas o Inventario están detenidos, las ventas recientes no aparecen todavía.</p>
+                }
+                @if ($any(reporte.datos).pedidos === 0) {
+                  <p class="estado-vacio-gestion">No hubo ventas confirmadas en ese periodo con esos filtros. Amplía el periodo o quita filtros en «Ajustar».</p>
+                } @else {
+                  <clb-grafico-reporte [datos]="$any(reporte.datos)" [visualizacion]="$any(reporte.especificacion).visualizacion" [grupo]="grupo(reporte)" />
+                }
               </div>
               <aside class="reporte-especificacion">
-                <span class="etiqueta-estado" [attr.data-tono]="reporte.generativa ? 'ok' : 'espera'">{{ reporte.generativa ? "Interpretado por el modelo local" : "Interpretación por palabras clave" }}</span>
+                <span class="etiqueta-estado" [attr.data-tono]="procedencia(reporte).tono">{{ procedencia(reporte).texto }}</span>
                 @if (reporte.observacion) { <p class="nota-agente">{{ reporte.observacion }}</p> }
-                <h3>Especificación validada</h3>
-                <pre>{{ reporte.especificacion | json }}</pre>
-                @if (reporte.salida_modelo) {
-                  <details><summary>Salida cruda del modelo</summary><pre>{{ reporte.salida_modelo }}</pre></details>
-                }
                 <div class="acciones-especificacion">
-                  <button class="botón-principal" (click)="estado.descargarExcel(reporte)" [disabled]="!!estado.ocupado()">Exportar a Excel</button>
-                  <a class="botón-secundario" [routerLink]="['/gestion/reportes', reporte.identificador]">Abrir en vista dedicada</a>
+                  <button class="botón-principal" (click)="estado.descargar(reporte, 'excel')" [disabled]="!!estado.ocupado()">Exportar a Excel</button>
+                  <button class="botón-secundario" (click)="estado.descargar(reporte, 'pdf')" [disabled]="!!estado.ocupado()">Exportar a PDF</button>
+                  <a class="botón-texto" [routerLink]="['/gestion/reportes', reporte.identificador]">Abrir en vista dedicada</a>
                 </div>
+                <details class="detalle-ajuste" [open]="ajusteAbierto()" (toggle)="ajusteAbierto.set($any($event.target).open)">
+                  <summary>Ajustar columnas, filtros y periodo</summary>
+                  <clb-ajuste-reporte [especificacion]="$any(reporte.especificacion)" [ocupado]="estado.ocupado() === 'reporte'" (actualizar)="ajustar($event)" />
+                </details>
+                <details><summary>Detalle técnico</summary>
+                  <h3>Especificación validada</h3>
+                  <pre>{{ reporte.especificacion | json }}</pre>
+                  @if (reporte.salida_modelo) { <h3>Salida cruda del modelo</h3><pre>{{ reporte.salida_modelo }}</pre> }
+                </details>
               </aside>
             </div>
           }
@@ -163,10 +226,12 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
                 <tr>
                   <td class="fecha">{{ r.fecha | date: "dd/MM HH:mm" }}</td>
                   <td><strong>{{ r.especificacion.titulo }}</strong>@if (r.peticion) {<small>«{{ r.peticion }}»</small>}</td>
-                  <td>{{ r.especificacion.visualizacion.toLowerCase() }} · {{ r.especificacion.destino.toLowerCase() }}</td>
-                  <td>{{ r.generativa ? "Modelo local" : "Palabras clave" }}</td>
+                  <td>{{ formatoHistorial(r) }}</td>
+                  <td>{{ procedencia(r).corto }}</td>
                   <td class="acciones-fila"><a class="botón-texto" [routerLink]="['/gestion/reportes', r.identificador]">Ver</a>
-                    <button class="botón-texto" (click)="estado.descargarExcel(r)">Excel</button></td>
+                    @for (f of archivos(r); track f) {
+                      <button class="botón-texto" (click)="descargar(r, f)">{{ f === "PDF" ? "PDF" : "Excel" }}</button>
+                    }</td>
                 </tr>
               }
             </tbody>
@@ -272,7 +337,12 @@ export class PaginaGestion implements OnInit {
   protected readonly seccion = signal<Seccion>("monitoreo");
   protected readonly misionTexto = signal("");
   protected readonly peticion = signal("");
-  protected readonly destino = signal<Destino | "">("");
+  protected readonly salidas = SALIDAS;
+  /** La última elección explícita de salida en la pantalla prevalece sobre lo que diga la petición. */
+  protected readonly salida = signal("auto");
+  protected readonly esV2 = esV2;
+  protected readonly ajusteAbierto = signal(false);
+  protected readonly minutosDesactualizado = MINUTOS_DESACTUALIZADO;
 
   ngOnInit(): void {
     const pedida = this.ruta.snapshot.queryParamMap.get("seccion") as Seccion | null;
@@ -304,8 +374,39 @@ export class PaginaGestion implements OnInit {
   }
 
   protected async generar(): Promise<void> {
-    const reporte = await this.estado.generarReporte({ peticion: this.peticion().trim(), ...(this.destino() ? { destino: this.destino() as Destino } : {}) });
-    if (reporte?.especificacion.destino === "VISTA") await this.enrutador.navigate(["/gestion/reportes", reporte.identificador]);
+    const formatos = SALIDAS.find(s => s.id === this.salida())?.formatos;
+    await this.estado.generarReporte({ peticion: this.peticion().trim(), ...(formatos ? { formatos } : {}) });
+  }
+
+  /** Regenera con la especificación editada: el servidor la valida igual que una interpretada y la marca como manual. */
+  protected async ajustar(especificacion: Especificacion | EspecificacionV2): Promise<void> {
+    await this.estado.generarReporte({ especificacion });
+  }
+
+  protected descargar(reporte: Reporte, formato: "PDF" | "EXCEL"): Promise<void> {
+    return this.estado.descargar(reporte, formato === "PDF" ? "pdf" : "excel");
+  }
+
+  protected procedencia(reporte: Reporte): { texto: string; corto: string; tono: string } {
+    return PROCEDENCIAS[procedenciaDe(reporte)];
+  }
+
+  /** Solo los archivos que el reporte ofrece (los pedidos; ambos si no se pidió ninguno, también en el historial v1). */
+  protected archivos(reporte: Reporte): ("PDF" | "EXCEL")[] {
+    if (!esV2(reporte.especificacion)) return ["EXCEL", "PDF"];
+    const pedidos = reporte.especificacion.formatos.filter((f): f is "PDF" | "EXCEL" => f !== "PANTALLA");
+    return pedidos.length ? pedidos : ["EXCEL", "PDF"];
+  }
+
+  protected formatoHistorial(reporte: Reporte): string {
+    const e = reporte.especificacion;
+    if (!esV2(e)) return `${e.visualizacion.toLowerCase()} · ${e.destino.toLowerCase()}`;
+    const nombres: Record<Formato, string> = { PANTALLA: "pantalla", PDF: "PDF", EXCEL: "Excel" };
+    return (e.tipo === "DETALLE" ? "detalle" : "totales") + " · " + (e.formatos.length ? e.formatos.map(f => nombres[f]).join(" + ") : "pantalla");
+  }
+
+  protected antiguedad(reporte: Reporte): number | null {
+    return minutosDesde(reporte.datos_al);
   }
 
   protected async voz(): Promise<void> {
@@ -319,7 +420,7 @@ export class PaginaGestion implements OnInit {
   }
 
   protected grupo(reporte: Reporte): string {
-    const g = reporte.especificacion.agrupar_por;
+    const g = (reporte.especificacion as Especificacion).agrupar_por;
     return g ? g.charAt(0) + g.slice(1).toLowerCase().replace("dia", "día").replace("categoria", "categoría") : "Total";
   }
 
@@ -327,7 +428,4 @@ export class PaginaGestion implements OnInit {
     return (evento.target as HTMLInputElement).value;
   }
 
-  protected valorDestino(evento: Event): Destino | "" {
-    return (evento.target as HTMLSelectElement).value as Destino | "";
-  }
 }

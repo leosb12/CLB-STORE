@@ -6,6 +6,8 @@ import { esAdministrador, type Titular } from "../dominio/modelos";
 
 /** Datos privados de otras funcionalidades que no deben quedar para el siguiente usuario del navegador. */
 export const LIMPIEZAS_AL_CERRAR = new InjectionToken<ReadonlyArray<() => Promise<void>>>("LIMPIEZAS_AL_CERRAR");
+/** Tareas tras un inicio de sesión nuevo (p. ej. que Clientes conozca correo y nombre de quien solo usa la web). No bloquean. */
+export const AL_INICIAR_SESION = new InjectionToken<ReadonlyArray<() => Promise<void>>>("AL_INICIAR_SESION");
 
 /** CU01: iniciar y cerrar sesión una sola vez para toda la aplicación (SSO). */
 @Injectable({ providedIn: "root" })

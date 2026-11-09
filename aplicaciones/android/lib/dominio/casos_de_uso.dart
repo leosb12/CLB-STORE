@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'administracion.dart';
+import 'avisos.dart';
 import 'contratos.dart';
 import 'modelos.dart';
 import 'pose.dart';
@@ -189,11 +190,16 @@ class SincronizarPedidos {
         continue;
       }
       final procesador = _procesadores[op.tipo];
-      // Sin rol admin la operación espera: la sesión actual no puede administrar (el servidor también lo exige).
+      // Sin rol admin una operación administrativa espera (el servidor también lo exige); las del propio titular
+      // (p. ej. sus preferencias de avisos) no requieren rol.
       if (procesador == null ||
-          !((await _sesion.titular())?.roles.contains('admin') ?? false))
+          (tiposAdministracion.contains(op.tipo) &&
+              !((await _sesion.titular())?.roles.contains('admin') ?? false)))
         continue;
-      switch (resolverVersion(op, await _almacen.operaciones())) {
+      final cola = await _almacen.operaciones();
+      switch (op.tipo == guardarPreferenciasAvisos
+          ? resolverPreferencias(op, cola)
+          : resolverVersion(op, cola)) {
         case Esperar():
           continue;
         case Bloqueada(:final motivo):

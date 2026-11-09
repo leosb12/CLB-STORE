@@ -44,9 +44,8 @@ class _PantallaProductosAdminState extends State<PantallaProductosAdmin> {
       _datosAl = DateTime.tryParse('${j['datos_al']}');
     }
     try {
-      final token = await widget.tienda.tokenAdmin();
-      if (token == null || widget.tienda.existencias == null)
-        throw SinConexion();
+      if (widget.tienda.existencias == null) throw SinConexion();
+      final token = await widget.tienda.exigirTokenAdmin();
       _productos = await widget.tienda.existencias!.productosAdmin(token);
       _datosAl = DateTime.now();
       _aviso = null;
@@ -147,9 +146,8 @@ class _PantallaVariantesAdminState extends State<PantallaVariantesAdmin> {
       _datosAl = DateTime.tryParse('${j['datos_al']}');
     }
     try {
-      final token = await widget.tienda.tokenAdmin();
-      if (token == null || widget.tienda.existencias == null)
-        throw SinConexion();
+      if (widget.tienda.existencias == null) throw SinConexion();
+      final token = await widget.tienda.exigirTokenAdmin();
       _variantes = await widget.tienda.existencias!.variantesAdmin(_id, token);
       _datosAl = DateTime.now();
       _aviso = null;

@@ -60,17 +60,65 @@ create table if not exists notificaciones (
     origen text not null, estado text not null default 'NUEVA' check (estado in ('NUEVA', 'ATENDIDA')),
     fecha_evento timestamptz not null, fecha timestamptz not null default now(), atendida_por text, fecha_atencion timestamptz);
 create index if not exists clb_notificaciones_estado on notificaciones (estado, fecha desc);
+-- Nombres visibles de los clientes con pedidos: proyección por el contrato interno de Clientes (perfil o cuenta).
+create table if not exists clientes (
+    cliente text primary key, nombre text, origen text, fecha_copia timestamptz not null default now());
+alter table reportes add column if not exists procedencia text;
 create table if not exists eventos_rechazados (
     fuente text not null, identificador text not null, error text not null, evento jsonb not null,
     fecha timestamptz not null default now(), primary key (fuente, identificador));
 """
 
 ORDEN_METRICA = {"UNIDADES": "unidades desc", "MONTO": "monto desc", "PEDIDOS": "pedidos desc"}
+COLUMNA_METRICA = {"UNIDADES": "unidades", "MONTO": "monto", "PEDIDOS": "pedidos"}
+# Filtros admitidos (lista blanca de columnas); el valor siempre va como parámetro enlazado.
+COLUMNAS_FILTRO = {"categoria": "l.categoria", "talla": "l.talla", "color": "l.color"}
 
 COLUMNAS_GRUPO = {
     "TALLA": "l.talla", "COLOR": "l.color", "CATEGORIA": "l.categoria", "PRODUCTO": "l.nombre",
     "DIA": "to_char(p.fecha_creacion at time zone 'America/La_Paz', 'YYYY-MM-DD')",
 }
+
+
+# Reportes v2: cada campo del catálogo (dominio/catalogo_reportes.py) tiene aquí UNA expresión SQL fija. Nada más llega al SQL.
+_DESDE_VENTAS = ("from pedidos p join lineas_venta l on l.pedido = p.identificador "
+                 "left join clientes c on c.cliente = p.cliente left join existencias e on e.variante = l.variante")
+SQL_CAMPOS = {
+    "VENTAS": {
+        "FECHA": "to_char(p.fecha_creacion at time zone 'America/La_Paz', 'YYYY-MM-DD')",
+        "PEDIDO": "left(p.identificador::text, 8)", "ESTADO": "p.estado",
+        "CLIENTE": "coalesce(c.nombre, 'Sin nombre registrado')",
+        "PRODUCTO": "l.nombre", "SKU": "l.sku", "CATEGORIA": "l.categoria", "TALLA": "l.talla", "COLOR": "l.color",
+        "CANTIDAD": "l.cantidad", "PRECIO_UNITARIO": "l.precio_centavos", "SUBTOTAL": "l.subtotal_centavos",
+        "STOCK_ACTUAL": "e.disponible",
+        "UNIDADES": "sum(l.cantidad)", "MONTO": "sum(l.subtotal_centavos)", "PEDIDOS": "count(distinct p.identificador)",
+        "CLIENTES": "count(distinct p.cliente)",
+        "PRECIO_PROMEDIO": "round(sum(l.subtotal_centavos)::numeric / nullif(sum(l.cantidad), 0))",
+        "TICKET_PROMEDIO": "round(sum(l.subtotal_centavos)::numeric / nullif(count(distinct p.identificador), 0))",
+    },
+    "INVENTARIO": {
+        "PRODUCTO": "e.nombre", "SKU": "e.sku", "CATEGORIA": "e.categoria", "TALLA": "e.talla", "COLOR": "e.color",
+        "STOCK_FISICO": "e.fisica", "STOCK_RESERVADO": "e.reservada", "STOCK_DISPONIBLE": "e.disponible",
+        "STOCK_MINIMO": "e.minimo", "STOCK_BAJO": "e.stock_bajo",
+        "DISPONIBLE_TOTAL": "sum(e.disponible)", "FISICO_TOTAL": "sum(e.fisica)", "VARIANTES": "count(*)",
+        "VARIANTES_STOCK_BAJO": "count(*) filter (where e.stock_bajo)",
+    },
+}
+_FILTRO_TEXTO = {"CLIENTE": "coalesce(c.nombre, '')"}  # filtrar por nombre no debe coincidir con «Sin nombre registrado»
+# Totales de un detalle: solo las columnas que se suman con sentido (cantidad, total comprado, stock).
+_SUMAS_DETALLE = {"VENTAS": {"CANTIDAD": "sum(l.cantidad)", "SUBTOTAL": "sum(l.subtotal_centavos)"},
+                  "INVENTARIO": {"STOCK_FISICO": "sum(e.fisica)", "STOCK_RESERVADO": "sum(e.reservada)",
+                                 "STOCK_DISPONIBLE": "sum(e.disponible)"}}
+_OPERADOR_SQL = {"IGUAL": "=", "MAYOR_O_IGUAL": ">=", "MENOR_O_IGUAL": "<="}
+
+
+def _es_metrica(expresion: str) -> bool:
+    return expresion.startswith(("sum(", "count(", "round("))
+
+
+def _plano(valor):
+    """Valores JSON: Decimal entero (round/sum) → int; el resto tal cual."""
+    return int(valor) if isinstance(valor, Decimal) else valor
 
 
 def texto_bs(centavos: int | Decimal | None) -> str:
@@ -214,23 +262,119 @@ class RepositorioPostgres:
         await c.execute("insert into cursores (fuente, posicion) values (%s, %s) "
                         "on conflict (fuente) do update set posicion = excluded.posicion", (fuente, posicion))
 
-    # ---- consultas -----------------------------------------------------------------------------------------------
-    async def resumen_ventas(self, desde: datetime | None, agrupar_por: str | None, limite: int, metrica: str = "UNIDADES") -> dict:
-        filtro = "p.estado = 'CONFIRMADO' and (%(desde)s::timestamptz is null or p.fecha_creacion >= %(desde)s)"
+    async def clientes_de_pedidos(self) -> list[str]:
         async with self.pool.connection() as c:
+            return [f["cliente"] for f in await (await c.execute("select distinct cliente from pedidos order by 1")).fetchall()]
+
+    async def guardar_nombres(self, nombres: list[dict]) -> None:
+        if not nombres:
+            return
+        async with self.pool.connection() as c, c.transaction():
+            async with c.cursor() as cursor:
+                await cursor.executemany(
+                    "insert into clientes values (%s, %s, %s, now()) on conflict (cliente) do update set "
+                    "nombre = excluded.nombre, origen = excluded.origen, fecha_copia = now()",
+                    [(n["cliente"], n.get("nombre"), n.get("origen")) for n in nombres])
+
+    # ---- consultas -----------------------------------------------------------------------------------------------
+    async def consultar_reporte(self, consulta: dict) -> dict:
+        """Reporte v2 sobre el catálogo: SELECT armado solo con expresiones de SQL_CAMPOS y valores enlazados.
+
+        `consulta`: fuente, tipo, columnas, filtros [(campo, operador, valor tipado)], inicio, fin, orden [(campo, dir)],
+        limite y grafico {eje, valor} o None. Devuelve filas (listas), total de filas, totales y puntos del gráfico."""
+        fuente, tipo, columnas = consulta["fuente"], consulta["tipo"], consulta["columnas"]
+        sql = SQL_CAMPOS[fuente]
+        parametros: dict = {"inicio": consulta.get("inicio"), "fin": consulta.get("fin"), "limite": consulta["limite"]}
+        if fuente == "VENTAS":
+            desde = _DESDE_VENTAS
+            donde = ["(%(inicio)s::timestamptz is null or p.fecha_creacion >= %(inicio)s)",
+                     "(%(fin)s::timestamptz is null or p.fecha_creacion < %(fin)s)"]
+            if not any(f[0] == "ESTADO" for f in consulta["filtros"]):
+                donde.append("p.estado = 'CONFIRMADO'")
+        else:
+            desde, donde = "from existencias e", ["e.activo"]
+        tener = []
+        for i, (campo, operador, valor) in enumerate(consulta["filtros"]):
+            expresion = _FILTRO_TEXTO.get(campo, sql[campo])
+            parametros[f"f{i}"] = valor
+            if operador == "CONTIENE":
+                condicion = f"position(lower(%(f{i})s) in lower({expresion})) > 0"
+            elif operador == "IGUAL" and isinstance(valor, str):
+                condicion = f"lower({expresion}) = lower(%(f{i})s)"
+            else:
+                condicion = f"{expresion} {_OPERADOR_SQL[operador]} %(f{i})s"
+            (tener if _es_metrica(expresion) else donde).append(condicion)
+        where = " where " + " and ".join(donde)
+        having = (" having " + " and ".join(tener)) if tener else ""
+        seleccion = ", ".join(f"{sql[c]} as c{i}" for i, c in enumerate(columnas))
+        dims = [i for i, c in enumerate(columnas) if not _es_metrica(sql[c])]
+        grupo = (" group by " + ", ".join(str(i + 1) for i in dims)) if tipo == "AGREGADO" and dims else ""
+        posicion = {c: i + 1 for i, c in enumerate(columnas)}
+        orden = [f"{posicion[c]} {'desc' if d == 'DESC' else 'asc'}" for c, d in consulta["orden"]]
+        usados = {o.split()[0] for o in orden}
+        orden += [f"{i + 1} asc" for i in range(len(columnas)) if str(i + 1) not in usados]  # orden estable
+        sumas = _SUMAS_DETALLE[fuente] if tipo == "DETALLE" else {c: sql[c] for c in columnas if _es_metrica(sql[c])}
+        sumas = {c: e for c, e in sumas.items() if c in columnas}
+        grafico = consulta.get("grafico")
+        async with self.pool.connection() as c:
+            # Un reporte nunca bloquea la base: 5 s como máximo por consulta (dentro de la transacción de la conexión).
+            await c.execute("set local statement_timeout = '5s'")
+            cuerpo = f"select {seleccion} {desde}{where}{grupo}{having}"
+            filas = await (await c.execute(f"{cuerpo} order by {', '.join(orden)} limit %(limite)s", parametros)).fetchall()
+            total_filas = (await (await c.execute(f"select count(*) n from ({cuerpo}) t", parametros)).fetchone())["n"]
+            totales = {}
+            if sumas:  # sobre TODAS las filas que cumplen el filtro, no solo las mostradas
+                fila = await (await c.execute(
+                    f"select {', '.join(f'{e} as t{i}' for i, e in enumerate(sumas.values()))} {desde}{where}", parametros)).fetchone()
+                totales = {campo: _plano(fila[f"t{i}"]) or 0 for i, campo in enumerate(sumas)}
+            puntos = []
+            if grafico:
+                orden_g = "1 asc" if grafico["eje"] == "FECHA" else "2 desc nulls last, 1 asc"
+                puntos = await (await c.execute(
+                    f"select {sql[grafico['eje']]} clave, {sql[grafico['valor']]} valor {desde}{where} group by 1 "
+                    f"order by {orden_g} limit 30", parametros)).fetchall()
+            sin_nombre = 0
+            if fuente == "VENTAS" and ("CLIENTE" in columnas or (grafico or {}).get("eje") == "CLIENTE"):
+                sin_nombre = (await (await c.execute(
+                    f"select count(distinct p.cliente) n {desde}{where} and c.nombre is null", parametros)).fetchone())["n"]
+        return {"filas": [[_plano(f[f"c{i}"]) for i in range(len(columnas))] for f in filas], "total_filas": total_filas,
+                "totales": totales, "grafico": [{"clave": _plano(p["clave"]), "valor": _plano(p["valor"]) or 0} for p in puntos],
+                "clientes_sin_nombre": sin_nombre}
+
+    async def resumen_ventas(self, desde: datetime | None, agrupar_por: str | None, limite: int, metrica: str = "UNIDADES",
+                             fin: datetime | None = None, filtros: dict | None = None, orden: str = "METRICA_DESC") -> dict:
+        filtro = ("p.estado = 'CONFIRMADO' and (%(desde)s::timestamptz is null or p.fecha_creacion >= %(desde)s) "
+                  "and (%(fin)s::timestamptz is null or p.fecha_creacion < %(fin)s)")
+        parametros = {"desde": desde, "fin": fin, "limite": limite}
+        for clave, valor in (filtros or {}).items():
+            if clave == "producto":  # contiene, sin comodines LIKE del usuario
+                filtro += " and position(lower(%(f_producto)s) in lower(l.nombre)) > 0"
+            else:
+                filtro += f" and lower({COLUMNAS_FILTRO[clave]}) = lower(%(f_{clave})s)"
+            parametros[f"f_{clave}"] = valor
+        async with self.pool.connection() as c:
+            # Un reporte nunca bloquea la base: 5 s como máximo por consulta (dentro de la transacción de la conexión).
+            await c.execute("set local statement_timeout = '5s'")
             total = await (await c.execute(
                 f"select count(distinct p.identificador) pedidos, coalesce(sum(l.cantidad), 0) unidades, "
                 f"coalesce(sum(l.subtotal_centavos), 0) monto from pedidos p join lineas_venta l on l.pedido = p.identificador "
-                f"where {filtro}", {"desde": desde})).fetchone()
+                f"where {filtro}", parametros)).fetchone()
             grupos = []
             if agrupar_por:
                 columna = COLUMNAS_GRUPO[agrupar_por]
-                # Días: los más recientes (se invierten para leerse en orden); el resto: el top N de la métrica pedida.
-                orden = "clave desc" if agrupar_por == "DIA" else f"{ORDEN_METRICA[metrica]}, clave"
+                # Días: los más recientes (se invierten para leerse en orden); el resto: el top N según el orden pedido.
+                if agrupar_por == "DIA":
+                    orden_sql = "clave desc"
+                elif orden == "CLAVE_ASC":
+                    orden_sql = "clave"
+                elif orden == "METRICA_ASC":
+                    orden_sql = f"{COLUMNA_METRICA[metrica]} asc, clave"
+                else:
+                    orden_sql = f"{ORDEN_METRICA[metrica]}, clave"
                 grupos = await (await c.execute(
                     f"select {columna} clave, count(distinct p.identificador) pedidos, sum(l.cantidad) unidades, "
                     f"sum(l.subtotal_centavos) monto from pedidos p join lineas_venta l on l.pedido = p.identificador "
-                    f"where {filtro} group by 1 order by {orden} limit %(limite)s", {"desde": desde, "limite": limite})).fetchall()
+                    f"where {filtro} group by 1 order by {orden_sql} limit %(limite)s", parametros)).fetchall()
                 if agrupar_por == "DIA":
                     grupos.reverse()
         return {"pedidos": total["pedidos"], "unidades": int(total["unidades"]), "monto_centavos": int(total["monto"]),
@@ -275,10 +419,10 @@ class RepositorioPostgres:
     # ---- reportes, auditoría y propuestas ------------------------------------------------------------------------
     async def guardar_reporte(self, r: dict) -> None:
         async with self.pool.connection() as c:
-            await c.execute("insert into reportes values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            await c.execute("insert into reportes values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                             (r["identificador"], r["usuario"], r["peticion"], r["salida_modelo"], Jsonb(r["especificacion"]),
                              r["generativa"], r["observacion"], Jsonb(json.loads(json.dumps(r["datos"], default=str))),
-                             r["datos_al"], r["fecha"]))
+                             r["datos_al"], r["fecha"], r.get("procedencia")))
 
     async def reportes(self, limite: int) -> list[dict]:
         async with self.pool.connection() as c:

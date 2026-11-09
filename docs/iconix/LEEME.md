@@ -19,4 +19,17 @@ Los diagramas Mermaid y el texto se versionan junto al código. Son fuente edita
 
 Requisito → caso de uso con pre/postcondiciones y alternativos → robustez (boundary/control/entity) → secuencia con colaboraciones concretas → clases y contratos → prueba y demo. Las entidades del análisis son conceptos de dominio; las tablas de persistencia y pantallas no se confunden con ellas.
 
+## Pendiente para Enterprise Architect
+
+La diagramación final se hará en Enterprise Architect después de la implementación; no se asume importación automática de Mermaid. Los Markdown/Mermaid son especificación técnica provisional. Elementos a modelar:
+
+- **Modelo de dominio:** clases y atributos de `modelo-dominio.md` (Producto, Variante, Existencias, Pedido, Comprobante, Perfil, Reporte, Propuesta, Notificación de stock).
+- **Casos de uso:** actores Cliente, Administrador, Servicio interno, Keycloak y n8n; CU01–CU05 con sus extensiones CU02.1–CU02.3, CU04.9, CU04.10 y CU05.1.
+- **Robustez:** boundary/control/entity de `robustez.md`, con el control «GraphQL de gestión» entre las pantallas de gestión y los controles de Inventario e IA (R5).
+- **Secuencias:** las de `secuencias.md`, incluidas la delegación GraphQL → Inventario de CU04 y la ruta de errores con `estado_http`.
+- **Clases de diseño:** operaciones y puertos de `clases-diseno.md`, más `GestionInventario`/`InventarioGestionRest` y `esquema_gestion`.
+- **Despliegue:** nodos de `arquitectura/despliegue.md` (pasarela, cuatro servicios, bases, n8n, Keycloak, clientes web/Android).
+
+Estado: especificación técnica actualizada para lo implementado; la diagramación EA y el documento institucional siguen pendientes.
+
 La trazabilidad incluye los cinco casos principales establecidos por el equipo. CU04.9 amplía Administración con preparación/publicación de recursos de prenda. R17 se documenta separadamente en `docs/arquitectura`.

@@ -5,18 +5,19 @@ registra por su identificador, así que repetir un lote (caída a mitad, cursor 
 """
 import logging
 
-from fuente.aplicacion.interfaces import Catalogo, CursorFueraDeRango, FuenteEventos, RepositorioAnalitica
+from fuente.aplicacion.interfaces import Catalogo, CursorFueraDeRango, DirectorioClientes, FuenteEventos, RepositorioAnalitica
 
 registro = logging.getLogger("clb.ia.ingesta")
 
 
 class IngerirEventos:
     def __init__(self, repositorio: RepositorioAnalitica, ventas: FuenteEventos, inventario: FuenteEventos, catalogo: Catalogo,
-                 copia_cada: int = 1):
+                 copia_cada: int = 1, directorio: DirectorioClientes | None = None):
         self.repositorio = repositorio
         self.fuentes = {"ventas": (ventas, repositorio.aplicar_eventos_ventas),
                         "inventario": (inventario, repositorio.aplicar_eventos_inventario)}
         self.catalogo = catalogo
+        self.directorio = directorio
         self.estado: dict[str, str] = {}
         # Los eventos son baratos (cursor); la copia de existencias recorre el catálogo: se hace cada «copia_cada» ciclos.
         self.copia_cada, self.ciclo = copia_cada, 0
@@ -42,7 +43,22 @@ class IngerirEventos:
         except Exception as error:
             self.estado["existencias"] = f"ERROR: {type(error).__name__}"
             registro.warning("existencias: %s", error)
+        if self.directorio:
+            try:
+                await self._copiar_nombres()
+                await self.repositorio.marcar_al_dia("clientes")
+                self.estado["clientes"] = "AL_DIA"
+            except Exception as error:  # sin nombres el reporte los muestra como «sin nombre registrado»
+                self.estado["clientes"] = f"ERROR: {type(error).__name__}"
+                registro.warning("clientes: %s", error)
         return dict(self.estado)
+
+    async def _copiar_nombres(self):
+        """Proyección de nombres de los clientes con pedidos, por el contrato interno de Clientes (nunca su base)."""
+        # ponytail: relee todos los clientes con pedidos en cada copia; con miles de clientes, copiar solo los nuevos o cambiados.
+        clientes = await self.repositorio.clientes_de_pedidos()
+        for i in range(0, len(clientes), 100):
+            await self.repositorio.guardar_nombres(await self.directorio.nombres(clientes[i:i + 100]))
 
     async def _consumir(self, nombre, fuente: FuenteEventos, aplicar) -> int:
         aplicados, reiniciado = 0, False

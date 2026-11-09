@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { ErrorDeFidelizacion } from "../../fidelizacion/negocio/servicio-fidelizacion.js";
-import { REPOSITORIO_PERFILES, type Medidas, type Perfil, type RepositorioPerfiles } from "../datos/repositorio-perfiles.js";
+import { REPOSITORIO_PERFILES, type Medidas, type NombreCliente, type Perfil, type RepositorioPerfiles } from "../datos/repositorio-perfiles.js";
 
 export interface CambiosPerfil {
   nombre: string;
@@ -27,5 +27,10 @@ export class ServicioPerfiles {
     if (await this.repositorio.guardar(nuevo, cambios.versión_esperada)) return nuevo;
     throw new ErrorDeFidelizacion("El perfil cambió en otro dispositivo. Revisa los datos actuales.", "CONFLICTO_VERSION", 409,
       { perfil_actual: await this.perfil(cliente) });
+  }
+
+  /** Contrato interno para el modelo de lectura de IA (CQRS): solo nombres, nunca contacto ni medidas. */
+  async nombres(clientes: string[]): Promise<NombreCliente[]> {
+    return this.repositorio.nombres([...new Set(clientes)]);
   }
 }

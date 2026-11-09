@@ -25,11 +25,11 @@ from fuente.infraestructura.configuracion import Configuracion
 from fuente.infraestructura.herramientas_mcp import HerramientasMcp
 from fuente.infraestructura.identidad import VerificadorTokens
 from fuente.infraestructura.ollama import ModeloOllama
-from fuente.infraestructura.servicios_rest import (CatalogoInventario, EventosRest, InventarioRest, PerfilesRest,
+from fuente.infraestructura.servicios_rest import (CatalogoInventario, DirectorioClientesRest, EventosRest, InventarioGestionRest, InventarioRest, PerfilesRest,
                                                    TokenDeServicio)
 from fuente.infraestructura.voz import TranscriptorWhisper
 from fuente.puertos import rest
-from fuente.puertos.graphql import esquema
+from fuente.puertos.graphql import esquema_gestion
 from fuente.puertos.mcp import AutenticacionMcp, crear_servidor_mcp
 
 registro = logging.getLogger("clb.ia")
@@ -48,11 +48,13 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
     servicios = SimpleNamespace(
         repositorio=repositorio, consultas=consultas, llm=llm, modelo_tallas=modelo_tallas,
         ingesta=IngerirEventos(repositorio, EventosRest(http, c.ventas_url, token), EventosRest(http, c.inventario_url, token),
-                               CatalogoInventario(http, c.inventario_url), copia_cada=5),
+                               CatalogoInventario(http, c.inventario_url), copia_cada=5,
+                               directorio=DirectorioClientesRest(http, c.clientes_url, token)),
         reportes=GenerarReporte(llm, herramientas, repositorio),
         mision=EjecutarMision(llm, herramientas, repositorio),
         propuestas=GestionarPropuestas(repositorio, InventarioRest(http, c.inventario_url)),
         notificaciones=GestionarNotificaciones(repositorio),
+        inventario_gestion=reemplazos.get("inventario_gestion") or InventarioGestionRest(http, c.inventario_url),
         tallas=RecomendarTalla(modelo_tallas, PerfilesRest(http, c.clientes_url)),
         transcriptor=reemplazos.get("transcriptor") or TranscriptorWhisper(c.modelo_voz, c.directorio_modelos))
     verificador = reemplazos.get("verificador") or VerificadorTokens(c.jwks, c.identidad_emisor)
@@ -85,9 +87,10 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
     app.include_router(rest.api)
 
     async def contexto_graphql(usuario: rest.Admin):
-        return {"consultas": consultas, "usuario": usuario}
+        return {"consultas": consultas, "usuario": usuario, "servicios": servicios, "trabajo_llm": rest.TRABAJO_LLM}
 
-    app.include_router(GraphQLRouter(esquema, context_getter=contexto_graphql, graphql_ide=None, allow_queries_via_get=False),
+    # Gestión empresarial: el rol admin se exige antes de ejecutar cualquier operación (401/403 como en REST).
+    app.include_router(GraphQLRouter(esquema_gestion, context_getter=contexto_graphql, graphql_ide=None, allow_queries_via_get=False),
                        prefix="/api/v1/graphql")
     # Solo para los agentes, por la red interna; la pasarela no lo publica.
     app.mount("/mcp", AutenticacionMcp(servidor_mcp.streamable_http_app(streamable_http_path="/", stateless_http=True,

@@ -10,6 +10,8 @@ import 'estado_tienda.dart';
 
 /// Texto para la persona a partir de un error de dominio.
 String explicar(Object error) => switch (error) {
+  SesionVencida() =>
+    'Tu sesión venció. Vuelve a iniciar sesión en Cuenta para actualizar la gestión.',
   SinConexion() => 'Sin conexión con la tienda: se muestra lo último guardado.',
   ErrorRemoto(estado: 401) =>
     'La sesión venció: vuelve a iniciar sesión en Cuenta.',
@@ -34,6 +36,9 @@ class EstadoGestion extends ChangeNotifier {
   List<Map<String, dynamic>> propuestas = const [];
   Map<String, dynamic>? mision;
   Map<String, dynamic>? reporte;
+
+  /// El reporte en pantalla salió de la copia guardada (sin conexión), no de una generación en esta sesión.
+  bool reporteDeCopia = false;
   DateTime? datosAl;
   String? aviso;
   bool cargando = false;
@@ -74,6 +79,7 @@ class EstadoGestion extends ChangeNotifier {
     propuestas = lista(j['propuestas']);
     mision = (j['mision'] as Map?)?.cast<String, dynamic>();
     reporte = (j['reporte'] as Map?)?.cast<String, dynamic>();
+    reporteDeCopia = reporte != null;
     datosAl = DateTime.tryParse(j['datos_al'] as String? ?? '');
   }
 
@@ -92,9 +98,9 @@ class EstadoGestion extends ChangeNotifier {
     if (resumen == null) await _leerCopia();
     _notificar();
     try {
-      final token = await tienda.tokenAdmin();
       final fuente = tienda.gestion;
-      if (token == null || fuente == null) throw SinConexion();
+      if (fuente == null) throw SinConexion();
+      final token = await tienda.exigirTokenAdmin();
       final [r, a, p] = await Future.wait<Object>([
         fuente.resumen(token),
         fuente.notificaciones(token),
@@ -123,22 +129,24 @@ class EstadoGestion extends ChangeNotifier {
         await _guardar();
       });
 
-  Future<void> generarReporte(String peticion) =>
+  /// Mismo backend que la web: el modelo de lenguaje corre en el servidor (Ollama), no en el teléfono.
+  Future<void> generarReporte(String peticion, {List<String>? formatos}) =>
       _remoto((fuente, token) async {
-        reporte = await fuente.reporte(peticion, token);
+        reporte = await fuente.reporte(peticion, token, formatos: formatos);
+        reporteDeCopia = false;
         await _guardar();
       });
 
-  Future<Uint8List?> excel() async {
+  /// Excel o PDF del reporte actual (REST binario); `null` sin reporte o sin sesión.
+  Future<Uint8List?> archivo(String formato) async {
     final id = reporte?['identificador'] as String?;
     final token = await tienda.tokenAdmin();
     if (id == null || token == null) return null;
-    return tienda.gestion!.excel(id, token);
+    return tienda.gestion!.archivo(id, formato, token);
   }
 
   Future<String> transcribir(Uint8List audio) async {
-    final token = await tienda.tokenAdmin();
-    if (token == null) throw SinConexion();
+    final token = await tienda.exigirTokenAdmin();
     return tienda.gestion!.transcribir(audio, token);
   }
 
@@ -182,9 +190,8 @@ class EstadoGestion extends ChangeNotifier {
     aviso = null;
     _notificar();
     try {
-      final token = await tienda.tokenAdmin();
-      if (token == null || tienda.gestion == null) throw SinConexion();
-      await accion(tienda.gestion, token);
+      if (tienda.gestion == null) throw SinConexion();
+      await accion(tienda.gestion, await tienda.exigirTokenAdmin());
     } on Object catch (e) {
       aviso = explicar(e);
     } finally {
