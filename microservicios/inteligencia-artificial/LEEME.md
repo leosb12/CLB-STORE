@@ -23,15 +23,17 @@ Las dependencias apuntan solo hacia adentro; las capas internas definen interfac
 | GET `/api/v1/agentes/propuestas[?estado=]` · POST `…/{id}/confirmar\|rechazar` | admin | Reposiciones propuestas por el agente; solo una persona las confirma |
 | GET `/api/v1/agentes/auditoria` | admin | Misiones, herramientas invocadas y rechazos |
 | POST `/api/v1/reportes` `{peticion}` o `{especificacion}` (+ `destino`) | admin | LLM → especificación validada → `generar_reporte` (MCP → GraphQL) → historial |
-| GET `/api/v1/reportes[/{id}[/excel]]` | admin | Historial, reporte y exportación xlsx con gráfico nativo |
-| POST `/api/v1/graphql` | admin | `resumenVentas`, `productos`, `stockBajo`, `alertas`, `segmentosClientes` |
+| GET `/api/v1/reportes[/{id}[/excel\|/pdf]]` | admin | Historial, reporte y exportación xlsx (gráfico nativo, paneles inmovilizados) o PDF (reportlab; tabla con encabezado repetido, gráfico, A4 apaisado con más de 3 columnas) |
+| POST `/api/v1/graphql` | admin | **Gestión empresarial (R5).** Lecturas analíticas (`resumenVentas`, `productos`, `stockBajo`, `alertas`, `segmentosClientes`), reportes y agentes (`generarReporte`, `reportes`, `reporte`, `ejecutarMision`, `propuestas`, `resolverPropuesta`, `auditoria`), alertas (`notificaciones`, `atenderNotificacion`) e Inventario delegado (`productosAdmin`, `productoAdmin`, `crearProducto`, `modificarProducto`, `variantesAdmin`, `varianteAdmin`, `crearVariante`, `modificarVariante`, `registrarMovimiento`, `fijarMinimo`, `movimientos`, `capacidadesIngesta`, `trabajoIngesta`, `publicarRecurso`). Ver `docs/arquitectura/backend.md` |
 | POST `/api/v1/voz` (multipart `audio`) | admin | Texto con faster-whisper local (máx. 5 MB y 60 s) |
 | GET `/api/v1/tallas/modelo` · POST `/api/v1/tallas/recomendacion` | público | Modelo exportado en JSON para inferencia offline · recomendación orientativa |
 | GET `/api/v1/tallas/mi-recomendacion` | cliente | Con las medidas del perfil de Clientes |
 | `/mcp` | interno | MCP HTTP streamable; token admin + `X-Clb-Agente`; la pasarela **no** lo publica |
 | GET `/salud` (`/salud/ia` en la pasarela) | público | PostgreSQL, Ollama y estado de la ingesta |
 
-Errores: `{mensaje, código}`. 429 `OCUPADO` si ya hay una misión o un reporte en curso (la GPU atiende uno a la vez).
+Errores REST: `{mensaje, código}`. GraphQL: `errors[].extensions {codigo, estado_http, cuerpo?}` con los mismos estados.
+429 `OCUPADO` si ya hay una misión o un reporte en curso (la GPU atiende uno a la vez). Las rutas REST de reportes,
+agentes y notificaciones se conservan como contrato interno; las interfaces de gestión usan GraphQL (salvo voz y Excel).
 
 ## Datos (`clb_analitica`)
 `pedidos`, `lineas_venta`, `existencias`, `alertas_stock`, `cursores`, `eventos_procesados`, `eventos_rechazados`,
@@ -55,7 +57,8 @@ fórmulas y auditoría de todo. Sin LLM, todo funciona con plantillas «no gener
 Para usar la voz sin Internet, precargar el modelo una vez: `docker exec clb_backend_ia python -m fuente.infraestructura.voz`.
 
 ## Pruebas
-`.venv/Scripts/python.exe -m pytest -q -p anyio` (requiere `clb_postgres`; las de Ollama se omiten si no está). Incluye
+`.venv/Scripts/python.exe -m pytest -q -p anyio` (requiere `clb_postgres`; las de Ollama se omiten si no está). Si en
+el equipo hay otro PostgreSQL en 5432, apuntar al del stack: `$env:CLB_ANALITICA_PUERTO='5433'` (PowerShell). Incluye
 dominio y ML, casos de uso con dobles, integración con PostgreSQL en un esquema temporal `clb_prueba_*` que se borra,
 puertos de punta a punta (uvicorn + MCP HTTP + GraphQL + REST) y Ollama real. Dependencias de desarrollo: `requirements-dev.txt`.
 

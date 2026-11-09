@@ -103,6 +103,8 @@ class ClienteJson {
   }
 
   Map<String, dynamic> _json(http.Response respuesta) {
+    // 204 (vincular, contacto, desvincular): éxito sin cuerpo.
+    if (respuesta.statusCode == 204) return {};
     Object? json;
     try {
       json = jsonDecode(utf8.decode(respuesta.bodyBytes));

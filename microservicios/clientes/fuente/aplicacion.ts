@@ -9,6 +9,7 @@ import { ModuloPerfiles } from "./perfiles/modulo-perfiles.js";
 import type { RepositorioFidelizacion } from "./fidelizacion/datos/repositorio-fidelizacion.js";
 import { ModuloFidelizacion } from "./fidelizacion/modulo-fidelizacion.js";
 import { ServicioFidelizacion } from "./fidelizacion/negocio/servicio-fidelizacion.js";
+import { ModuloNotificaciones, type DependenciasNotificaciones } from "./notificaciones/modulo-notificaciones.js";
 
 @Controller("salud")
 class ControladorSalud {
@@ -34,14 +35,17 @@ class ModuloIdentidad {
 
 @Module({})
 class ModuloClientes {
-  static con(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens): DynamicModule {
+  static con(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens,
+    notificaciones?: DependenciasNotificaciones): DynamicModule {
     return { module: ModuloClientes, controllers: [ControladorSalud],
-      imports: [ModuloIdentidad.con(verificador), ModuloFidelizacion.con(fidelizacion), ModuloPerfiles.con(perfiles)] };
+      imports: [ModuloIdentidad.con(verificador), ModuloFidelizacion.con(fidelizacion), ModuloPerfiles.con(perfiles),
+        ...(notificaciones ? [ModuloNotificaciones.con(notificaciones)] : [])] };
   }
 }
 
-export async function crearAplicacion(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens): Promise<INestApplication> {
-  const aplicación = await NestFactory.create(ModuloClientes.con(fidelizacion, perfiles, verificador), { logger: ["error", "warn"] });
+export async function crearAplicacion(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens,
+  notificaciones?: DependenciasNotificaciones): Promise<INestApplication> {
+  const aplicación = await NestFactory.create(ModuloClientes.con(fidelizacion, perfiles, verificador, notificaciones), { logger: ["error", "warn"] });
   aplicación.useGlobalPipes(new ValidationPipe({
     whitelist: true, forbidNonWhitelisted: true,
     exceptionFactory: errores => new UnprocessableEntityException({

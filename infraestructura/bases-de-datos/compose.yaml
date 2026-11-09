@@ -244,6 +244,15 @@ services:
       # Tokens de Keycloak: emisor público (pasarela) y JWKS por la red interna.
       CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}/realms/clb
       CLB_IDENTIDAD_JWKS: http://identidad:8080/identidad/realms/clb/protocol/openid-connect/certs
+      # Avisos de pedido (flujo n8n C): FCM HTTP v1 y API de Resend. Envíos reales solo con CLB_NOTIFICACIONES_HABILITADAS=true.
+      CLB_NOTIFICACIONES_HABILITADAS: ${CLB_NOTIFICACIONES_HABILITADAS:-false}
+      CLB_NOTIFICACIONES_CORREO_HABILITADO: ${CLB_NOTIFICACIONES_CORREO_HABILITADO:-false}
+      CLB_FIREBASE_SERVICE_ACCOUNT_BASE64: ${CLB_FIREBASE_SERVICE_ACCOUNT_BASE64:-}
+      CLB_FIREBASE_PROJECT_ID: ${CLB_FIREBASE_PROJECT_ID:-}
+      CLB_FIREBASE_CLIENT_EMAIL: ${CLB_FIREBASE_CLIENT_EMAIL:-}
+      CLB_FIREBASE_PRIVATE_KEY: ${CLB_FIREBASE_PRIVATE_KEY:-}
+      CLB_RESEND_API_KEY: ${CLB_RESEND_API_KEY:-}
+      CLB_SMTP_REMITENTE: ${CLB_SMTP_REMITENTE:-}
     # Sin puerto publicado: se accede solo por la pasarela (punto único de entrada).
     networks: [bases, aplicaciones]
     depends_on:

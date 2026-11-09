@@ -5,6 +5,8 @@ los nodos Code y las URL estén revisados como código; también se pueden edita
 
 Flujo A — `stock_bajo` → alerta: Inventario (eventos, variante, producto) → IA (notificación accionable en el panel).
 Flujo B — `pedido_confirmado` → comprobante: Ventas (outbox) → Clientes (puntos) → Inventario (productos) → xlsx → Ventas.
+Flujo C — pedido confirmado/cancelado → aviso al cliente: Ventas (outbox) → Clientes registra el aviso de forma durable →
+Clientes envía por push (FCM) y correo (Resend) con reintentos. La compra nunca espera a este flujo.
 
 Cada flujo lee su fuente con un cursor guardado en los datos estáticos de n8n y solo lo avanza cuando terminó todo. Si n8n
 cae, los eventos siguen en el emisor y se procesan al volver; cada escritura es idempotente (evento o pedido).
@@ -222,9 +224,52 @@ return [{ json: { cursor: datos.cursorVentas } }];"""),
                  "Flujo B (fase 10): pedido_confirmado de Ventas → puntos (Clientes) → productos (Inventario) → xlsx → Ventas.")
 
 
+def flujo_notificaciones():
+    nodos = [
+        programado([0, 0]),
+        codigo("a3000000-0000-4000-8000-000000000002", "Cursor de avisos", [220, 0],
+               "const datos = $getWorkflowStaticData('global');\nreturn [{ json: { desde: datos.cursorAvisos ?? 0 } }];"),
+        token([440, 0]),
+        http("a3000000-0000-4000-8000-000000000004", "Eventos de Ventas", [660, 0],
+             "={{ $env.CLB_VENTAS_URL }}/api/v1/interno/eventos",
+             consulta={"desde": "={{ $('Cursor de avisos').first().json.desde }}", "límite": "20"}),
+        codigo("a3000000-0000-4000-8000-000000000005", "Lote de avisos", [880, 0], """const { eventos, siguiente } = $input.first().json;
+// Al activarse por primera vez el flujo solo avisa de lo nuevo: los pedidos anteriores ya ocurrieron sin aviso.
+const datos = $getWorkflowStaticData('global');
+datos.avisosDesde ??= new Date().toISOString();
+const desde = new Date(datos.avisosDesde).getTime();
+// Solo identificadores: Clientes busca preferencias, correo y dispositivos del titular; nada personal viaja por n8n.
+const avisos = eventos.filter((e) => ['pedido_confirmado', 'pedido_cancelado'].includes(e.tipo)
+  && new Date(e.fecha).getTime() >= desde).map((e) => ({
+  evento: `ventas:${e.identificador}`, tipo: e.tipo, cliente: e.datos.identificador_cliente, pedido: e.datos.identificador }));
+return [{ json: { eventos: avisos, siguiente } }];"""),
+        http("a3000000-0000-4000-8000-000000000006", "Registrar en Clientes", [1100, 0],
+             "={{ $env.CLB_CLIENTES_URL }}/api/v1/interno/notificaciones/registrar", metodo="POST", completa=True,
+             sendBody=True, contentType="json", specifyBody="json", jsonBody="={{ JSON.stringify({ eventos: $json.eventos }) }}"),
+        codigo("a3000000-0000-4000-8000-000000000007", "Verificar registro", [1320, 0], RECHAZADOS + """const r = $input.first().json;
+// El cursor solo avanza con el lote ya guardado en Clientes (202). Caída o error temporal: el siguiente ciclo repite el
+// mismo lote y el registro es idempotente por evento. Un rechazo definitivo se registra para revisión sin frenar la cola.
+if (r.statusCode >= 500 || [401, 403, 408, 425, 429].includes(r.statusCode)) throw new Error(`Clientes respondió ${r.statusCode}: se reintentará.`);
+if (r.statusCode !== 202) registrarRechazo({ evento: `avisos#${$('Cursor de avisos').first().json.desde}`, destino: 'Clientes',
+  estado: r.statusCode, motivo: String(r.body?.mensaje ?? '').slice(0, 200) });
+return [{ json: { estado: r.statusCode } }];"""),
+        codigo("a3000000-0000-4000-8000-000000000008", "Avanzar cursor", [1540, 0], """const datos = $getWorkflowStaticData('global');
+datos.cursorAvisos = $('Lote de avisos').first().json.siguiente;
+return [{ json: { cursor: datos.cursorAvisos } }];"""),
+        # Envía lo registrado y los reintentos vencidos (también tras una caída: el reclamo vence y vuelve a ser elegible).
+        http("a3000000-0000-4000-8000-000000000009", "Enviar avisos pendientes", [1760, 0],
+             "={{ $env.CLB_CLIENTES_URL }}/api/v1/interno/notificaciones/procesar", metodo="POST", completa=True,
+             consulta={"limite": "20"}),
+    ]
+    orden = [n["name"] for n in nodos]
+    return flujo("clbAvisosPedido1", "CLB · Pedido confirmado o cancelado → aviso al cliente (push y correo)", nodos,
+                 list(zip(orden, orden[1:])),
+                 "Flujo C: outbox de Ventas → registro durable en Clientes → envío por FCM y Resend con reintentos.")
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     SALIDA.mkdir(exist_ok=True)
-    for f in (flujo_stock_bajo(), flujo_comprobante()):
+    for f in (flujo_stock_bajo(), flujo_comprobante(), flujo_notificaciones()):
         (SALIDA / f"{f['id']}.json").write_text(json.dumps(f, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
         print("✓", f["name"])

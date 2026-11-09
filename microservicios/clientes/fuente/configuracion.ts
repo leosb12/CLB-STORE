@@ -14,6 +14,14 @@ export const configuracion = {
     identificador: process.env.CLB_DYNAMODB_IDENTIFICADOR ?? (local ? "clblocal" : undefined),
     clave: process.env.CLB_DYNAMODB_CLAVE ?? (local ? "clblocalficticia" : undefined),
   },
+  notificaciones: {
+    // Envíos reales a FCM/Resend solo si se habilitan explícitamente; si no, cada canal queda como NO_CONFIGURADO.
+    habilitadas: process.env.CLB_NOTIFICACIONES_HABILITADAS === "true",
+    // El correo además exige su propio interruptor: solo se activa con destinatarios confirmados (buzón real verificado).
+    correoHabilitado: process.env.CLB_NOTIFICACIONES_CORREO_HABILITADO === "true",
+    correo: process.env.CLB_RESEND_API_KEY,
+    remitente: process.env.CLB_SMTP_REMITENTE,
+  },
   identidad: {
     // Emisor público estable (por la pasarela) y JWKS por la red interna de Compose.
     emisor: process.env.CLB_IDENTIDAD_EMISOR ?? "http://127.0.0.1:18000/identidad/realms/clb",

@@ -12,7 +12,61 @@ const consultaResumen =
     '''{ resumenVentas(periodo: HOY) { pedidos unidades monto datosAl }
   stockBajo { sku nombre talla color disponible minimo } }''';
 
-/// Administración y gestión en el móvil, con el token del titular (rol admin). Mismas rutas que la web por la pasarela.
+// Alias: el móvil recibe los mismos nombres que ya usa (p. ej. datos_al), así el dominio no cambia con el transporte.
+const _camposReporte =
+    'identificador peticion salida_modelo: salidaModelo especificacion generativa observacion datos datos_al: datosAl fecha '
+    'interpretacion procedencia';
+const _camposPropuesta =
+    'identificador variante sku cantidad motivo fecha estado disponible minimo';
+const _camposNotificacion =
+    'evento producto sku talla color disponible minimo mensaje origen estado fecha_evento: fechaEvento fecha '
+    'atendida_por: atendidaPor fecha_atencion: fechaAtencion';
+
+/// Consulta o acción de gestión por GraphQL (R5). Un error de negocio trae `estado_http`: se lanza el mismo
+/// [ErrorRemoto] que con REST, así la cola decide igual (reintentar con la misma clave o pedir revisión).
+Future<Map<String, dynamic>> consultarGestion(
+  ClienteJson cliente,
+  String token,
+  String consulta, {
+  Map<String, Object?> variables = const {},
+  Duration plazo = const Duration(seconds: 15),
+}) async {
+  final r = await cliente.pedir(
+    'POST',
+    '/graphql',
+    cabeceras: {'Authorization': 'Bearer $token'},
+    cuerpo: {'query': consulta, 'variables': variables},
+    plazo: plazo,
+  );
+  final errores = r['errors'];
+  if (errores is List && errores.isNotEmpty) {
+    final error = errores.first is Map ? (errores.first as Map) : const {};
+    final mensaje = error['message'] is String
+        ? error['message'] as String
+        : 'La gestión rechazó la solicitud.';
+    final extensiones = error['extensions'];
+    final estado = extensiones is Map ? extensiones['estado_http'] : null;
+    if (estado is int) throw ErrorRemoto(estado, mensaje);
+    // Sin estado: error interno enmascarado (transitorio) o consulta inválida (definitivo).
+    throw ErrorRemoto(
+      mensaje == 'Error interno de la consulta.' ? 500 : 422,
+      mensaje,
+    );
+  }
+  final datos = r['data'];
+  if (datos is! Map)
+    throw ContratoInvalido('La consulta de gestión no devolvió datos.');
+  return datos.cast<String, dynamic>();
+}
+
+Map<String, dynamic> _mapa(Map<String, dynamic> datos, String clave) {
+  final valor = datos[clave];
+  if (valor is! Map) throw ContratoInvalido('Respuesta de $clave inválida.');
+  return valor.cast<String, dynamic>();
+}
+
+/// Administración y gestión en el móvil, con el token del titular (rol admin). Consultas y acciones de gestión por
+/// GraphQL; REST solo para transferir archivos (audio, fotos, Excel y previsualización) y para Inventario (F1b-II).
 class AdministracionRest
     implements FuenteGestion, FuenteExistencias, FuenteIngesta {
   AdministracionRest(this._cliente);
@@ -30,39 +84,33 @@ class AdministracionRest
     return [for (final e in valor) (e as Map).cast<String, dynamic>()];
   }
 
-  // ---- Gestión con agentes (IA) ----------------------------------------------------------------------------------
+  // ---- Gestión con agentes (IA), por GraphQL ----------------------------------------------------------------------
   @override
-  Future<Map<String, dynamic>> resumen(String token) async {
-    final r = await _cliente.pedir(
-      'POST',
-      '/graphql',
-      cabeceras: _con(token),
-      cuerpo: {'query': consultaResumen},
-    );
-    final datos = r['data'];
-    if (datos is! Map || r['errors'] != null)
-      throw ContratoInvalido('La consulta de gestión no devolvió datos.');
-    return datos.cast<String, dynamic>();
-  }
+  Future<Map<String, dynamic>> resumen(String token) =>
+      consultarGestion(_cliente, token, consultaResumen);
 
   @override
-  Future<Map<String, dynamic>> mision(String texto, String token) =>
-      _cliente.pedir(
-        'POST',
-        '/agentes/misiones',
-        cabeceras: _con(token),
-        cuerpo: {'mision': texto},
-        plazo: const Duration(seconds: 210),
-      );
+  Future<Map<String, dynamic>> mision(
+    String texto,
+    String token,
+  ) async => _mapa(
+    await consultarGestion(
+      _cliente,
+      token,
+      r'mutation($m: String!) { ejecutarMision(mision: $m) { mision agentes generativa fecha } }',
+      variables: {'m': texto},
+      plazo: const Duration(seconds: 210),
+    ),
+    'ejecutarMision',
+  );
 
   @override
   Future<List<Map<String, dynamic>>> notificaciones(String token) async =>
       _lista(
-        await _cliente.pedir(
-          'GET',
-          '/notificaciones',
-          consulta: {'estado': 'NUEVA'},
-          cabeceras: _con(token),
+        await consultarGestion(
+          _cliente,
+          token,
+          '{ notificaciones(estado: NUEVA) { $_camposNotificacion } }',
         ),
         'notificaciones',
       );
@@ -70,10 +118,10 @@ class AdministracionRest
   @override
   Future<List<Map<String, dynamic>>> propuestas(String token) async {
     final todas = _lista(
-      await _cliente.pedir(
-        'GET',
-        '/agentes/propuestas',
-        cabeceras: _con(token),
+      await consultarGestion(
+        _cliente,
+        token,
+        '{ propuestas { $_camposPropuesta } }',
       ),
       'propuestas',
     );
@@ -93,26 +141,40 @@ class AdministracionRest
     String identificador,
     bool confirmar,
     String token,
-  ) => _cliente.pedir(
-    'POST',
-    '/agentes/propuestas/${Uri.encodeComponent(identificador)}/${confirmar ? 'confirmar' : 'rechazar'}',
-    cabeceras: _con(token),
-    plazo: const Duration(seconds: 30),
+  ) async => _mapa(
+    await consultarGestion(
+      _cliente,
+      token,
+      'mutation(\$i: UUID!, \$c: Boolean!) { resolverPropuesta(identificador: \$i, confirmar: \$c) { $_camposPropuesta } }',
+      variables: {'i': identificador, 'c': confirmar},
+      plazo: const Duration(seconds: 30),
+    ),
+    'resolverPropuesta',
   );
 
   @override
-  Future<Map<String, dynamic>> reporte(String peticion, String token) =>
-      _cliente.pedir(
-        'POST',
-        '/reportes',
-        cabeceras: _con(token),
-        cuerpo: {'peticion': peticion},
-        plazo: const Duration(seconds: 210),
-      );
+  Future<Map<String, dynamic>> reporte(
+    String peticion,
+    String token, {
+    List<String>? formatos,
+  }) async => _mapa(
+    await consultarGestion(
+      _cliente,
+      token,
+      'mutation(\$p: String, \$f: [FormatoReporte!]) { generarReporte(peticion: \$p, formatos: \$f) { $_camposReporte } }',
+      variables: {'p': peticion, 'f': formatos},
+      plazo: const Duration(seconds: 210),
+    ),
+    'generarReporte',
+  );
 
   @override
-  Future<Uint8List> excel(String identificador, String token) => _cliente.bytes(
-    '/reportes/${Uri.encodeComponent(identificador)}/excel',
+  Future<Uint8List> archivo(
+    String identificador,
+    String formato,
+    String token,
+  ) => _cliente.bytes(
+    '/reportes/${Uri.encodeComponent(identificador)}/${formato == 'pdf' ? 'pdf' : 'excel'}',
     cabeceras: _con(token),
   );
 
@@ -139,11 +201,13 @@ class AdministracionRest
   @override
   Future<List<Map<String, dynamic>>> productosAdmin(String token) async =>
       _lista(
-        await _cliente.pedir(
-          'GET',
-          '/productos/administracion',
-          consulta: {'límite': '100'},
-          cabeceras: _con(token),
+        _mapa(
+          await consultarGestion(
+            _cliente,
+            token,
+            '{ productosAdmin(pagina: 1, limite: 100) }',
+          ),
+          'productosAdmin',
         ),
         'productos',
       );
@@ -154,10 +218,14 @@ class AdministracionRest
     String token,
   ) async => [
     for (final v in _lista(
-      await _cliente.pedir(
-        'GET',
-        '/administracion/productos/${Uri.encodeComponent(producto)}/variantes',
-        cabeceras: _con(token),
+      _mapa(
+        await consultarGestion(
+          _cliente,
+          token,
+          r'query($p: String!) { variantesAdmin(producto: $p) }',
+          variables: {'p': producto},
+        ),
+        'variantesAdmin',
       ),
       'variantes',
     ))
@@ -189,10 +257,14 @@ class AdministracionRest
     String producto,
     String trabajo,
     String token,
-  ) => _cliente.pedir(
-    'GET',
-    '/productos/${Uri.encodeComponent(producto)}/recursos-probador/${Uri.encodeComponent(trabajo)}',
-    cabeceras: _con(token),
+  ) async => _mapa(
+    await consultarGestion(
+      _cliente,
+      token,
+      r'query($p: String!, $t: String!) { trabajoIngesta(producto: $p, trabajo: $t) }',
+      variables: {'p': producto, 't': trabajo},
+    ),
+    'trabajoIngesta',
   );
 
   @override
@@ -213,18 +285,27 @@ class AdministracionRest
     int version,
     bool aceptarAvisos,
     String token,
-  ) => _cliente.pedir(
-    'POST',
-    '/productos/${Uri.encodeComponent(producto)}/recursos-probador/${Uri.encodeComponent(trabajo)}/publicar',
-    cabeceras: _con(token, clave),
-    cuerpo: {
-      'versión_esperada': version,
-      if (aceptarAvisos) 'aceptar_avisos': true,
-    },
+  ) async => _mapa(
+    await consultarGestion(
+      _cliente,
+      token,
+      r'mutation($p: String!, $t: String!, $c: String!, $d: JSON!) { publicarRecurso(producto: $p, trabajo: $t, clave: $c, datos: $d) }',
+      variables: {
+        'p': producto,
+        't': trabajo,
+        'c': clave,
+        'd': {
+          'versión_esperada': version,
+          if (aceptarAvisos) 'aceptar_avisos': true,
+        },
+      },
+    ),
+    'publicarRecurso',
   );
 }
 
-/// Procesadores de la cola: Idempotency-Key fija, versión esperada y comprobante validado (como la web). Un comprobante
+/// Procesadores de la cola, por GraphQL de gestión: Idempotency-Key fija (`clave`), versión esperada (en `datos`) y
+/// comprobante validado (como la web). Un comprobante
 /// que no corresponde a la operación se reintenta con la misma clave en vez de darse por bueno.
 class ProcesadorExistencias implements ProcesadorOperacion {
   ProcesadorExistencias(this._cliente);
@@ -237,14 +318,17 @@ class ProcesadorExistencias implements ProcesadorOperacion {
       ..remove('reemplazo_de');
     final variante = datos.remove('identificador_variante') as String;
     final version = datos['versión_esperada'] as int;
-    final r = await _cliente.pedir(
-      op.tipo == registrarMovimiento ? 'POST' : 'PUT',
-      '/variantes/${Uri.encodeComponent(variante)}/${op.tipo == registrarMovimiento ? 'movimientos' : 'minimo'}',
-      cabeceras: {
-        'Authorization': 'Bearer $token',
-        'Idempotency-Key': op.claveIdempotencia,
-      },
-      cuerpo: datos,
+    final mutacion = op.tipo == registrarMovimiento
+        ? 'registrarMovimiento'
+        : 'fijarMinimo';
+    final r = _mapa(
+      await consultarGestion(
+        _cliente,
+        token,
+        'mutation(\$v: String!, \$c: String!, \$d: JSON!) { $mutacion(variante: \$v, clave: \$c, datos: \$d) }',
+        variables: {'v': variante, 'c': op.claveIdempotencia, 'd': datos},
+      ),
+      mutacion,
     );
     final confirmada = VarianteAdmin.validar(r['variante']);
     if (confirmada.identificador != variante ||
@@ -257,7 +341,8 @@ class ProcesadorExistencias implements ProcesadorOperacion {
   }
 }
 
-/// «Atender» una alerta de n8n: idempotente en IA (NUEVA → ATENDIDA), por eso puede esperar en la cola sin red.
+/// «Atender» una alerta de n8n por GraphQL: idempotente en IA (NUEVA → ATENDIDA; repetirla devuelve la misma), por eso
+/// puede esperar en la cola sin red.
 class ProcesadorAtenderAlerta implements ProcesadorOperacion {
   ProcesadorAtenderAlerta(this._cliente);
   final ClienteJson _cliente;
@@ -265,15 +350,13 @@ class ProcesadorAtenderAlerta implements ProcesadorOperacion {
   @override
   Future<Map<String, dynamic>> enviar(Operacion op, String token) async {
     final evento = op.datos!['evento'] as String;
-    final r = await _cliente.pedir(
-      'POST',
-      '/notificaciones/${Uri.encodeComponent(evento)}/atender',
-      cabeceras: {
-        'Authorization': 'Bearer $token',
-        'Idempotency-Key': op.claveIdempotencia,
-      },
+    final r = await consultarGestion(
+      _cliente,
+      token,
+      'mutation(\$e: UUID!) { atenderNotificacion(evento: \$e) { $_camposNotificacion } }',
+      variables: {'e': evento},
     );
-    final n = r['notificacion'];
+    final n = r['atenderNotificacion'];
     if (n is! Map || n['evento'] != evento || n['estado'] != 'ATENDIDA') {
       throw ContratoInvalido('La alerta no quedó atendida; se reintentará.');
     }

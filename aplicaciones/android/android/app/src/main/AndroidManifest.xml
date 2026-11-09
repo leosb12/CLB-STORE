@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Notificaciones push en Android 13+ -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Cámara en vivo de la realidad aumentada (WebView); la vista rápida usa el selector del sistema. -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Dictar un reporte (solo admin); el audio se borra del teléfono tras transcribirlo. -->

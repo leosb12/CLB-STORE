@@ -65,8 +65,11 @@ shells, Angular y Flutter, con un mismo contrato es justamente el propósito de 
 
 ## Android: administración y gestión (solo rol admin)
 
-- Pestaña «Gestión»: resumen por GraphQL, misión de agentes, alertas, propuestas, reportes con Excel y voz, y
-  existencias con foto de prenda. Usa la misma cuenta SSO; los servicios vuelven a validar el rol en el JWT.
+- Pestaña «Gestión»: resumen, misión de agentes, alertas, propuestas, reportes, existencias e ingesta. Desde el
+  9-nov-2026 todas sus consultas y acciones de negocio, y los procesadores de la cola, usan el GraphQL de gestión
+  (`consultarGestion` en `administracion_rest.dart`; en la web, `gestion-rest.ts` y `administracion-rest.ts`); solo el
+  audio, la foto y las descargas viajan por REST. Un error trae `estado_http`, así la cola decide igual que antes.
+  Usa la misma cuenta SSO; los servicios vuelven a validar el rol en el JWT.
 - **Una sola cola** para pedidos y cambios de administración, procesadores por tipo y orden FIFO:
   - `versión_esperada` encadenada por variante;
   - «Rehacer» solo ante un conflicto definitivo;

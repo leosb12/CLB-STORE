@@ -5,7 +5,7 @@ Este registro sustituye las decisiones por fases y notas de conversaciones. Desc
 ## Arquitectura
 
 - Cuatro servicios: Ventas con DDD, Inventario hexagonal, Clientes en capas clásicas y IA con CLEAR (Clear Architecture de Joschi Kuphal, basada en Clean Architecture). La interpretación de CLEAR debe confirmarse si el docente utiliza otra denominación.
-- GraphQL solo en gestión empresarial, incluida la gestión Android; tienda y comunicación entre servicios por REST. Cada servicio posee sus datos. El modelo CQRS `clb_analitica` recibe eventos con cursores; no consulta las bases de otros servicios.
+- GraphQL solo en gestión empresarial, incluida la gestión Android: todas las consultas y acciones de negocio de las interfaces de gestión pasan por el endpoint GraphQL de IA, que delega en los casos de uso de IA y en el contrato REST propietario de Inventario sin reglas propias (ver [backend](arquitectura/backend.md#r5--gestión-empresarial-sobre-graphql-9-nov-2026)). Transferencia de archivos (audio, fotos, descargas) por REST como decisión técnica; tienda y comunicación entre servicios por REST. Cada servicio posee sus datos. El modelo CQRS `clb_analitica` recibe eventos con cursores; no consulta las bases de otros servicios.
 - Angular es el shell y React el microfrontend del probador. Flutter conserva dominio, presentación y datos separados.
 - Compra como SAGA entre Ventas, Inventario y Clientes. La devolución es una extensión futura; el ejemplo del docente no obliga a implementar dos SAGA.
 - n8n coordina stock bajo → alerta y pedido confirmado → comprobante con tres servicios. No se integró WhatsApp; el dominio justifica los dos procesos locales. Comprobante no equivale a factura fiscal.
@@ -26,6 +26,7 @@ Este registro sustituye las decisiones por fases y notas de conversaciones. Desc
 - Keycloak con OIDC/PKCE. AppAuth utiliza el navegador del teléfono; la prueba confirmada fue app → Brave sin repetir contraseña. Compartir cuenta no implica compartir cookies entre navegadores o dispositivos. No hay logout global inmediato por back-channel.
 - Cola de pedidos/administración por titular; acciones admin requieren rol vigente. Claves y UUID estables. Conflicto definitivo permite rehacer; resultado incierto solo reintenta con la misma clave.
 - Gestión offline muestra una copia fechada. Misiones, reportes, confirmación de reposición e ingesta/publicación requieren servidor. Alertas atendidas y movimientos pueden encolarse. Datos administrativos se retiran al cerrar sesión.
+- Reportes: la especificación sigue siendo una lista cerrada (métricas extra ≤ 2, filtros de texto corto como parámetros enlazados, rango ≤ 366 días sin fechas futuras, orden en lista blanca); una petición sin términos del dominio responde AMBIGUA con sugerencias. Pantalla, Excel y PDF (reportlab, BSD) salen del mismo `datos` guardado. Cada consulta del reporte tiene `statement_timeout` de 5 s.
 - La voz genera texto editable; micrófono solo si hay soporte de grabación y conexión. Los resultados de agentes preceden a los detalles de herramientas; escrituras requieren confirmación.
 - Seguridad MCP: lista blanca, identidad/rol, esquemas cerrados, sin SQL arbitrario; datos y respuestas externas no son instrucciones.
 

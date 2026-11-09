@@ -1,4 +1,5 @@
 /** Gestión empresarial (fase 8): lo que devuelven los agentes del microservicio de IA y cómo se dibuja un reporte. */
+import type { DatosReporteV2, EspecificacionV2, Procedencia } from "./reportes-v2";
 
 export type Agente = "monitoreo" | "reportes" | "inventario" | "clientes";
 export type Visualizacion = "TABLA" | "BARRAS" | "LINEAS" | "KPI";
@@ -18,30 +19,49 @@ export interface RespuestaAgente {
 
 export interface ResultadoMision { mision: string; agentes: RespuestaAgente[]; generativa: boolean; fecha: string }
 
+export type Metrica = "UNIDADES" | "MONTO" | "PEDIDOS";
+export type Agrupacion = "TALLA" | "COLOR" | "CATEGORIA" | "PRODUCTO" | "DIA";
+export type Orden = "METRICA_DESC" | "METRICA_ASC" | "CLAVE_ASC";
+export interface Filtros { categoria?: string | null; talla?: string | null; color?: string | null; producto?: string | null }
+
 export interface Especificacion {
   titulo: string;
-  metrica: "UNIDADES" | "MONTO" | "PEDIDOS";
-  agrupar_por: string | null;
-  periodo: "HOY" | "SEMANA" | "MES" | "TODO";
+  metrica: Metrica;
+  agrupar_por: Agrupacion | null;
+  periodo: "HOY" | "SEMANA" | "MES" | "TODO" | "RANGO";
   visualizacion: Visualizacion;
   destino: Destino;
   limite: number;
+  // Ampliación de reportes (opcional: el historial anterior no la trae).
+  metricas_extra?: Metrica[];
+  filtros?: Filtros | null;
+  desde?: string | null;
+  hasta?: string | null;
+  orden?: Orden;
 }
 
-export interface Fila { clave: string; valor: number }
+/** `valor` es la métrica principal; `valores` trae también las columnas extra pedidas. */
+export interface Fila { clave: string; valor: number; valores?: Partial<Record<Metrica, number>> }
 
-export interface DatosReporte { titulo: string; unidad: string; total: number; filas: Fila[]; pedidos: number; unidades: number; monto: string; datos_al: string | null }
+export interface DatosReporte {
+  titulo: string; unidad: string; total: number; filas: Fila[]; pedidos: number; unidades: number; monto: string; datos_al: string | null;
+  columnas?: Metrica[]; totales?: Partial<Record<Metrica, number>>;
+}
 
 export interface Reporte {
   identificador: string;
   peticion: string | null;
   salida_modelo: string | null;
-  especificacion: Especificacion;
+  /** v1 (historial anterior) o v2 (catálogo); se distinguen con `esV2(especificacion)`. */
+  especificacion: Especificacion | EspecificacionV2;
   generativa: boolean;
   observacion: string | null;
-  datos: DatosReporte;
+  datos: DatosReporte | DatosReporteV2;
+  procedencia?: Procedencia;
   datos_al: string | null;
   fecha: string;
+  /** Lo que se entendió (métricas, agrupación, periodo, filtros y orden), calculado por el servidor. */
+  interpretacion?: string;
 }
 
 export interface Propuesta {
@@ -67,11 +87,23 @@ export const NOMBRES_AGENTE: Record<Agente, string> = {
   monitoreo: "Monitoreo", reportes: "Reportes", inventario: "Inventario", clientes: "Clientes",
 };
 
-export const PERIODOS: Record<Especificacion["periodo"], string> = { HOY: "hoy", SEMANA: "últimos 7 días", MES: "últimos 30 días", TODO: "todo el historial" };
+export const PERIODOS: Record<Especificacion["periodo"], string> = {
+  HOY: "hoy", SEMANA: "últimos 7 días", MES: "últimos 30 días", TODO: "todo el historial", RANGO: "rango de fechas",
+};
+export const METRICAS: Record<Metrica, string> = { UNIDADES: "Unidades vendidas", MONTO: "Ventas en Bs", PEDIDOS: "Pedidos" };
+export const AGRUPACIONES: Record<Agrupacion, string> = { TALLA: "Talla", COLOR: "Color", CATEGORIA: "Categoría", PRODUCTO: "Producto", DIA: "Día" };
+export const ORDENES: Record<Orden, string> = { METRICA_DESC: "De mayor a menor", METRICA_ASC: "De menor a mayor", CLAVE_ASC: "Alfabético" };
 
-/** Valor legible: los montos con dos decimales y separador de miles boliviano (1.320,00 Bs). */
+/** Minutos desde la última sincronización del modelo de lectura; `null` si nunca llegaron datos. */
+export function minutosDesde(fecha: string | null, ahora = Date.now()): number | null {
+  if (!fecha) return null;
+  const ms = ahora - new Date(fecha).getTime();
+  return Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 60_000)) : null;
+}
+
+/** Valor legible: los montos con dos decimales y separador de miles boliviano (Bs 1.320,00), igual que tabla, PDF y Excel. */
 export function formatoValor(valor: number, unidad: string): string {
-  if (unidad === "Bs") return valor.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " Bs";
+  if (unidad === "Bs") return "Bs " + valor.toLocaleString("es-BO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return valor.toLocaleString("es-BO") + (unidad ? " " + unidad : "");
 }
 

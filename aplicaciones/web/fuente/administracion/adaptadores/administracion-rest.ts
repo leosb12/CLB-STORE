@@ -56,20 +56,40 @@ export class AdministracionRest {
     return datos as T;
   }
 
+  /**
+   * Consulta o acción de gestión por GraphQL (R5). Inventario sigue siendo el propietario: la respuesta es su mismo
+   * cuerpo y un rechazo trae `estado_http` y su cuerpo, así la cola decide igual que con REST.
+   */
+  private async gestion<T>(consulta: string, variables: Record<string, unknown> = {}, señal?: AbortSignal): Promise<T> {
+    const respuesta = await this.petición<{ data?: Record<string, T> | null; errors?: { message: string; extensions?: Record<string, unknown> }[] }>(
+      "/graphql", { method: "POST", ...(señal ? { signal: señal } : {}), headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: consulta, variables }) });
+    const error = respuesta.errors?.[0];
+    if (error) {
+      const extensiones = error.extensions ?? {};
+      const estado = typeof extensiones["estado_http"] === "number" ? extensiones["estado_http"] : 500;
+      const cuerpo = extensiones["cuerpo"] as Record<string, unknown> | undefined;
+      throw new ErrorRemoto(estado, error.message, cuerpo ?? { código: extensiones["codigo"] });
+    }
+    const valores = respuesta.data ? Object.values(respuesta.data) : [];
+    if (valores.length !== 1 || valores[0] === null || valores[0] === undefined) throw new Error("La gestión no devolvió datos.");
+    return valores[0];
+  }
+
   async capacidadFotografica(): Promise<boolean> {
-    return (await this.petición<{habilitado: boolean}>("/administracion/recursos-probador/capacidades")).habilitado === true;
+    return (await this.gestion<{habilitado: boolean}>("{ capacidadesIngesta }")).habilitado === true;
   }
   async cargarFotografia(id: string, clave: string, version: number, color: string, archivo: File): Promise<TrabajoFotografico> {
     const datos = new FormData(); datos.set("imagen",archivo); datos.set("color",color); datos.set("versión_esperada",String(version));
     return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador`, {method: "POST", headers: {"Idempotency-Key": clave},body: datos})).trabajo;
   }
   async consultarFotografia(id: string, trabajo: string): Promise<TrabajoFotografico> {
-    return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador/${trabajo}`)).trabajo;
+    return (await this.gestion<{trabajo: TrabajoFotografico}>("query($p: String!, $t: String!) { trabajoIngesta(producto: $p, trabajo: $t) }",
+      { p: id, t: trabajo })).trabajo;
   }
   async publicarFotografia(id: string, trabajo: string, clave: string, version: number, aceptarAvisos = false): Promise<TrabajoFotografico> {
-    return (await this.petición<{trabajo: TrabajoFotografico}>(`/productos/${id}/recursos-probador/${trabajo}/publicar`, {
-      method: "POST", headers: {"Content-Type": "application/json", "Idempotency-Key": clave},
-      body: JSON.stringify({versión_esperada: version, ...(aceptarAvisos ? {aceptar_avisos: true} : {})})})).trabajo;
+    return (await this.gestion<{trabajo: TrabajoFotografico}>(
+      "mutation($p: String!, $t: String!, $c: String!, $d: JSON!) { publicarRecurso(producto: $p, trabajo: $t, clave: $c, datos: $d) }",
+      { p: id, t: trabajo, c: clave, d: {versión_esperada: version, ...(aceptarAvisos ? {aceptar_avisos: true} : {})} })).trabajo;
   }
   async previsualizarFotografia(id: string, trabajo: string): Promise<Blob> {
     const r = await this.solicitar(`${this.url}/productos/${id}/recursos-probador/${trabajo}/previsualizacion`, {
@@ -82,9 +102,8 @@ export class AdministracionRest {
     const productos: Producto[] = [];
     let total: number | undefined;
     for (let página = 1; página <= 10000; página++) {
-      const resultado = await this.petición<PaginaProductos>(
-        "/productos/administracion?" +
-          new URLSearchParams({ página: String(página), límite: "100" }),
+      const resultado = await this.gestion<PaginaProductos>(
+        "query($p: Int!) { productosAdmin(pagina: $p, limite: 100) }", { p: página },
       );
       if (
         !Array.isArray(resultado.productos) ||
@@ -112,34 +131,37 @@ export class AdministracionRest {
 
   async consultar(identificador: string): Promise<Producto> {
     return (
-      await this.petición<{ producto: Producto }>(
-        "/productos/administracion/" + encodeURIComponent(identificador),
+      await this.gestion<{ producto: Producto }>(
+        "query($p: String!) { productoAdmin(producto: $p) }", { p: identificador },
       )
     ).producto;
   }
 
   procesadores(): ProcesadorOperacion[] {
     return [...["CREAR_VARIANTE", "MODIFICAR_VARIANTE", "REGISTRAR_MOVIMIENTO", "CONFIGURAR_MINIMO"].map(tipo => ({
-      tipo, endpoint: this.url + "/variantes", procesar: (operación: Readonly<Operacion>, señal: AbortSignal) => this.enviarExistencias(operación, señal),
+      tipo, endpoint: this.url + "/graphql", procesar: (operación: Readonly<Operacion>, señal: AbortSignal) => this.enviarExistencias(operación, señal),
     })), ...["REGISTRAR_PRODUCTO", "MODIFICAR_PRODUCTO"].map((tipo) => ({
       tipo,
-      endpoint: this.url + "/productos",
+      endpoint: this.url + "/graphql",
       procesar: async (operación: Readonly<Operacion>, señal: AbortSignal) => this.enviar(operación, señal),
     }))];
   }
 
   async variantes(producto: string, administración = false): Promise<Variante[]> {
-    const respuesta = await this.petición<{ variantes: Variante[] }>((administración ? "/administracion" : "") + "/productos/" + encodeURIComponent(producto) + "/variantes");
+    // La vista pública de la tienda sigue en REST; la administrativa es una consulta de gestión (GraphQL).
+    const respuesta = administración
+      ? await this.gestion<{ variantes: Variante[] }>("query($p: String!) { variantesAdmin(producto: $p) }", { p: producto })
+      : await this.petición<{ variantes: Variante[] }>("/productos/" + encodeURIComponent(producto) + "/variantes");
     if (!Array.isArray(respuesta.variantes) || !respuesta.variantes.every(varianteValida) || respuesta.variantes.some(v => v.identificador_producto !== producto)) throw new Error("Respuesta de variantes inválida.");
     return respuesta.variantes;
   }
   async variante(id: string): Promise<Variante> {
-    const respuesta = await this.petición<ConfirmacionExistencias>("/administracion/variantes/" + encodeURIComponent(id));
+    const respuesta = await this.gestion<ConfirmacionExistencias>("query($v: String!) { varianteAdmin(variante: $v) }", { v: id });
     if (!varianteValida(respuesta.variante)) throw new Error("Respuesta de variante inválida.");
     return respuesta.variante;
   }
   async movimientos(id: string): Promise<Movimiento[]> {
-    const respuesta = await this.petición<{ movimientos: Movimiento[] }>("/variantes/" + encodeURIComponent(id) + "/movimientos");
+    const respuesta = await this.gestion<{ movimientos: Movimiento[] }>("query($v: String!) { movimientos(variante: $v) }", { v: id });
     if (!Array.isArray(respuesta.movimientos)) throw new Error("Historial inválido.");
     return respuesta.movimientos;
   }
@@ -148,13 +170,12 @@ export class AdministracionRest {
     const crear = operación.tipo === "CREAR_VARIANTE";
     const movimiento = operación.tipo === "REGISTRAR_MOVIMIENTO";
     const mínimo = operación.tipo === "CONFIGURAR_MINIMO";
-    const ruta = crear ? `/productos/${encodeURIComponent(String(identificador_producto))}/variantes`
-      : `/variantes/${encodeURIComponent(String(identificador_variante))}${movimiento ? "/movimientos" : mínimo ? "/minimo" : ""}`;
-    const respuesta = await this.petición<ConfirmacionExistencias>(ruta, {
-      method: crear || movimiento ? "POST" : "PUT", signal: señal,
-      headers: { "Content-Type": "application/json", "Idempotency-Key": operación.claveIdempotencia },
-      body: JSON.stringify({ ...datos, ...(!crear ? { versión_esperada: operación.versiónEsperada } : {}) }),
-    });
+    const mutación = crear ? "crearVariante(producto: $id, clave: $c, datos: $d)"
+      : `${movimiento ? "registrarMovimiento" : mínimo ? "fijarMinimo" : "modificarVariante"}(variante: $id, clave: $c, datos: $d)`;
+    const respuesta = await this.gestion<ConfirmacionExistencias>(`mutation($id: String!, $c: String!, $d: JSON!) { ${mutación} }`, {
+      id: String(crear ? identificador_producto : identificador_variante), c: operación.claveIdempotencia,
+      d: { ...datos, ...(!crear ? { versión_esperada: operación.versiónEsperada } : {}) },
+    }, señal);
     if (!varianteValida(respuesta.variante) || respuesta.variante.identificador !== (crear ? datos["identificador"] : identificador_variante)
       || respuesta.variante.versión_sincronización !== (crear ? 1 : Number(operación.versiónEsperada) + 1))
       throw new Error("No se recibió una confirmación válida de existencias. Se reintentará la misma operación.");
@@ -167,23 +188,14 @@ export class AdministracionRest {
   ): Promise<Producto> {
     const modificación = operación.tipo === "MODIFICAR_PRODUCTO";
     const { identificadorProducto, ...datos } = operación.datos;
-    const ruta = modificación
-      ? "/productos/" + encodeURIComponent(String(identificadorProducto))
-      : "/productos";
-    const respuesta = await this.petición<{ producto: Producto }>(ruta, {
-      method: modificación ? "PUT" : "POST",
-      signal: señal,
-      headers: {
-        "Content-Type": "application/json",
-        "Idempotency-Key": operación.claveIdempotencia,
-      },
-      body: JSON.stringify({
-        ...datos,
-        ...(modificación
-          ? { versión_esperada: operación.versiónEsperada }
-          : {}),
-      }),
-    });
+    const cuerpo = { ...datos, ...(modificación ? { versión_esperada: operación.versiónEsperada } : {}) };
+    const respuesta = modificación
+      ? await this.gestion<{ producto: Producto }>(
+          "mutation($p: String!, $c: String!, $d: JSON!) { modificarProducto(producto: $p, clave: $c, datos: $d) }",
+          { p: String(identificadorProducto), c: operación.claveIdempotencia, d: cuerpo }, señal)
+      : await this.gestion<{ producto: Producto }>(
+          "mutation($c: String!, $d: JSON!) { crearProducto(clave: $c, datos: $d) }",
+          { c: operación.claveIdempotencia, d: cuerpo }, señal);
     const producto = respuesta.producto;
     if (
       !producto ||

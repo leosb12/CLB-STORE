@@ -77,20 +77,24 @@ sequenceDiagram
 sequenceDiagram
   actor A as Admin
   participant UI as Administración
+  participant G as GraphQL de gestión (IA, delega)
   participant C as ModificarProducto
   participant R as Puerto repositorio
   A->>UI: Editar y guardar
   UI->>UI: Persistir propuesta + clave + versión
-  UI->>C: PUT con token admin
+  UI->>G: mutation modificarProducto(clave, datos con versión) + token admin
+  G->>C: PUT al contrato de Inventario con el mismo JWT y clave
   C->>C: Validar reglas y construir producto
   C->>R: Actualizar con versión esperada y comprobante
   alt Versión vigente
     R-->>C: Producto confirmado
-    C-->>UI: 200
+    C-->>G: 200
+    G-->>UI: {producto}
     UI->>UI: Releer catálogo vigente
   else Otra escritura ganó
     R-->>C: Conflicto
-    C-->>UI: 409 con producto actual
+    C-->>G: 409 con producto actual
+    G-->>UI: error estado_http 409 + cuerpo
     UI->>UI: Conservar propuesta para revisión
   end
 ```
@@ -140,15 +144,19 @@ sequenceDiagram
   participant L as LLM local / STT local
   participant M as MCP / GobiernoHerramientas
   participant G as GraphQL / ConsultarAnalitica
-  UI->>L: Voz a texto cuando corresponde
-  UI->>R: Petición + destino/formato
+  UI->>L: Voz a texto cuando corresponde (REST, texto editable)
+  UI->>R: mutation generarReporte(petición | especificación editada)
+  alt Petición sin términos del dominio
+    R-->>UI: AMBIGUA + sugerencias
+  end
   R->>L: Proponer especificación estructurada
-  R->>R: Validar esquema y lista permitida
+  R->>R: Validar esquema y lista permitida (columnas, filtros, rango, orden)
   R->>M: Herramienta fija autenticada
   M->>G: Consulta fija sobre modelo de lectura
   G-->>R: Datos reales + fecha de actualización
-  R->>R: Verificar cifras, guardar reporte y generar xlsx
-  R-->>UI: Resultado y exportación
+  R->>R: Verificar cifras y guardar reporte
+  R-->>UI: Resultado + interpretación legible
+  UI->>R: GET /reportes/{id}/excel | /pdf (mismos datos guardados)
   Note over R,G: Sin SQL arbitrario ni acceso a bases ajenas
 ```
 

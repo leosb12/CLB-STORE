@@ -6,7 +6,7 @@ Fuente de requisitos: [requisitos del docente](../requisitos-docente.md) (destil
 |---|---|---|
 | R1/R2: servicios y lenguajes | CU03/CU04/CU05 | `microservicios/{ventas,clientes,inventario,inteligencia-artificial}`; Compose y suites de cada servicio |
 | R3/R4: Angular y React integrados | CU02 | Web Component `clb-probador`, contrato y `pruebas:probador` |
-| R5: GraphQL solo empresarial | CU05 | `fuente/puertos/graphql.py`, consultas y pruebas de puertos IA |
+| R5: GraphQL solo empresarial | CU04/CU04.9/CU04.10/CU05 | `fuente/puertos/graphql.py` (`esquema_gestion`), `InventarioGestionRest`; `test_graphql_gestion.py`, `test_graphql_inventario.py`, `gestion.test.ts`, `administracion.test.ts`, `existencias.test.ts`, `gestion_graphql_test.dart`; lecturas y escrituras contra el stack 9-nov, cola offline real en el S23 e IA caída (`ia_caida_stack_test.dart`) |
 | R6: agentes y misión empresarial | CU05 | EjecutarMision, agentes/MCP; `demo-gestion-ia.py` |
 | R7: IA en móvil/navegador | CU02 | MoveNet TF.js/TFLite; pruebas de probador y `integration_test` Android |
 | R8: offline, sincronización, idempotencia | CU02/CU03/CU04 | Suites persistencia, pedidos, administración; demo desconexión en ambos clientes |
@@ -14,7 +14,7 @@ Fuente de requisitos: [requisitos del docente](../requisitos-docente.md) (destil
 | R10: ML supervisado y no supervisado | CU02/CU05 | Modelo de tallas y AgrupadorKMeans; fixtures y pruebas de aprendizaje |
 | R11: DL de imagen/video con TensorFlow | CU02 | MoveNet TensorFlow.js y LiteRT; pruebas de inferencia local |
 | R12: automatización entre servicios | CU03/CU05 | Flujos n8n stock bajo y comprobante; demo-automatizacion.py |
-| R13: reportes por audio/texto y exportación | CU05 | STT, reportes y xlsx; demo-gestion-ia.py |
+| R13: reportes por audio/texto y exportación | CU05 | STT, especificación cerrada ampliada (columnas, filtros, rango, orden), AMBIGUA, xlsx y PDF; `test_reportes_f4.py`, `gestion.test.ts`; verificación visual web (escritorio y 390 px) contra el stack 9-nov |
 | R14: MCP y mitigación de inyección | CU05 | GobiernoHerramientas y pruebas de puertos/gobierno |
 | R15: PostgreSQL, MongoDB y DynamoDB | CU03/CU04/CU05 | Pruebas contra bases reales y propiedad por servicio |
 | R16: entrada única y SSO | CU01 | Keycloak/PKCE y JWT en servicios; ensayo de identidad |
@@ -29,6 +29,14 @@ Fuente de requisitos: [requisitos del docente](../requisitos-docente.md) (destil
 | RF3: publicación idempotente | CU04.9 | GestionarRecursosProbador y pruebas HTTP con MongoDB real |
 | RF4: texturas offline íntegras | CU02/CU04.9 | recursos-dinamicos.test.ts; recursos_prendas_test.dart |
 | RF5: ajuste equivalente Dart/TS | CU02 | `compartido/prendas/fixtures/ajuste-fotografico.json` y pruebas de ambos clientes |
+
+## Actualización del 9 de noviembre de 2026
+
+- R5: las interfaces de gestión usan GraphQL para consultas y acciones de negocio; los casos de uso CU04, CU04.9, CU04.10 y CU05 cambian solo su transporte. Las precondiciones, alternativos e idempotencia se mantienen (ver CU04 en casos de uso).
+- R8: arranque en frío en modo avión en el S23 con y sin Firebase; cola de existencias offline real en el S23 aplicada una vez tras reconectar.
+- R9: `demo-compra-saga.py` con logs de los tres servicios (contexto local de evidencias): compra, idempotencia y compensación ante la caída real de Clientes.
+- R12: `demo-automatizacion.py`: flujos A y B y recuperación tras n8n caído.
+- Resultados del día y bloqueos: [estado](../estado.md). La diagramación final en Enterprise Architect sigue pendiente ([pendientes para EA](LEEME.md#pendiente-para-enterprise-architect)).
 
 ## Distinción entre pruebas y demostración
 

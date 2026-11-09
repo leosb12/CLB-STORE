@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'comunes.dart';
@@ -55,15 +56,69 @@ class _Inicio extends StatefulWidget {
 class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
   int _pestana = 0;
   late final _gestion = EstadoGestion(widget.estado);
+  static const _canalNotificacionesNativas =
+      MethodChannel('bo.clb.store/notificaciones_nativas');
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    widget.estado.avisoEnPrimerPlano.addListener(_mostrarAviso);
+    widget.estado.pestanaSolicitada.addListener(_abrirPestana);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _abrirPestana());
+    _canalNotificacionesNativas.setMethodCallHandler((call) async {
+      if (call.method == 'abrirPedidos') {
+        _ir(2);
+      }
+    });
+    try {
+      _canalNotificacionesNativas
+          .invokeMethod<bool>('comprobarInicio')
+          .then((abrir) {
+            if (abrir == true && mounted) _ir(2);
+          })
+          .catchError((_) {});
+    } catch (_) {}
+  }
+
+  /// Aviso con la app abierta: notificación nativa arriba en el sistema y SnackBar abajo en pantalla.
+  void _mostrarAviso() {
+    final aviso = widget.estado.avisoEnPrimerPlano.value;
+    if (aviso == null || !mounted) return;
+    _dispararNotificacionNativa(aviso);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(aviso.cuerpo.isEmpty ? aviso.titulo : aviso.cuerpo),
+        action: aviso.abrePedidos
+            ? SnackBarAction(label: 'Ver', onPressed: () => _ir(2))
+            : null,
+      ),
+    );
+  }
+
+  void _dispararNotificacionNativa(dynamic aviso) {
+    try {
+      _canalNotificacionesNativas.invokeMethod('mostrar', {
+        'titulo': '${aviso.titulo}',
+        'cuerpo': '${aviso.cuerpo}',
+      });
+    } catch (_) {
+      // Ignorado en plataformas sin soporte nativo o en pruebas.
+    }
+  }
+
+  /// Notificación tocada (app en segundo plano o cerrada): abre «Pedidos».
+  void _abrirPestana() {
+    final pestana = widget.estado.pestanaSolicitada.value;
+    if (pestana == null || !mounted) return;
+    widget.estado.pestanaSolicitada.value = null;
+    _ir(pestana);
   }
 
   @override
   void dispose() {
+    widget.estado.avisoEnPrimerPlano.removeListener(_mostrarAviso);
+    widget.estado.pestanaSolicitada.removeListener(_abrirPestana);
     WidgetsBinding.instance.removeObserver(this);
     _gestion.dispose();
     super.dispose();

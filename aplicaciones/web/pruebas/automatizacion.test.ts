@@ -17,12 +17,14 @@ function respondiendo(estado: number, cuerpo: BodyInit, tipo = "application/json
 
 test("alertas de n8n: se listan solo las nuevas y se atienden con el token del admin", async () => {
   const rest = new GestionRest("/api/v1", conSesión);
-  respondiendo(200, JSON.stringify({ notificaciones: [{ evento: "e-1", sku: "CLB-M" }] }));
+  respondiendo(200, JSON.stringify({ data: { notificaciones: [{ evento: "e-1", sku: "CLB-M" }] } }));
   assert.equal((await rest.notificaciones())[0].evento, "e-1");
-  assert.equal(llamadas[0].url, "/api/v1/notificaciones?estado=NUEVA");
-  respondiendo(200, JSON.stringify({ notificacion: { evento: "e-1", estado: "ATENDIDA" } }));
+  assert.equal(llamadas[0].url, "/api/v1/graphql");
+  assert.match(JSON.parse(llamadas[0].opciones.body as string).query, /notificaciones\(estado: NUEVA\)/);
+  respondiendo(200, JSON.stringify({ data: { atenderNotificacion: { evento: "e-1", estado: "ATENDIDA" } } }));
   assert.equal((await rest.atender("e-1")).estado, "ATENDIDA");
-  assert.equal(llamadas[0].url, "/api/v1/notificaciones/e-1/atender");
+  assert.equal(llamadas[0].url, "/api/v1/graphql");
+  assert.deepEqual(JSON.parse(llamadas[0].opciones.body as string).variables, { e: "e-1" });
   assert.equal(llamadas[0].opciones.method, "POST");
   assert.equal((llamadas[0].opciones.headers as Record<string, string>)["Authorization"], "Bearer token-de-prueba");
 });

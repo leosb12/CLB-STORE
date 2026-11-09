@@ -8,6 +8,7 @@ Defensas contra la inyección de instrucciones, en el servidor (no se confía en
 - sin SQL ni consultas libres: cada herramienta ejecuta una consulta GraphQL fija con variables;
 - sin escrituras directas: `proponer_reposicion` solo registra una propuesta que una persona confirma.
 """
+import datetime
 import uuid
 from typing import Annotated
 
@@ -19,19 +20,22 @@ from starlette.responses import JSONResponse
 from fuente.aplicacion.consultas import ConsultarAnalitica
 from fuente.aplicacion.herramientas import GobiernoHerramientas, HerramientaRechazada
 from fuente.dominio.agentes import AGENTES
-from fuente.dominio.reportes import (Agrupacion, Destino, EspecificacionReporte, Metrica, Periodo, Visualizacion,
-                                     valores_reporte)
+from fuente.dominio.catalogo_reportes import EspecificacionV2
+from fuente.dominio.reportes import Agrupacion, Periodo
 from fuente.infraestructura.identidad import IdentidadNoDisponible, TokenInvalido, VerificadorTokens
 from fuente.puertos.graphql import esquema
 
 CABECERA_USUARIO = b"x-clb-usuario-verificado"
 
-VENTAS = """query ($periodo: Periodo!, $agruparPor: Agrupacion, $limite: Int!, $ordenarPor: Metrica!) {
-  resumenVentas(periodo: $periodo, agruparPor: $agruparPor, limite: $limite, ordenarPor: $ordenarPor) {
+VENTAS = """query ($periodo: Periodo!, $agruparPor: Agrupacion, $limite: Int!, $ordenarPor: Metrica!, $desde: Date, $hasta: Date,
+  $filtros: FiltrosVentas, $orden: OrdenGrupos!) {
+  resumenVentas(periodo: $periodo, agruparPor: $agruparPor, limite: $limite, ordenarPor: $ordenarPor, desde: $desde,
+                hasta: $hasta, filtros: $filtros, orden: $orden) {
     periodo agruparPor pedidos unidades monto datosAl grupos { clave pedidos unidades monto } } }"""
 PRODUCTOS = "query ($limite: Int!) { productos(limite: $limite) { identificador nombre categoria stock variantes ventas monto } }"
 STOCK_BAJO = "{ stockBajo { identificador sku nombre talla color disponible minimo } }"
 ALERTAS = "query ($limite: Int!) { alertas(limite: $limite) { sku nombre disponible minimo fecha } }"
+DATOS_REPORTE = "query ($especificacion: JSON!) { datosReporte(especificacion: $especificacion) }"
 SEGMENTOS = ("{ segmentosClientes { clientes silueta datosAl segmentos { grupo nombre descripcion clientes recenciaDias "
              "frecuencia montoBs diversidad } } }")
 
@@ -85,8 +89,10 @@ def crear_servidor_mcp(consultas: ConsultarAnalitica, gobierno: GobiernoHerramie
             # Solo un rechazo deliberado llega con su texto al agente; el SDK oculta cualquier otro error interno.
             raise ToolError(str(rechazo)) from rechazo
 
-    async def ventas(periodo, agrupar_por, limite, metrica="UNIDADES") -> dict:
-        r = (await graphql(VENTAS, {"periodo": periodo, "agruparPor": agrupar_por, "limite": limite, "ordenarPor": metrica}))["resumenVentas"]
+    async def ventas(periodo, agrupar_por, limite, metrica="UNIDADES", desde=None, hasta=None, filtros=None,
+                     orden="METRICA_DESC") -> dict:
+        r = (await graphql(VENTAS, {"periodo": periodo, "agruparPor": agrupar_por, "limite": limite, "ordenarPor": metrica,
+                                    "desde": desde, "hasta": hasta, "filtros": filtros, "orden": orden}))["resumenVentas"]
         return {"periodo": r["periodo"], "agrupar_por": r["agruparPor"], "pedidos": r["pedidos"], "unidades": r["unidades"],
                 "monto": r["monto"], "grupos": r["grupos"], "datos_al": r["datosAl"]}
 
@@ -120,19 +126,13 @@ def crear_servidor_mcp(consultas: ConsultarAnalitica, gobierno: GobiernoHerramie
             return {"clientes": r["clientes"], "silueta": r["silueta"], "datos_al": r["datosAl"], "segmentos": r["segmentos"]}
         return await ejecutar(ctx, "obtener_segmentos", {}, accion)
 
-    @servidor.tool(description="Calcula un reporte a partir de una especificación validada (las cifras salen del modelo de lectura).")
-    async def generar_reporte(ctx: Context, titulo: Annotated[str, Field(min_length=1, max_length=80)], metrica: Metrica,
-                              periodo: Periodo, visualizacion: Visualizacion, destino: Destino,
-                              agrupar_por: Agrupacion | None = None, limite: Limite = 10) -> dict:
-        argumentos = {"titulo": titulo, "metrica": metrica, "agrupar_por": agrupar_por, "periodo": periodo,
-                      "visualizacion": visualizacion, "destino": destino, "limite": limite}
+    @servidor.tool(description="Calcula un reporte (catálogo v2: fuente, tipo, columnas, filtros, periodo, orden, gráfico "
+                               "y formatos validados). Las cifras salen del modelo de lectura; no admite SQL.")
+    async def generar_reporte(ctx: Context, especificacion: EspecificacionV2) -> dict:
+        argumentos = especificacion.model_dump(mode="json")
 
         async def accion():
-            try:
-                spec = EspecificacionReporte.model_validate(argumentos)
-            except ValidationError as error:
-                raise HerramientaRechazada(f"Especificación inválida: {error.error_count()} errores.") from error
-            return valores_reporte(spec, await ventas(spec.periodo, spec.agrupar_por, spec.limite, spec.metrica))
+            return (await graphql(DATOS_REPORTE, {"especificacion": argumentos}))["datosReporte"]
         return await ejecutar(ctx, "generar_reporte", argumentos, accion)
 
     @servidor.tool(description="PROPONE reponer una variante. No cambia el stock: crea una propuesta que un administrador "

@@ -152,8 +152,9 @@ async def test_reporte_valida_la_salida_del_modelo_y_cae_a_palabras_clave():
     repo = RepositorioMemoria()
     reporte = await GenerarReporte(LlmInvalido(), HerramientasFalsas(), repo).ejecutar(
         "admin-1", "t", "ventas por talla esta semana en barras")
-    assert not reporte["generativa"] and "no pasó la validación" in reporte["observacion"]
-    assert reporte["especificacion"]["agrupar_por"] == "TALLA" and reporte["salida_modelo"].startswith("{")
+    assert not reporte["generativa"] and reporte["procedencia"] == "REGLAS"
+    assert "fuera del catálogo" in reporte["observacion"] and "limitada por reglas" in reporte["observacion"]
+    assert reporte["especificacion"]["columnas"] == ["TALLA", "UNIDADES"] and reporte["salida_modelo"].startswith("{")
     assert repo.reportes == [reporte]
 
     with pytest.raises(EspecificacionInvalida):

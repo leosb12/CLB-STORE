@@ -3,6 +3,7 @@
 library;
 
 import 'administracion.dart';
+import 'avisos.dart';
 import 'dart:typed_data';
 
 import 'modelos.dart';
@@ -77,8 +78,15 @@ abstract interface class FuenteGestion {
     bool confirmar,
     String token,
   );
-  Future<Map<String, dynamic>> reporte(String peticion, String token);
-  Future<Uint8List> excel(String identificador, String token);
+  /// `formatos`: elección explícita en la pantalla (PANTALLA, PDF, EXCEL); `null` = lo que diga la petición.
+  Future<Map<String, dynamic>> reporte(
+    String peticion,
+    String token, {
+    List<String>? formatos,
+  });
+
+  /// Descarga binaria del reporte guardado (`excel` o `pdf`): mismos datos que la pantalla.
+  Future<Uint8List> archivo(String identificador, String formato, String token);
   Future<String> transcribir(Uint8List audio, String token);
 }
 
@@ -119,6 +127,38 @@ abstract interface class FuenteIngesta {
 }
 
 /// Envía una operación administrativa de la cola con su Idempotency-Key fija y devuelve el comprobante ya validado.
+/// Canal push del dispositivo (FCM). Puede no estar disponible (sin Firebase o sin Play Services): nunca bloquea la app.
+abstract interface class AvisosDispositivo {
+  Future<bool> get listo;
+  Future<String?> token();
+  Stream<String> get renovaciones;
+  Stream<AvisoPedido> get recibidos;
+  Stream<AvisoPedido> get tocados;
+  Future<PermisoAvisos> permiso();
+
+  /// Se pide en contexto (al activar Push), no al abrir la app.
+  Future<PermisoAvisos> solicitarPermiso();
+
+  /// Invalida el token del teléfono (otra cuenta recibirá uno nuevo).
+  Future<void> olvidarToken();
+}
+
+/// Preferencias y vínculo del dispositivo en Clientes.
+abstract interface class FuenteAvisos {
+  Future<PreferenciasAvisos> preferencias(String token);
+
+  /// Asocia esta instalación (y su token push) con la cuenta del JWT; el secreto prueba que es el mismo teléfono.
+  Future<void> vincular(String instalacion, String tokenPush, String secreto, String token);
+
+  /// Sin sesión: basta el secreto de la instalación (cierre de sesión sin red, convergido al reconectar).
+  Future<void> desvincular(String instalacion, String secreto);
+}
+
+/// Identidad estable de esta instalación (UUID y secreto de 256 bits), guardada en el Keystore.
+abstract interface class IdentidadInstalacion {
+  Future<({String id, String secreto})> obtener();
+}
+
 abstract interface class ProcesadorOperacion {
   Future<Map<String, dynamic>> enviar(Operacion operacion, String token);
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,9 @@ import 'datos/rest.dart';
 import 'datos/servidor_probador.dart';
 import 'datos/recursos_prendas.dart';
 import 'datos/sesion_keycloak.dart';
+import 'datos/servicio_notificaciones.dart';
+import 'datos/avisos_rest.dart';
+import 'dominio/avisos.dart';
 import 'datos/probador_fotografico_rest.dart';
 import 'datos/cola_generaciones_sqlite.dart';
 import 'dominio/cola_generaciones.dart';
@@ -89,6 +94,7 @@ Future<void> main() async {
           registrarMovimiento: procesadorExistencias,
           configurarMinimo: procesadorExistencias,
           atenderAlerta: ProcesadorAtenderAlerta(cliente),
+          guardarPreferenciasAvisos: ProcesadorPreferenciasAvisos(cliente),
         }),
     tallas: RecomendarTalla(almacen),
     sesion: sesion,
@@ -109,6 +115,10 @@ Future<void> main() async {
     ingesta: administracion,
     // La foto se reduce en el teléfono; solo el modo fotográfico la envía al servidor al generar.
     recursosPrendas: recursos,
+    // Avisos de pedido: push (FCM, puede no estar disponible) y preferencias en Clientes.
+    avisos: ServicioNotificaciones.instancia,
+    fuenteAvisos: AvisosRest(cliente),
+    instalacion: IdentidadInstalacionSegura(),
     crearCompositor: CompositorCamisetaLocal.new,
     elegirFoto: (camara) async {
       final foto = await selector.pickImage(
@@ -121,5 +131,7 @@ Future<void> main() async {
     },
   );
   runApp(AppClb(estado));
+  // Push en segundo plano: un fallo o la falta de red/configuración de Firebase no retrasa ni impide el arranque.
+  unawaited(ServicioNotificaciones.instancia.iniciar());
   await estado.iniciar();
 }

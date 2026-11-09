@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, IsString, Length, Matches, Max, Min, ValidateNested } from "class-validator";
-import { Body, Controller, Get, Put, Req, UseGuards } from "@nestjs/common";
+import { ArrayMaxSize, ArrayMinSize, IsInt, IsOptional, IsString, IsUUID, Length, Matches, Max, Min, ValidateNested } from "class-validator";
+import { Body, Controller, Get, HttpCode, Post, Put, Req, UseGuards } from "@nestjs/common";
 import { AutenticacionJwt, Roles, type SolicitudAutenticada } from "../../comun/autenticacion.js";
 import { ServicioPerfiles } from "../negocio/servicio-perfiles.js";
 
@@ -36,5 +36,22 @@ export class ControladorPerfiles {
     return { perfil: await this.servicio.editar(solicitud.titular.sub, {
       nombre: cambios.nombre, teléfono: cambios.teléfono ?? null, medidas: { ...(cambios.medidas ?? {}) }, versión_esperada: cambios.versión_esperada,
     }) };
+  }
+}
+
+class SolicitudNombres {
+  @ArrayMinSize(1) @ArrayMaxSize(100) @IsUUID("4", { each: true, message: "clientes debe contener UUID v4." }) clientes!: string[];
+}
+
+/** Solo servicios internos (IA alimenta su modelo de lectura); la pasarela no publica /interno. */
+@Controller("api/v1/interno/clientes")
+@UseGuards(AutenticacionJwt)
+@Roles("servicio")
+export class ControladorPerfilesInterno {
+  constructor(private readonly servicio: ServicioPerfiles) {}
+
+  @Post("nombres") @HttpCode(200)
+  async nombres(@Body() cuerpo: SolicitudNombres) {
+    return { clientes: await this.servicio.nombres(cuerpo.clientes) };
   }
 }

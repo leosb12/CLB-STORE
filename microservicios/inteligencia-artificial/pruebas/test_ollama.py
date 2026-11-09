@@ -27,8 +27,20 @@ async def test_el_modelo_traduce_la_peticion_de_la_demo(llm):
     interpretacion = await GenerarReporte(llm, HerramientasFalsas(), RepositorioMemoria()).interpretar(
         "ventas por talla esta semana, barras en el panel")
     spec = interpretacion["especificacion"]
-    assert interpretacion["generativa"], interpretacion["observacion"]
-    assert (spec.agrupar_por, spec.periodo, spec.visualizacion, spec.destino) == ("TALLA", "SEMANA", "BARRAS", "PANEL")
+    assert interpretacion["procedencia"] == "MODELO", interpretacion["observacion"]
+    assert (spec.tipo, spec.columnas[0], spec.periodo, spec.grafico.tipo) == ("AGREGADO", "TALLA", "ESTA_SEMANA", "BARRAS")
+
+
+async def test_el_modelo_interpreta_el_reporte_detallado_del_usuario(llm):
+    """Caso real que fallaba (60 s y KPI de unidades): detalle con nombres, precios, gráfico y solo PDF."""
+    interpretacion = await GenerarReporte(llm, HerramientasFalsas(), RepositorioMemoria()).interpretar(
+        "Quiero las ventas de esta semana con nombres de clientes, productos, cantidad, precio unitario y total comprado, "
+        "un gráfico de barras y salida solo PDF")
+    spec = interpretacion["especificacion"]
+    assert interpretacion["procedencia"] == "MODELO", interpretacion["observacion"]
+    assert (spec.fuente, spec.tipo, spec.periodo, spec.formatos, spec.grafico.tipo) == (
+        "VENTAS", "DETALLE", "ESTA_SEMANA", ["PDF"], "BARRAS")
+    assert spec.columnas == ["CLIENTE", "PRODUCTO", "CANTIDAD", "PRECIO_UNITARIO", "SUBTOTAL"]
 
 
 @pytest.mark.parametrize("mision,esperados", [

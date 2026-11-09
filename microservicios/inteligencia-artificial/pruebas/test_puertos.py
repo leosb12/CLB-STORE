@@ -138,16 +138,17 @@ async def test_reporte_por_texto_historial_y_excel(servidor):
                                     headers=_cabecera("admin"))
         assert respuesta.status_code == 201, respuesta.text
         reporte = respuesta.json()
-        assert reporte["generativa"] is False and reporte["especificacion"]["agrupar_por"] == "TALLA"
-        assert reporte["datos"]["filas"][0] == {"clave": "L", "valor": 3} and reporte["datos_al"]
+        assert reporte["generativa"] is False and reporte["especificacion"]["columnas"] == ["TALLA", "UNIDADES"]
+        assert reporte["datos"]["filas"][0] == ["L", 3] and reporte["datos_al"]
         invalido = await http.post("/api/v1/reportes", json={"especificacion": {"titulo": "x", "metrica": "MONTO", "visualizacion": "KPI",
                                                                                 "agrupar_por": "TALLA"}}, headers=_cabecera("admin"))
         assert invalido.status_code == 422 and invalido.json()["código"] == "ESPECIFICACION_INVALIDA"
         assert (await http.get("/api/v1/reportes", headers=_cabecera("admin"))).json()["reportes"][0]["identificador"] == reporte["identificador"]
         excel = await http.get(f"/api/v1/reportes/{reporte['identificador']}/excel", headers=_cabecera("admin"))
-    hoja = load_workbook(io.BytesIO(excel.content))["Reporte"]
-    filas = [tuple(f) for f in hoja.iter_rows(min_row=7, max_col=2, values_only=True)]
-    assert filas[:3] == [("L", 3), ("M", 2), ("S", 1)] and hoja._charts
+    libro = load_workbook(io.BytesIO(excel.content))
+    filas = [tuple(f) for f in libro["Reporte"].iter_rows(values_only=True)]
+    inicio = filas.index(("Talla", "Unidades")) + 1
+    assert filas[inicio:inicio + 4] == [("L", 3), ("M", 2), ("S", 1), ("Total", 6)] and libro["Gráfico"]._charts
 
 
 async def test_mision_sin_modelo_tallas_y_salud(servidor):

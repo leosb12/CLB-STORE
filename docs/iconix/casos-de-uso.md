@@ -57,7 +57,9 @@ Curso básico:
 4. Inventario valida reglas y confirma estado/comprobante en una escritura atómica.
 5. La aplicación relee el catálogo vigente y muestra existencias.
 
-Alternativos: SKU duplicado, valores inválidos o rol insuficiente no modifican datos. Versión concurrente devuelve conflicto y conserva propuesta. Confirmación incierta conserva la clave; no preparar otra hasta resolverla. Desactivación retira producto del catálogo público sin borrarlo físicamente. Límite de historial exige revisión técnica; no eliminar deduplicación para continuar.
+Transporte (R5, 9-nov-2026): la interfaz de gestión envía cada paso como consulta o mutación del GraphQL de gestión; IA lo delega al contrato de Inventario con el JWT del administrador, la misma Idempotency-Key y la versión esperada. Inventario sigue validando las reglas. La foto de CU04.9 se carga por REST (transferencia de archivo); consultar el trabajo y publicar van por GraphQL.
+
+Alternativos: SKU duplicado, valores inválidos o rol insuficiente no modifican datos. GraphQL de gestión no disponible (IA caída): la propuesta queda en la cola y se reintenta con la misma clave; la lectura usa la copia guardada. Versión concurrente devuelve conflicto y conserva propuesta. Confirmación incierta conserva la clave; no preparar otra hasta resolverla. Desactivación retira producto del catálogo público sin borrarlo físicamente. Límite de historial exige revisión técnica; no eliminar deduplicación para continuar.
 
 ### CU04.9 — Preparar y publicar fotografía de prenda (ingesta con estándar de calidad)
 
@@ -93,17 +95,18 @@ Alternativos:
 
 ## CU05 — Monitorear empresa y generar reportes
 
-Actor: Administrador. Precondición: acceso de gestión y modelo de lectura disponible. Disparador: misión por texto/voz, por ejemplo «monitorea mi negocio». Postcondición: reporte/resultado auditado con fecha de datos; exportación xlsx cuando se solicita.
+Actor: Administrador. Precondición: acceso de gestión y modelo de lectura disponible. Disparador: misión por texto/voz, por ejemplo «monitorea mi negocio». Postcondición: reporte/resultado auditado con fecha de datos e interpretación legible; exportación xlsx o PDF con los mismos datos guardados cuando se solicita.
 
 Curso básico:
 1. Elegir misión y, si corresponde, destino y formato del reporte.
 2. STT local convierte voz a texto; el LLM local propone especificación estructurada.
 3. Validar métricas, herramientas y autorización mediante listas cerradas.
 4. Agentes consultan herramientas MCP que ejecutan GraphQL sobre la proyección analítica.
-5. Calcular/verificar cifras de forma determinista; mostrar resultado y fecha de actualización.
-6. Guardar reporte/historial y exportar xlsx.
+5. Calcular/verificar cifras de forma determinista; mostrar resultado, interpretación («qué se entendió») y fecha de actualización.
+6. Opcional: el administrador ajusta métricas extra (hasta 2 columnas), agrupación, filtros (categoría, talla, color, producto), periodo o rango de fechas (≤ 366 días, sin fechas futuras), orden, gráfico y límite; la especificación editada se valida igual que una interpretada y se recalcula.
+7. Guardar reporte/historial y exportar xlsx o PDF (mismas filas, filtros y periodo que la pantalla).
 
-Alternativos: petición de SQL/herramienta ajena se rechaza y audita. LLM apagado permite respuestas no generativas donde exista plantilla. Modelo de lectura caído impide afirmar cifras nuevas; no consultar bases ajenas como atajo. Misión concurrente 429. Voz no transcrita permite texto. Una propuesta de reposición requiere confirmación administrativa explícita antes de escribir en Inventario.
+Alternativos: petición de SQL/herramienta ajena se rechaza y audita. LLM apagado permite respuestas no generativas donde exista plantilla. Modelo de lectura caído impide afirmar cifras nuevas; no consultar bases ajenas como atajo. Misión concurrente 429. Voz no transcrita permite texto. Petición sin ningún término de ventas, prendas o periodo → AMBIGUA con sugerencias, sin inventar un reporte. Sin ventas en el periodo/filtros → estado vacío explícito. Datos con más de 15 min sin sincronizar → aviso de antigüedad. Consulta que excede 5 s → se cancela (statement_timeout). Una propuesta de reposición requiere confirmación administrativa explícita antes de escribir en Inventario.
 
 Automatización relacionada: stock bajo genera alerta persistente; pedido confirmado inicia comprobante entre Ventas, Clientes e Inventario. n8n caído conserva cursor y reentrega idempotente; no se representa como interacción humana obligatoria.
 

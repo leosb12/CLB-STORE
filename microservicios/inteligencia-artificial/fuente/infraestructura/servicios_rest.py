@@ -1,6 +1,7 @@
 """Clientes REST hacia Ventas, Inventario y Clientes por la red interna de Compose (nunca sus bases)."""
 import asyncio
 import time
+from urllib.parse import quote
 
 import httpx
 
@@ -111,9 +112,69 @@ class InventarioRest:
         return _comprobar(respuesta)
 
 
+class InventarioGestionRest:
+    """Operaciones de gestión de Inventario (lista cerrada) sobre su API REST propietaria, por la red interna.
+
+    Reenvía el JWT del administrador, la Idempotency-Key y el cuerpo tal cual (incluida `versión_esperada`): Inventario
+    sigue autorizando, validando y deduplicando. Un 4xx vuelve como RechazoDeServicio con el cuerpo del propietario.
+    """
+
+    OPERACIONES = {
+        "productos_admin": ("GET", "/productos/administracion"),
+        "producto_admin": ("GET", "/productos/administracion/{producto}"),
+        "crear_producto": ("POST", "/productos"),
+        "modificar_producto": ("PUT", "/productos/{producto}"),
+        "variantes_admin": ("GET", "/administracion/productos/{producto}/variantes"),
+        "variante_admin": ("GET", "/administracion/variantes/{variante}"),
+        "crear_variante": ("POST", "/productos/{producto}/variantes"),
+        "modificar_variante": ("PUT", "/variantes/{variante}"),
+        "registrar_movimiento": ("POST", "/variantes/{variante}/movimientos"),
+        "fijar_minimo": ("PUT", "/variantes/{variante}/minimo"),
+        "movimientos": ("GET", "/variantes/{variante}/movimientos"),
+        "capacidades_ingesta": ("GET", "/administracion/recursos-probador/capacidades"),
+        "trabajo_ingesta": ("GET", "/productos/{producto}/recursos-probador/{trabajo}"),
+        "publicar_recurso": ("POST", "/productos/{producto}/recursos-probador/{trabajo}/publicar"),
+    }
+
+    def __init__(self, http: httpx.AsyncClient, base: str):
+        self.http, self.base = http, f"{base}/api/v1"
+
+    async def ejecutar(self, operacion: str, token: str, *, ruta: dict | None = None, clave: str | None = None,
+                       datos: dict | None = None, consulta: dict | None = None) -> dict:
+        metodo, plantilla = self.OPERACIONES[operacion]
+        url = self.base + plantilla.format(**{k: quote(str(v), safe="") for k, v in (ruta or {}).items()})
+        cabeceras = {"Authorization": f"Bearer {token}", **({"Idempotency-Key": clave} if clave else {})}
+        try:
+            respuesta = await self.http.request(metodo, url, params=consulta, json=datos, headers=cabeceras)
+        except httpx.HTTPError as error:
+            raise ServicioNoDisponible(f"Inventario sin respuesta ({type(error).__name__})") from error
+        return _comprobar(respuesta)
+
+
 class PerfilesRest:
     def __init__(self, http: httpx.AsyncClient, base: str):
         self.http, self.base = http, base
 
     async def medidas(self, token: str) -> dict:
         return _comprobar(await _get(self.http, f"{self.base}/api/v1/perfiles/yo", token))["perfil"].get("medidas", {})
+
+
+class DirectorioClientesRest:
+    """`POST /api/v1/interno/clientes/nombres` de Clientes con el token de servicio de IA."""
+
+    def __init__(self, http: httpx.AsyncClient, base: str, token: TokenDeServicio):
+        self.http, self.url, self.token = http, f"{base}/api/v1/interno/clientes/nombres", token
+
+    async def nombres(self, clientes: list[str]) -> list[dict]:
+        uuids = [c for c in clientes if len(c) == 36]  # Clientes solo acepta UUID v4; otros identificadores quedan sin nombre
+        if not uuids:
+            return []
+        try:
+            respuesta = await self.http.post(self.url, json={"clientes": uuids},
+                                             headers={"Authorization": f"Bearer {await self.token.obtener()}"})
+        except httpx.HTTPError as error:
+            raise ServicioNoDisponible(f"sin respuesta ({type(error).__name__})") from error
+        if respuesta.status_code == 401:
+            self.token.descartar()
+        return _comprobar(respuesta)["clientes"]
+

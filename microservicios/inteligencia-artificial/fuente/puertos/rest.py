@@ -11,12 +11,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import UploadFile  # lo que devuelve request.form()
 
 from fuente.aplicacion.interfaces import RechazoDeServicio, ServicioNoDisponible
-from fuente.aplicacion.reportes import EspecificacionInvalida
+from fuente.aplicacion.reportes import EspecificacionInvalida, ReporteAmbiguo, ReporteNoDisponible
 from fuente.dominio.reportes import Destino
 from fuente.aplicacion.notificaciones import NotificacionInexistente
 from fuente.dominio.notificaciones import EstadoNotificacion, NotificacionStockBajo
 from fuente.dominio.tallas import Medidas, MedidasInvalidas
 from fuente.infraestructura.excel import reporte_xlsx
+from fuente.infraestructura.pdf import reporte_pdf as reporte_pdf_bytes
 from fuente.infraestructura.identidad import IdentidadNoDisponible, TokenInvalido, Usuario
 from fuente.infraestructura.voz import TranscriptorOcupado
 
@@ -62,6 +63,8 @@ class PeticionReporte(BaseModel):
     peticion: str | None = Field(default=None, min_length=3, max_length=500)
     especificacion: dict | None = None
     destino: Destino | None = None
+    # Última elección explícita en la interfaz (prevalece sobre lo interpretado): PANTALLA, PDF y/o EXCEL.
+    formatos: list[Literal["PANTALLA", "PDF", "EXCEL"]] | None = Field(default=None, max_length=3)
 
 
 class PeticionMision(BaseModel):
@@ -92,9 +95,13 @@ async def crear_reporte(cuerpo: PeticionReporte, usuario: Admin, request: Reques
     try:
         async with TRABAJO_LLM:
             return await _servicios(request).reportes.ejecutar(usuario.sub, usuario.token, cuerpo.peticion,
-                                                               cuerpo.especificacion, cuerpo.destino)
+                                                               cuerpo.especificacion, cuerpo.destino, cuerpo.formatos)
     except EspecificacionInvalida as error:
         raise ErrorHttp(422, "ESPECIFICACION_INVALIDA", str(error), errores=error.errores)
+    except ReporteAmbiguo as error:
+        raise ErrorHttp(422, "AMBIGUA", str(error), sugerencias=error.sugerencias)
+    except ReporteNoDisponible as error:
+        raise ErrorHttp(422, "NO_DISPONIBLE", str(error), motivos=error.motivos)
 
 
 @api.get("/reportes")
@@ -114,11 +121,29 @@ async def reporte(identificador: uuid.UUID, usuario: Admin, request: Request):
     return await _reporte(request, identificador)
 
 
+def _exigir_formato(reporte: dict, formato: str):
+    """«Solo PDF» ofrece únicamente PDF (y «solo Excel», Excel); sin archivos pedidos se ofrecen ambos bajo demanda."""
+    spec = reporte["especificacion"]
+    if spec.get("version") == 2:
+        pedidos = {f for f in spec.get("formatos") or [] if f != "PANTALLA"}
+        if pedidos and formato not in pedidos:
+            raise ErrorHttp(409, "FORMATO_NO_SOLICITADO", f"Este reporte se pidió solo en {' y '.join(sorted(pedidos))}.")
+
+
 @api.get("/reportes/{identificador}/excel")
 async def reporte_excel(identificador: uuid.UUID, usuario: Admin, request: Request):
     reporte = await _reporte(request, identificador)
+    _exigir_formato(reporte, "EXCEL")
     return Response(reporte_xlsx(reporte), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     headers={"Content-Disposition": f'attachment; filename="clb-reporte-{str(identificador)[:8]}.xlsx"'})
+
+
+@api.get("/reportes/{identificador}/pdf")
+async def reporte_pdf(identificador: uuid.UUID, usuario: Admin, request: Request):
+    reporte = await _reporte(request, identificador)
+    _exigir_formato(reporte, "PDF")
+    return Response(reporte_pdf_bytes(reporte), media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="clb-reporte-{str(identificador)[:8]}.pdf"'})
 
 
 @api.post("/agentes/misiones")

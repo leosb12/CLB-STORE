@@ -61,7 +61,9 @@ npm run build
 npx playwright test --config playwright.administracion.config.ts
 ```
 
-La suite inicia temporalmente Laravel en `127.0.0.1:18081` y la PWA de producción en `127.0.0.1:14201`. Requiere PHP local/ext-mongodb mediante el ejecutor de Inventario, además de Chrome. Usa una colección aleatoria `clb_prueba_web_*` y la limpia al finalizar, sin tocar productos reales. Perfiles temporales aislados para comprobar cierre/reapertura offline, respuesta perdida tras escritura y resolución de conflicto. Capturas/trazas en `test-results-administracion/`. Las cinco pruebas originales de PWA se siguen ejecutando con `npm run pruebas:pwa` en 14200.
+**Desde el 9-nov-2026 la administración usa el GraphQL de gestión del servicio IA**, que este montaje (Laravel +
+PWA, sin IA ni identidad) no levanta: la suite necesita adaptarse antes de volver a usarse. Mientras tanto la cubren
+`npm test` (adaptador y colas) y la verificación contra el stack. La suite inicia temporalmente Laravel en `127.0.0.1:18081` y la PWA de producción en `127.0.0.1:14201`. Requiere PHP local/ext-mongodb mediante el ejecutor de Inventario, además de Chrome. Usa una colección aleatoria `clb_prueba_web_*` y la limpia al finalizar, sin tocar productos reales. Perfiles temporales aislados para comprobar cierre/reapertura offline, respuesta perdida tras escritura y resolución de conflicto. Capturas/trazas en `test-results-administracion/`. Las cinco pruebas originales de PWA se siguen ejecutando con `npm run pruebas:pwa` en 14200.
 
 
 ## Variantes, stock y carrito

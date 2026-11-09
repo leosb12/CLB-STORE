@@ -1,8 +1,9 @@
 import { Injectable, inject, signal } from "@angular/core";
-import { GESTION_REST } from "../adaptadores/gestion-rest";
+import { ErrorRemoto } from "../../catalogo/dominio/modelos";
+import { GESTION_REST, type SolicitudReporte } from "../adaptadores/gestion-rest";
 import { GrabadoraVoz } from "../adaptadores/grabadora-voz";
 import type {
-  Alerta, Auditoria, Destino, Especificacion, Notificacion, Propuesta, Reporte, ResultadoMision, Segmentacion, VarianteStock,
+  Alerta, Auditoria, Notificacion, Propuesta, Reporte, ResultadoMision, Segmentacion, VarianteStock,
 } from "../dominio/modelos";
 
 /** CU05: gestión empresarial construida con agentes. Cada sección del panel es la misión de un agente. */
@@ -24,6 +25,10 @@ export class EstadoGestion {
   /** Qué está en curso: una sola operación larga a la vez evita misiones duplicadas por doble clic. */
   readonly ocupado = signal<"" | "mision" | "reporte" | "voz" | "grabando" | "datos" | "propuesta">("");
   readonly error = signal("");
+  /** Petición que no nombra qué medir: el servidor pide aclarar y propone ejemplos en vez de inventar un reporte. */
+  readonly ambigua = signal<{ mensaje: string; sugerencias: string[] } | null>(null);
+  /** La petición pide datos que el sistema no registra (costo, proveedor…): se explica en vez de entregar otro reporte. */
+  readonly noDisponible = signal<string[] | null>(null);
   readonly aviso = signal("");
 
   async ejecutarMision(texto: string): Promise<void> {
@@ -34,10 +39,26 @@ export class EstadoGestion {
     });
   }
 
-  async generarReporte(solicitud: { peticion?: string; especificacion?: Especificacion; destino?: Destino }): Promise<Reporte | null> {
+  async generarReporte(solicitud: SolicitudReporte): Promise<Reporte | null> {
     let reporte: Reporte | null = null;
+    this.ambigua.set(null);
+    this.noDisponible.set(null);
     await this.tarea("reporte", async () => {
-      reporte = await this.rest.reporte(solicitud);
+      try {
+        reporte = await this.rest.reporte(solicitud);
+      } catch (error) {
+        if (error instanceof ErrorRemoto && error.detalles?.["código"] === "AMBIGUA") {
+          const sugerencias = error.detalles["sugerencias"];
+          this.ambigua.set({ mensaje: error.message, sugerencias: Array.isArray(sugerencias) ? sugerencias.map(String) : [] });
+          return;
+        }
+        if (error instanceof ErrorRemoto && error.detalles?.["código"] === "NO_DISPONIBLE") {
+          const motivos = error.detalles["motivos"];
+          this.noDisponible.set(Array.isArray(motivos) ? motivos.map(String) : [error.message]);
+          return;
+        }
+        throw error;
+      }
       this.reporte.set(reporte);
       this.historial.set(await this.rest.historial());
     });
@@ -89,11 +110,16 @@ export class EstadoGestion {
     await this.cargarInventario();
   }
 
-  async descargarExcel(reporte: Reporte): Promise<void> {
+  descargarExcel(reporte: Reporte): Promise<void> {
+    return this.descargar(reporte, "excel");
+  }
+
+  /** Excel y PDF salen de los mismos datos guardados que la pantalla: mismos filtros, periodo y cifras. */
+  async descargar(reporte: Reporte, formato: "excel" | "pdf"): Promise<void> {
     await this.tarea("datos", async () => {
       const enlace = document.createElement("a");
-      enlace.href = URL.createObjectURL(await this.rest.excel(reporte.identificador));
-      enlace.download = `clb-reporte-${reporte.identificador.slice(0, 8)}.xlsx`;
+      enlace.href = URL.createObjectURL(await this.rest.archivo(reporte.identificador, formato));
+      enlace.download = `clb-reporte-${reporte.identificador.slice(0, 8)}.${formato === "excel" ? "xlsx" : "pdf"}`;
       enlace.click();
       setTimeout(() => URL.revokeObjectURL(enlace.href), 10_000);
     });
