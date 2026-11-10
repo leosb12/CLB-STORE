@@ -16,6 +16,8 @@ export type Celda = string | number | boolean | null;
 export interface FiltroV2 { campo: string; operador: Operador; valor: string }
 export interface EspecificacionV2 {
   version: 2;
+  /** DEMOSTRACION: dataset sintético aislado (tablero de inteligencia de negocios). Sin valor = OPERACION. */
+  conjunto?: "OPERACION" | "DEMOSTRACION";
   titulo: string;
   fuente: FuenteReporte;
   tipo: "DETALLE" | "AGREGADO";
@@ -35,7 +37,7 @@ export interface GraficoV2 {
   puntos: { clave: string; valor: number }[];
 }
 export interface DatosReporteV2 {
-  version: 2; titulo: string; fuente: FuenteReporte; tipo: "DETALLE" | "AGREGADO";
+  version: 2; titulo: string; fuente: FuenteReporte; tipo: "DETALLE" | "AGREGADO"; conjunto?: "OPERACION" | "DEMOSTRACION";
   columnas: ColumnaReporte[]; filas: Celda[][]; total_filas: number; truncado: boolean;
   totales: Record<string, number>;
   grafico: GraficoV2 | null;

@@ -13,6 +13,13 @@
 | Cliente Android (VTON) | SQLite `clb_vton_cola.db` y PNG privados | Originales pendientes, resultados y borrados por sincronizar; independientes de pedidos | Cuenta titular; originales retirados al completar/eliminar |
 | Cliente Web (VTON) | Cache Storage y marcas en localStorage | Hasta 20 resultados e invalidación remota pendiente por cuenta | Mismo origen y titular comprobado por adaptador |
 
+## Dataset de demostración para inteligencia de negocios
+
+`clb_analitica.demo_bi` repite las tablas de lectura (`clientes`, `pedidos`, `lineas_venta`, `existencias`) con
+≈10.000 registros sintéticos, más `dataset_demostracion` (semilla, hash, conteos, corte) y `modelos_demostracion`
+(K-Means guardado con el hash del dataset). Es propiedad de IA, no tiene ingesta y nunca se mezcla con `public`. Se
+genera con `python -m fuente.infraestructura.dataset_demostracion generar|entrenar|estado`.
+
 ## Consistencia y proyección transversal
 
 ```mermaid

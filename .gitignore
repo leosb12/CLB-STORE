@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!infraestructura/azure/.env.*.example
 **/secretos/
 *.pem
 *.key

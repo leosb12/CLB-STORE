@@ -1,0 +1,150 @@
+/* Tablero de inteligencia de negocios: mismo mundo visual que la web de CLB Store (aplicaciones/web/fuente/estilos.css).
+   Tokens copiados de allí; si cambian en la web, cambiar aquí. */
+:root {
+  --verde: #254e43;
+  --verde-hover: #183b31;
+  --tinta: #222e29;
+  --tenue: #46544b;
+  --borde: #dedfd6;
+  --fondo: #f8f7f3;
+  --superficie-suave: #f0f3ec;
+  --dato: #1f8a5c;
+  --foco: #aa703b;
+  --aviso-fondo: #f3eadb;
+  --aviso-texto: #5c3f16;
+  --error: #8a2f22;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--tinta);
+  background: var(--fondo);
+  font-synthesis: none;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--fondo); }
+h1, h2, h3, p { margin: 0; }
+a { color: inherit; }
+::selection { background: #d5e6d0; color: #17322b; }
+button, input { font: inherit; }
+button { cursor: pointer; border: 0; }
+button:disabled { opacity: 0.5; cursor: default; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--foco); outline-offset: 3px; }
+
+/* Franja de la marca. */
+.franja-superior {
+  background: var(--verde); color: #f0f4ec; text-align: center; font-size: 11px; letter-spacing: 2.5px;
+  padding: 11px 16px; line-height: 1.6;
+}
+
+.encabezado {
+  max-width: 1180px; margin: auto; display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; padding: 22px 0; flex-wrap: wrap;
+}
+.marca { display: flex; align-items: center; gap: 15px; text-decoration: none; }
+.monograma {
+  background: var(--verde); color: #fff; width: 57px; height: 55px; font: 700 22px Georgia, serif;
+  display: flex; align-items: center; justify-content: center; letter-spacing: -2px; position: relative;
+}
+.monograma > span { position: absolute; font: 10px system-ui, sans-serif; top: 8px; right: 6px; letter-spacing: 0; }
+.nombre-marca { font-size: 21px; font-weight: 700; letter-spacing: -0.6px; }
+.nombre-marca small { display: block; font-size: 11px; letter-spacing: 2.5px; font-weight: 400; margin-top: 7px; }
+.encabezado nav { display: flex; gap: 28px; font-size: 13px; }
+.encabezado nav a { text-decoration: none; border-bottom: 2px solid transparent; padding: 6px 0; }
+.encabezado nav a:hover { border-bottom-color: var(--verde); color: var(--verde); }
+
+.bi { max-width: 1180px; margin: auto; padding: 18px 0 80px; }
+.titulo-gestion { margin-bottom: 26px; }
+.titulo-gestion h1 { font: 38px/1.2 Georgia, serif; letter-spacing: -0.5px; text-wrap: balance; }
+.resumen-datos { font-size: 13px; color: var(--tenue); font-variant-numeric: tabular-nums; }
+.titulo-gestion p { margin-top: 10px; max-width: 70ch; font-size: 14px; line-height: 1.65; color: var(--tenue); }
+
+/* Filtros */
+.filtros { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-end; padding: 18px 0 22px;
+  border-top: 1px solid var(--borde); border-bottom: 1px solid var(--borde); }
+.filtro { display: grid; gap: 6px; min-width: 190px; }
+.filtro-ancho { min-width: 260px; flex: 1; max-width: 360px; }
+.filtro label { font-size: 12px; color: var(--tenue); }
+.filtros input[type="number"] { width: 120px; border: 1px solid #cfd3c8; background: #fff; padding: 10px 12px; border-radius: 0;
+  font-variant-numeric: tabular-nums; }
+.botón-principal, .botón-secundario { display: inline-flex; align-items: center; justify-content: center; padding: 13px 20px;
+  font-size: 13px; line-height: 1.3; text-decoration: none; transition: background 150ms ease-out, color 150ms ease-out; }
+.botón-principal { background: var(--verde); color: #fff; border: 1px solid var(--verde); }
+.botón-principal:hover { background: var(--verde-hover); }
+.botón-secundario { background: none; border: 1px solid var(--verde); color: var(--verde); }
+.botón-secundario:hover { background: var(--superficie-suave); }
+.enlace { color: var(--verde); text-decoration: underline; text-underline-offset: 3px; font-size: 13px; }
+
+/* Componentes de Dash 4 con la piel cuadrada de los campos de Gestión */
+.filtros [class*="dash-dropdown"], .filtros [class*="dash-datepicker"] { border-radius: 0; }
+
+/* Estados */
+.estado-bi { margin: 18px 0 0; padding: 14px 16px; font-size: 13px; line-height: 1.6; max-width: 80ch;
+  background: var(--aviso-fondo); color: var(--aviso-texto); display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; }
+.estado-bi.error { background: #f6e3df; color: var(--error); }
+.estado-bi.exito { background: var(--superficie-suave); color: var(--verde); display: grid; gap: 6px; }
+
+/* KPI: una franja de cifras, sin tarjetas */
+.periodo-bi { margin-top: 26px; font-size: 13px; color: var(--tenue); }
+.periodo-bi strong { color: var(--tinta); font-weight: 600; }
+.kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); margin-top: 14px; border-top: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde); }
+.kpis-compactos { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 18px; }
+.kpi { padding: 20px 18px 18px 0; display: grid; gap: 8px; align-content: start; }
+.kpi + .kpi { padding-left: 18px; border-left: 1px solid var(--borde); }
+.kpi span { font-size: 12px; color: var(--tenue); }
+.kpi strong { font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -0.6px; font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; }
+.kpis-compactos .kpi strong { font-size: 24px; }
+.meta-bi { margin-top: 10px; font-size: 12px; line-height: 1.6; color: var(--tenue); max-width: 90ch; font-variant-numeric: tabular-nums; }
+.meta-bi code { font-size: 12px; color: var(--verde); }
+.texto-bi { margin-top: 8px; font-size: 14px; line-height: 1.65; max-width: 75ch; }
+
+/* Secciones */
+.seccion-bi { margin-top: 44px; }
+.seccion-bi h2 { font: 22px/1.3 Georgia, serif; }
+.seccion-bi h3 { font-size: 13px; font-weight: 600; margin-top: 26px; }
+.seccion-ml { padding-top: 34px; border-top: 1px solid var(--borde); }
+.alcance { margin-top: 10px; display: inline-block; padding: 6px 10px; font-size: 12px; background: var(--superficie-suave); color: var(--verde); }
+.grafico-bi { margin-top: 14px; }
+.dos-columnas { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; }
+.dos-columnas .seccion-bi { min-width: 0; }
+
+/* Tablas: las de Gestión */
+.tabla-administracion { max-width: 100%; overflow-x: auto; margin-top: 18px; }
+.tabla-administracion table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.tabla-administracion th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #40523a; font-weight: 500;
+  padding: 11px 9px; background: var(--superficie-suave); border-bottom: 1px solid var(--borde); white-space: nowrap; }
+.tabla-administracion td { padding: 12px 9px; border-bottom: 1px solid var(--borde); line-height: 1.5; }
+.numero { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nombre-segmento { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; }
+.muestra { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.descripciones { margin: 16px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.65; max-width: 90ch; color: var(--tenue); }
+.descripciones strong { color: var(--tinta); }
+
+.simulador { border-bottom: 0; padding-bottom: 6px; }
+.descargas { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.talla-sugerida { margin-top: 14px; font-size: 14px; }
+.talla-sugerida strong { font-size: 30px; font-weight: 600; margin: 0 4px; }
+
+.bi-mensaje { max-width: 640px; margin: 12vh auto; padding: 0 16px; display: grid; gap: 16px; }
+.bi-mensaje h1 { font: 32px/1.2 Georgia, serif; }
+.bi-mensaje p { font-size: 14px; line-height: 1.65; color: var(--tenue); display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+
+@media (max-width: 1240px) {
+  .encabezado, .bi { padding-left: 32px; padding-right: 32px; }
+}
+@media (max-width: 860px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi, .kpi + .kpi { padding: 16px 12px 14px 0; border-left: 0; border-bottom: 1px solid var(--borde); }
+  .kpi:nth-child(even) { padding-left: 12px; border-left: 1px solid var(--borde); }
+  .dos-columnas { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+@media (max-width: 560px) {
+  .encabezado, .bi { padding-left: 16px; padding-right: 16px; }
+  .encabezado nav { gap: 18px; }
+  .titulo-gestion h1 { font-size: 30px; }
+  .kpi strong { font-size: 22px; }
+  .filtro, .filtro-ancho { min-width: 0; width: 100%; max-width: none; }
+  .filtros input[type="number"] { width: 100%; }
+  .simulador { display: grid; grid-template-columns: 1fr 1fr; }
+  .simulador .botón-principal { grid-column: 1 / -1; }
+  .franja-superior { letter-spacing: 1.5px; font-size: 10px; }
+}

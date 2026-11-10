@@ -8,15 +8,17 @@ datos y fecha de actualización.
 """
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from pydantic import ValidationError
 
 from fuente.aplicacion.interfaces import Herramientas, ModeloLenguaje, ModeloNoDisponible, RepositorioAnalitica
 from fuente.dominio.catalogo_reportes import (CATALOGO, NOMBRE_PERIODO, TODOS_LOS_CAMPOS, EspecificacionV2, desde_v1,
-                                              limitaciones, normalizar, pide_grafico_no_soportado)
-from fuente.dominio.reglas_reportes import interpretar_por_reglas, reforzar
-from fuente.dominio.reportes import EspecificacionReporte, es_ambigua, sin_delimitadores
+                                              limitaciones, normalizar, normalizar_texto, pide_grafico_no_soportado, ventana)
+from fuente.dominio.demostracion import conjunto_de
+from fuente.dominio.fechas_peticion import fechas_pedidas
+from fuente.dominio.reglas_reportes import interpretar_por_reglas, periodo_relativo, reforzar
+from fuente.dominio.reportes import ZONA_BOLIVIA, EspecificacionReporte, es_ambigua, sin_delimitadores
 
 LIMITE_PETICION = 500
 SUGERENCIAS_V2 = ["Ventas de esta semana por producto con gráfico de barras",
@@ -31,7 +33,7 @@ SISTEMA = (
     "fuente: VENTAS (líneas de pedidos) o INVENTARIO (existencias actuales; periodo TODO).\n"
     "tipo: DETALLE (una fila por línea de venta o por variante) o AGREGADO (totales agrupados por las dimensiones).\n"
     "Campos de VENTAS — dimensiones: FECHA, PEDIDO, ESTADO, CLIENTE (nombre del comprador), PRODUCTO, SKU, CATEGORIA, "
-    "TALLA, COLOR; valores por línea (solo DETALLE): CANTIDAD, PRECIO_UNITARIO (precio al que compró), SUBTOTAL (total "
+    "TALLA, COLOR, MES (AAAA-MM, para evolución mensual); valores por línea (solo DETALLE): CANTIDAD, PRECIO_UNITARIO (precio al que compró), SUBTOTAL (total "
     "comprado de la línea), STOCK_ACTUAL; totales (solo AGREGADO): UNIDADES, MONTO (ventas en Bs), PEDIDOS, CLIENTES, "
     "PRECIO_PROMEDIO, TICKET_PROMEDIO.\n"
     "Campos de INVENTARIO — dimensiones: PRODUCTO, SKU, CATEGORIA, TALLA, COLOR; valores (DETALLE): STOCK_FISICO, "
@@ -48,7 +50,7 @@ SISTEMA = (
     "filtros: las fechas nunca van en filtros, solo en periodo. Solo si los nombra (campo, operador IGUAL/CONTIENE/MAYOR_O_IGUAL/MENOR_O_IGUAL, valor). Estado: CONFIRMADO "
     "o CANCELADO. Stock bajo: STOCK_BAJO IGUAL SI.\n"
     "orden: solo si lo pide (campo de las columnas, ASC o DESC). limite: 1 a 500 filas (200 si no lo dice).\n"
-    "grafico: tipo NINGUNO, BARRAS o LINEAS (LINEAS solo con eje FECHA); eje una dimensión y valor un total; vacíos si "
+    "grafico: tipo NINGUNO, BARRAS o LINEAS (LINEAS solo con eje FECHA o MES); eje una dimensión y valor un total; vacíos si "
     "no lo dice. Sin gráfico si no lo pide.\n"
     "formatos: PANTALLA, PDF y/o EXCEL solo si los pide; «solo PDF» es [PDF]; vacío si no dice.\n"
     "faltantes: lo que pide y no existe en estos campos (p. ej. costo, margen, proveedor); vacío si todo existe.\n"
@@ -77,7 +79,7 @@ def esquema_modelo() -> dict:
             "orden": {"type": "array", "maxItems": 2, "items": {"type": "object", "properties": {
                 "campo": {"type": "string", "enum": TODOS_LOS_CAMPOS},
                 "direccion": {"type": "string", "enum": ["ASC", "DESC"]}}, "required": ["campo", "direccion"]}},
-            "limite": {"type": "integer"},
+            "limite": {"type": "integer", "minimum": 1, "maximum": 500},
             "grafico": {"type": "object", "properties": {
                 "tipo": {"type": "string", "enum": ["NINGUNO", "BARRAS", "LINEAS"]},
                 "eje": {"type": "string", "enum": ["", *_DIMS]},
@@ -139,6 +141,80 @@ def _limpiar_modelo(crudo: dict) -> dict:
     return datos
 
 
+def _fecha(valor) -> date | None:
+    try:
+        return date.fromisoformat(str(valor)) if valor else None
+    except ValueError:
+        return None
+
+
+def _dias(periodo: str | None, ahora: datetime) -> tuple[date, date] | None:
+    """Días [desde, hasta] que cubre un periodo relativo hoy; None para TODO, RANGO o desconocido."""
+    if periodo in (None, "TODO", "RANGO") or periodo not in NOMBRE_PERIODO:
+        return None
+    inicio, fin = ventana(periodo, ahora)
+    hasta = (fin - timedelta(days=1)) if fin else ahora
+    return inicio.astimezone(ZONA_BOLIVIA).date(), hasta.astimezone(ZONA_BOLIVIA).date()
+
+
+def _texto_dias(par: tuple[date, date] | None) -> str:
+    if par is None:
+        return "todo el historial"
+    desde, hasta = (d.strftime("%d/%m/%Y") for d in par)
+    return f"el {desde}" if desde == hasta else f"del {desde} al {hasta}"
+
+
+def _coherencia_modelo(datos: dict, peticion: str, ahora: datetime) -> list[str]:
+    """Contrasta la propuesta del modelo con lo que la petición dice, sin adivinar:
+    - límite fuera de rango (p. ej. 0): «no indicado», queda el predeterminado (anotado);
+    - fechas: el texto manda (fechas_peticion). Si la petición nombra fechas y el modelo propone otras (explícitas o por
+      su periodo), o si el modelo propone fechas que contradicen su propio periodo o el periodo relativo del texto, se
+      pregunta. Solo se usa RANGO cuando coincide con lo pedido; nunca por el solo hecho de que el modelo dio dos fechas."""
+    notas = []
+    limite = datos.get("limite")
+    if not isinstance(limite, int) or isinstance(limite, bool) or not 1 <= limite <= 500:
+        datos.pop("limite", None)
+        notas.append("El modelo no indicó un límite válido: se usó el predeterminado.")
+    texto = normalizar_texto(peticion)
+    pedidas = fechas_pedidas(texto, ahora.astimezone(ZONA_BOLIVIA).date())
+    if pedidas.pregunta:
+        raise ReporteAmbiguo(pedidas.pregunta, [])
+    periodo = datos.get("periodo")
+    desde, hasta = _fecha(datos.get("desde")), _fecha(datos.get("hasta"))
+    if pedidas.desde:
+        esperado = (pedidas.desde, pedidas.hasta)
+        # Lo que propuso el modelo: sus fechas explícitas si dio ambas; si no, los días de su periodo relativo.
+        propuesto = (desde, hasta) if desde and hasta else _dias(periodo, ahora)
+        if propuesto is not None and propuesto != esperado:
+            # Sin año en la petición, el modelo pudo elegir otro año para los MISMOS días: no contradice lo escrito,
+            # se usa el último transcurrido (anotado). Si difieren los días o el mes, se pregunta.
+            mismo_calendario = pedidas.anio_supuesto and all((p.month, p.day) == (q.month, q.day)
+                                                             for p, q in zip(propuesto, esperado))
+            if not mismo_calendario:
+                raise ReporteAmbiguo(f"La petición pide {_texto_dias(esperado)}, pero la interpretación propuso "
+                                     f"{_texto_dias(propuesto)}. ¿Qué periodo quieres?", [])
+            notas.append(f"El modelo propuso {_texto_dias(propuesto)}; sin año indicado se usó el último transcurrido.")
+        if propuesto is None:
+            notas.append(f"El modelo no indicó el periodo: se usó el de la petición ({_texto_dias(esperado)}).")
+        datos.update(periodo="RANGO", desde=pedidas.desde.isoformat(), hasta=pedidas.hasta.isoformat())
+        notas.extend(pedidas.notas)
+        return notas
+    if (desde or hasta) and periodo != "RANGO":
+        if not (desde and hasta):  # la petición no nombró fechas: una fecha suelta del modelo no se usa
+            notas.append("El modelo propuso una fecha suelta que la petición no menciona: no se usó.")
+        elif (desde, hasta) != _dias(periodo, ahora):
+            raise ReporteAmbiguo(f"La interpretación propuso {_texto_dias((desde, hasta))} y a la vez "
+                                 f"«{NOMBRE_PERIODO.get(periodo, periodo)}» ({_texto_dias(_dias(periodo, ahora))}). "
+                                 "¿Qué periodo quieres?", [])
+        datos["desde"] = datos["hasta"] = None
+    elif periodo == "RANGO" and desde and hasta:
+        relativo = periodo_relativo(texto)
+        if relativo and _dias(relativo, ahora) != (desde, hasta):
+            raise ReporteAmbiguo(f"La petición dice «{NOMBRE_PERIODO[relativo]}» ({_texto_dias(_dias(relativo, ahora))}), "
+                                 f"pero la interpretación propuso {_texto_dias((desde, hasta))}. ¿Qué periodo quieres?", [])
+    return notas
+
+
 def _errores(error: ValidationError) -> list[dict]:
     return json.loads(error.json(include_url=False, include_input=False))
 
@@ -168,7 +244,7 @@ class GenerarReporte:
         try:
             crudo = json.loads(salida)
         except ValueError:
-            return self._por_reglas(peticion, "INCOMPATIBLE", salida)
+            return self._por_reglas(peticion, "INCOMPATIBLE", salida, "la salida no es JSON")
         faltantes = [f.strip() for f in crudo.get("faltantes") or [] if isinstance(f, str) and f.strip()]
         if faltantes:
             raise ReporteNoDisponible([f"No hay datos de: {', '.join(faltantes[:4])}. Los reportes usan ventas (pedidos, "
@@ -176,23 +252,27 @@ class GenerarReporte:
         aclaracion = (crudo.get("aclaracion") or "").strip()
         if aclaracion:
             raise ReporteAmbiguo(aclaracion[:200])
-        propuesta, reforzadas = reforzar(peticion, _limpiar_modelo(crudo), set(_METRICAS), set(_DIMS))
+        limpio = _limpiar_modelo(crudo)
+        corregidas = _coherencia_modelo(limpio, peticion, datetime.now(timezone.utc))
+        propuesta, reforzadas = reforzar(peticion, limpio, set(_METRICAS), set(_DIMS))
+        propuesta["conjunto"] = conjunto_de(peticion)
         datos, notas = normalizar(propuesta)
-        notas = [*reforzadas, *notas]
+        notas = [*corregidas, *reforzadas, *notas]
         try:
             spec = EspecificacionV2.model_validate(datos)
-        except ValidationError:
-            return self._por_reglas(peticion, "INCOMPATIBLE", salida)
+        except ValidationError as error:
+            return self._por_reglas(peticion, "INCOMPATIBLE", salida, _mensajes(error))
         return {"especificacion": spec, "salida_modelo": salida, "generativa": True, "procedencia": "MODELO",
                 "observacion": None, "notas": notas}
 
     @staticmethod
-    def _por_reglas(peticion: str, motivo: str, salida: str | None) -> dict:
+    def _por_reglas(peticion: str, motivo: str, salida: str | None, detalle: str | None = None) -> dict:
         """Respaldo no generativo: reglas limitadas, con la causa del fallo del modelo a la vista."""
         causa = MOTIVO_FALLO.get(motivo, MOTIVO_FALLO["NO_DISPONIBLE"])
         spec, notas, pregunta = interpretar_por_reglas(peticion)
         if pregunta:
             raise ReporteAmbiguo(f"{causa} {pregunta}")
+        spec = {**spec, "conjunto": conjunto_de(peticion)}
         datos, mas = normalizar(spec)
         try:
             validada = EspecificacionV2.model_validate(datos)
@@ -200,7 +280,9 @@ class GenerarReporte:
             raise ReporteAmbiguo(f"{causa} Las reglas de respaldo no lograron armar el reporte ({_mensajes(error)}). "
                                  "Reformula la petición o ajusta la especificación a mano.") from error
         return {"especificacion": validada, "salida_modelo": salida, "generativa": False, "procedencia": "REGLAS",
-                "observacion": f"{causa} Interpretación limitada por reglas: revisa columnas, periodo y formato.",
+                # El motivo concreto queda guardado con el reporte (diagnóstico); antes solo quedaba la causa genérica.
+                "observacion": f"{causa}{f' Detalle: {detalle.rstrip(chr(46))}.' if detalle else ''} Interpretación limitada por reglas: "
+                               "revisa columnas, periodo y formato.",
                 "motivo_fallo": motivo, "notas": [*notas, *mas]}
 
     @staticmethod

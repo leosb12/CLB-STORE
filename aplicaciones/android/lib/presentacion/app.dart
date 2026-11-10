@@ -10,6 +10,7 @@ import 'pantalla_catalogo.dart';
 import 'pantalla_cuenta.dart';
 import 'pantalla_gestion.dart';
 import 'pantalla_pedidos.dart';
+import 'pantalla_sucursales.dart';
 import 'tema.dart';
 
 class AppClb extends StatelessWidget {
@@ -55,9 +56,11 @@ class _Inicio extends StatefulWidget {
 
 class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
   int _pestana = 0;
+  static const _pestanaSucursales = 4, _pestanaGestion = 5;
   late final _gestion = EstadoGestion(widget.estado);
-  static const _canalNotificacionesNativas =
-      MethodChannel('bo.clb.store/notificaciones_nativas');
+  static const _canalNotificacionesNativas = MethodChannel(
+    'bo.clb.store/notificaciones_nativas',
+  );
 
   @override
   void initState() {
@@ -131,7 +134,7 @@ class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
 
   void _ir(int pestana) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    if (pestana == 4) _gestion.cargar();
+    if (pestana == _pestanaGestion) _gestion.cargar();
     setState(() => _pestana = pestana);
   }
 
@@ -142,7 +145,7 @@ class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
       final e = widget.estado;
       // La pestaña Gestión existe solo para el rol admin; si se cierra la sesión, se vuelve al catálogo.
       final admin = e.esAdmin && e.gestion != null;
-      if (!admin && _pestana == 4) _pestana = 0;
+      if (!admin && _pestana == _pestanaGestion) _pestana = 0;
       return Scaffold(
         body: IndexedStack(
           index: _pestana,
@@ -155,11 +158,16 @@ class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
             ),
             PantallaPedidos(e),
             PantallaCuenta(e),
+            PantallaSucursales(e, visible: _pestana == _pestanaSucursales),
             if (admin) PantallaGestion(e, _gestion),
           ],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _pestana,
+          // Seis destinos (vendedor) en un teléfono angosto: la etiqueta solo en el elegido, sin cortes.
+          labelBehavior: admin
+              ? NavigationDestinationLabelBehavior.onlyShowSelected
+              : NavigationDestinationLabelBehavior.alwaysShow,
           onDestinationSelected: _ir,
           destinations: [
             const NavigationDestination(
@@ -199,6 +207,11 @@ class _InicioState extends State<_Inicio> with WidgetsBindingObserver {
               icon: Icon(Icons.person_outline),
               selectedIcon: Icon(Icons.person),
               label: 'Cuenta',
+            ),
+            const NavigationDestination(
+              icon: Icon(Icons.storefront_outlined),
+              selectedIcon: Icon(Icons.storefront),
+              label: 'Sucursales',
             ),
             if (admin)
               NavigationDestination(

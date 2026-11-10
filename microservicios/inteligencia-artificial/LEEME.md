@@ -43,6 +43,15 @@ cursor en una transacción, idempotencia por evento y eventos malformados aparta
 existencias desde el catálogo público se hace cada 5 ciclos. La base se crea con `crear-analitica.py` o, en un volumen vacío,
 con `inicializar-analitica.sh`.
 
+### Dataset de demostración (`demo_bi`)
+Esquema aislado con ≈10.000 registros sintéticos para el tablero de inteligencia de negocios (`aplicaciones/inteligencia-negocios`).
+`python -m fuente.infraestructura.dataset_demostracion generar|entrenar|estado` (`CLB_BI_ESQUEMA`, por defecto `demo_bi`;
+se niega a escribir en `public` o en el esquema operativo). GraphQL `indicadoresDemostracion(desde, hasta, categoria,
+producto)`, reportes con `especificacion.conjunto = DEMOSTRACION` y la herramienta MCP de solo lectura
+`obtener_indicadores_demostracion` (agente de reportes) usan el mismo motor `datos_reporte`. Descarga:
+`GET /api/v1/demostracion/dataset/{completo|clientes|pedidos|lineas_venta|existencias}.csv` (admin; consultas fijas con
+COPY; 404 si no está generado). La pasarela enruta `/api/v1/demostracion/` a IA.
+
 ## Defensas contra la inyección de instrucciones
 Esquemas cerrados (`Literal`, rangos), lista blanca por agente comprobada en el cliente y en el servidor MCP, token admin y
 usuario verificado en cada llamada MCP, consultas GraphQL fijas (sin SQL ni filtros libres), ninguna escritura sin

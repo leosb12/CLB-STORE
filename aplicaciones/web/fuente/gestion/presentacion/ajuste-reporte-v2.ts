@@ -240,6 +240,8 @@ export class AjusteReporteV2 {
     const conGrafico = this.graficoTipo() !== "NINGUNO";
     this.actualizar.emit({
       version: 2, titulo: this.especificacion().titulo, fuente: this.fuente(), tipo: this.tipo(), columnas: this.columnas(),
+      // El ajuste nunca cambia de conjunto: un reporte del dataset de demostración sigue siéndolo al regenerarse.
+      ...(this.especificacion().conjunto ? { conjunto: this.especificacion().conjunto } : {}),
       filtros: this.filtros().map(f => ({ ...f, valor: f.valor.trim() })),
       periodo: this.fuente() === "INVENTARIO" ? "TODO" : this.periodo(),
       desde: this.periodo() === "RANGO" ? this.desde() : null, hasta: this.periodo() === "RANGO" ? this.hasta() : null,

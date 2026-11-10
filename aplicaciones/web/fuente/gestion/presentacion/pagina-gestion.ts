@@ -35,7 +35,13 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
   imports: [DatePipe, JsonPipe, RouterLink, GraficoReporte, AjusteReporte, AjusteReporteV2, ResultadoReporte],
   template: `<section class="gestion">
     <div class="titulo-gestion">
-      <h1>Gestión del negocio</h1>
+      <div class="cabecera-gestion">
+        <h1>Gestión del negocio</h1>
+        <!-- Tablero Dash en el mismo origen (/bi/), con su propia sesión SSO de Keycloak; usa datos sintéticos de demostración. -->
+        <a class="botón-secundario enlace-bi" href="/bi/" target="_blank" rel="noopener"
+          >Inteligencia de negocios<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg
+          ><span class="solo-lectores"> (se abre en otra pestaña)</span></a>
+      </div>
       <p>Cada sección es un agente con sus propias herramientas. Las cifras salen de los datos reales de ventas, inventario y
         clientes; el modelo local solo interpreta y redacta.</p>
     </div>

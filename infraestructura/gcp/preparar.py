@@ -11,7 +11,7 @@ base = pathlib.Path(__file__).resolve().parent
 repo = base.parents[1]
 local = yaml.safe_load((base.parent / "bases-de-datos/compose.yaml").read_text(encoding="utf-8"))
 servicios = {}
-for nombre in ("inventario", "identidad", "pasarela", "web", "probador", "automatizacion"):
+for nombre in ("inventario", "identidad", "pasarela", "web", "probador", "automatizacion", "bi"):
     servicio = servicios[nombre] = copy.deepcopy(local["services"][nombre])
     for campo in ("ports", "networks", "depends_on"):
         servicio.pop(campo, None)
@@ -48,6 +48,11 @@ servicios["web"]["volumes"] = [
     "./privado/cabeceras-seguridad.conf:/etc/nginx/cabeceras-seguridad.conf:ro",
 ]
 servicios["probador"]["image"] = "clb_probador:gcp"
+# Tablero de inteligencia de negocios: mismo origen que la tienda (store/bi/), SSO con el Keycloak de esta VM.
+bi = servicios["bi"]
+bi["image"] = "clb_bi:gcp"
+bi["environment"].update(CLB_BI_IDENTIDAD_PUBLICA="https://auth.leonardoserrate.xyz/identidad",
+                         CLB_BI_ORIGENES="https://store.leonardoserrate.xyz", CLB_BI_COOKIE_SEGURA="true")
 gateway = servicios["pasarela"]
 gateway["volumes"] = ["./privado/nginx.conf:/etc/nginx/nginx.conf:ro"]
 automatizacion = servicios["automatizacion"]
@@ -77,6 +82,15 @@ if not archivo.exists():
     with os.fdopen(os.open(archivo, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "w") as salida:
         salida.writelines(f"{k}={v}\n" for k, v in valores.items())
 env = dict(linea.split("=", 1) for linea in archivo.read_text().splitlines() if linea and not linea.startswith("#"))
+# Secretos del tablero BI: solo se AGREGAN si faltan; nunca se reemplazan los existentes.
+nuevos = {k: secrets.token_hex(32) for k in ("CLB_IDENTIDAD_SECRETO_BI", "CLB_BI_SECRETO_SESION") if not env.get(k)}
+if nuevos:
+    contenido = archivo.read_text()
+    with open(archivo, "a") as salida:
+        if contenido and not contenido.endswith("\n"):
+            salida.write("\n")
+        salida.writelines(f"{k}={v}\n" for k, v in nuevos.items())
+    env.update(nuevos)
 realm = json.loads((base.parent / "identidad/realm-clb.json").read_text(encoding="utf-8"))
 for cliente in realm["clients"]:
     id_cliente = cliente["clientId"]
@@ -85,6 +99,12 @@ for cliente in realm["clients"]:
                        webOrigins=["https://store.leonardoserrate.xyz"])
     elif id_cliente in ("clb-ventas", "clb-ia", "clb-n8n"):
         cliente["secret"] = env[f"CLB_IDENTIDAD_SECRETO_{id_cliente[4:].upper()}"]
+if not any(c["clientId"] == "clb-bi" for c in realm["clients"]):  # instalación nueva; en una existente: cliente-bi.sh
+    realm["clients"].append({"clientId": "clb-bi", "name": "CLB Store — tablero de inteligencia de negocios", "enabled": True,
+        "publicClient": False, "secret": env["CLB_IDENTIDAD_SECRETO_BI"], "standardFlowEnabled": True,
+        "directAccessGrantsEnabled": False, "serviceAccountsEnabled": False, "implicitFlowEnabled": False,
+        "redirectUris": ["https://store.leonardoserrate.xyz/bi/callback"], "attributes": {"pkce.code.challenge.method": "S256"},
+        "defaultClientScopes": ["basic", "clb-api", "profile"]})
 (privado / "realm-clb.json").write_text(json.dumps(realm), encoding="utf-8")
 cabeceras = (repo / "aplicaciones/web/infraestructura/cabeceras-seguridad.conf").read_text(encoding="utf-8")
 (privado / "cabeceras-seguridad.conf").write_text(cabeceras.replace("http://127.0.0.1:18000", "https://auth.leonardoserrate.xyz"), encoding="utf-8")

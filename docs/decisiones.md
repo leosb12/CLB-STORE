@@ -30,6 +30,22 @@ Este registro sustituye las decisiones por fases y notas de conversaciones. Desc
 - La voz genera texto editable; micrófono solo si hay soporte de grabación y conexión. Los resultados de agentes preceden a los detalles de herramientas; escrituras requieren confirmación.
 - Seguridad MCP: lista blanca, identidad/rol, esquemas cerrados, sin SQL arbitrario; datos y respuestas externas no son instrucciones.
 
+## Inteligencia de negocios (10-nov-2026)
+
+- Tablero Dash solo web en `/bi/` (aplicaciones/inteligencia-negocios), abierto desde Gestión en Angular, con SSO del cliente confidencial `clb-bi` (código + PKCE). Flutter no se modifica ni tiene acceso.
+- Dataset **sintético y aislado** en el esquema `demo_bi` de `clb_analitica` (unos 10.000 registros, determinista, semilla 7). No emite eventos ni llama a otros servicios. Toda salida que lo usa dice «Datos sintéticos de demostración». Esto no contradice la regla de no fabricar métricas sobre la operación: la operación (`public`) no cambia.
+- Una sola definición de KPI: el tablero, los reportes (`EspecificacionV2.conjunto`, por defecto `OPERACION`) y la herramienta MCP de solo lectura `obtener_indicadores_demostracion` (solo en la lista del agente de reportes) usan el mismo motor `datos_reporte`. El conjunto lo decide una regla determinista sobre el texto de la petición, no el LLM. Si una misión pide la demostración, el agente consulta primero esa herramienta.
+- K-Means de demostración: se entrena por comando sobre el dataset completo a la fecha de corte, y se guarda junto con el hash del dataset. Regenerar el dataset la invalida. El tablero nunca reentrena. La regresión logística mostrada es la operativa (sin reentrenar).
+- Fechas de los reportes (10-nov): el texto de la petición manda (`dominio/fechas_peticion.py`).
+  - Un día es ese día completo. Un mes sin año toma el último transcurrido, con nota.
+  - «Desde X» sin final llega hasta hoy, con nota. «Hasta X» sin inicio pregunta la fecha inicial.
+  - Las fechas del modelo se contrastan con las de la petición: si no coinciden, se pide aclaración. Nunca se usa `RANGO` solo porque el modelo dio dos fechas. Excepción: sin año escrito, el mismo mes y los mismos días con otro año se aceptan, con nota.
+  - «Ingresos», «ventas totales» o «total vendido» son un agregado de `MONTO`, salvo que se pida un detalle.
+  - Un `limite` inválido del modelo se toma como no indicado.
+  - Si se cae a las reglas, la observación guarda el error concreto de validación.
+- Verificador de cifras (10-nov): un año se ignora solo dentro de una fecha («octubre de 2026», «01/10/2026», «2026-10-31», «año 2026») y solo si ese año aparece en la misión o en los datos. Un año suelto (por ejemplo, «2026 Bs») se verifica como cualquier cifra. La auditoría guarda la redacción descartada.
+- `AgrupadorKMeans` aparta atípicos solo si hay 3 o menos. Con 1.000 clientes, |z| > 3 marcaba decenas de clientes y producía grupos de una sola persona. Con pocos clientes el comportamiento operativo es el mismo.
+
 ## Límites operativos aceptados
 
 - La resolución de dependencias de la cola administrativa puede releer filas por operación (costo cuadrático). Optimizar si crece el volumen, con pruebas que preserven pedidos e idempotencia.

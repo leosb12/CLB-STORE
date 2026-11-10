@@ -27,11 +27,16 @@ class Configuracion:
     identidad_interno: str = field(default_factory=lambda: _env("CLB_IDENTIDAD_INTERNO", "http://identidad:8080/identidad"))
     identidad_secreto: str = field(default_factory=lambda: _env("CLB_IDENTIDAD_SECRETO_IA"))
     ollama_url: str = field(default_factory=lambda: _env("CLB_IA_OLLAMA_URL", "http://host.docker.internal:11434"))
+    # Opcionales: token de servicio de Cloudflare Access si Ollama está detrás de un túnel protegido.
+    ollama_access_id: str = field(default_factory=lambda: os.environ.get("CLB_IA_OLLAMA_ACCESS_ID", ""))
+    ollama_access_clave: str = field(default_factory=lambda: os.environ.get("CLB_IA_OLLAMA_ACCESS_CLAVE", ""), repr=False)
     modelo: str = field(default_factory=lambda: _env("CLB_IA_MODELO", "qwen3:8b"))
     modelo_voz: str = field(default_factory=lambda: _env("CLB_IA_MODELO_VOZ", "small"))
     directorio_modelos: str = field(default_factory=lambda: _env("CLB_IA_DIRECTORIO_MODELOS", "/modelos"))
     intervalo_ingesta: float = field(default_factory=lambda: float(_env("CLB_IA_INTERVALO_INGESTA", "20")))
     mcp_url: str = field(default_factory=lambda: _env("CLB_IA_MCP_URL", "http://127.0.0.1:8000/mcp/"))
+    # Esquema del dataset sintético de inteligencia de negocios (demo_*); vacío = sin conjunto de demostración.
+    bi_esquema: str = field(default_factory=lambda: os.environ.get("CLB_BI_ESQUEMA", "demo_bi"))
 
     @property
     def jwks(self) -> str:

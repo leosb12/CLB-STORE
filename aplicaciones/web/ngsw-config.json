@@ -23,7 +23,9 @@
   "navigationUrls": [
     "/**",
     "!/**/*.*",
-    "!/api/**"
+    "!/api/**",
+    "!/bi",
+    "!/bi/**"
   ],
   "navigationRequestStrategy": "performance",
   "dataGroups": [

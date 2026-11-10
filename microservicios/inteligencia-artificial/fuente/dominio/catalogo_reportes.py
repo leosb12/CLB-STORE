@@ -29,6 +29,8 @@ Operador = Literal["IGUAL", "CONTIENE", "MAYOR_O_IGUAL", "MENOR_O_IGUAL"]
 Direccion = Literal["ASC", "DESC"]
 TipoGrafico = Literal["NINGUNO", "BARRAS", "LINEAS"]
 Formato = Literal["PANTALLA", "PDF", "EXCEL"]
+# OPERACION: modelo de lectura de la tienda. DEMOSTRACION: dataset sintético aislado (dominio/demostracion.py).
+Conjunto = Literal["OPERACION", "DEMOSTRACION"]
 Procedencia = Literal["MODELO", "REGLAS", "MANUAL"]
 
 
@@ -51,6 +53,7 @@ _DIM_PRODUCTO = {
 CATALOGO: dict[str, dict[str, Campo]] = {
     "VENTAS": {
         "FECHA": Campo("Fecha", "FECHA", "DIMENSION", "Día del pedido en Bolivia"),
+        "MES": Campo("Mes", "TEXTO", "DIMENSION", "Mes del pedido en Bolivia, AAAA-MM"),
         "PEDIDO": Campo("Pedido", "TEXTO", "DIMENSION", "Primeros 8 caracteres del identificador"),
         "ESTADO": Campo("Estado", "TEXTO", "DIMENSION"),
         "CLIENTE": Campo("Cliente", "TEXTO", "DIMENSION", "Nombre del perfil o, si no lo editó, el de su cuenta"),
@@ -119,6 +122,7 @@ class EspecificacionV2(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     version: Literal[2] = 2
+    conjunto: Conjunto = "OPERACION"
     titulo: str = Field(min_length=1, max_length=80, pattern=r"^[^\x00-\x1f<>{}=+\-@][^\x00-\x1f<>{}]*$")
     fuente: Fuente = "VENTAS"
     tipo: TipoReporte
@@ -187,7 +191,7 @@ class EspecificacionV2(BaseModel):
                 raise ValueError("El eje del gráfico debe ser un campo para agrupar (cliente, producto, talla, fecha…).")
             if g.valor not in campos or campos[g.valor].clase != "METRICA":
                 raise ValueError("El valor del gráfico debe ser un total (unidades, ventas, pedidos…).")
-            if g.tipo == "LINEAS" and g.eje != "FECHA":
+            if g.tipo == "LINEAS" and g.eje not in ("FECHA", "MES"):
                 raise ValueError("Un gráfico de líneas muestra una evolución: su eje es la fecha.")
         return self
 
@@ -285,7 +289,8 @@ NOMBRE_OPERADOR = {"IGUAL": "=", "CONTIENE": "contiene", "MAYOR_O_IGUAL": "≥",
 def describir_v2(spec: dict, ahora: datetime | None = None) -> str:
     """Interpretación legible: qué fuente, columnas, periodo, filtros, orden, gráfico y salida se entendieron."""
     campos = CATALOGO[spec["fuente"]]
-    partes = [("Detalle de " if spec["tipo"] == "DETALLE" else "Totales de ") + spec["fuente"].lower(),
+    partes = ["Datos sintéticos de demostración"] if spec.get("conjunto") == "DEMOSTRACION" else []
+    partes += [("Detalle de " if spec["tipo"] == "DETALLE" else "Totales de ") + spec["fuente"].lower(),
               ", ".join(campos[c].etiqueta for c in spec["columnas"]), texto_periodo(spec, ahora)]
     filtros = spec.get("filtros") or []
     if spec["fuente"] == "VENTAS" and not any(f["campo"] == "ESTADO" for f in filtros):

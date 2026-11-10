@@ -5,8 +5,11 @@ Cada suposición (métrica o periodo no indicados, columnas básicas) queda anot
 mostrar, devuelve una pregunta en lugar de inventar un reporte.
 """
 import re
+from datetime import date, datetime
 
 from fuente.dominio.catalogo_reportes import CATALOGO, normalizar_texto
+from fuente.dominio.fechas_peticion import fechas_pedidas
+from fuente.dominio.reportes import ZONA_BOLIVIA
 
 # (patrón, campo en detalle, campo en agregado). El orden de aparición en el texto decide el orden de las columnas.
 _VENTAS = (
@@ -90,9 +93,15 @@ def _grafico(texto: str) -> str:
     return "NINGUNO"
 
 
-def interpretar_por_reglas(peticion: str) -> tuple[dict | None, list[str], str | None]:
+# «Ingresos», «ventas totales», «total vendido»: piden UN total, no el detalle de cada venta (salvo que digan «detalle»).
+_TOTAL = re.compile(r"\b(ingresos?|ventas totales|total vendido|total de ventas|cuanto (?:se )?vendi\w*|facturacion|recaudacion)\b")
+_DETALLE = re.compile(r"\b(detalle|cada venta|cada pedido|linea por linea)\b")
+
+
+def interpretar_por_reglas(peticion: str, hoy: date | None = None) -> tuple[dict | None, list[str], str | None]:
     """(especificación sin validar, notas de lo supuesto, pregunta si no se entendió qué mostrar)."""
     texto = normalizar_texto(peticion)
+    hoy = hoy or datetime.now(ZONA_BOLIVIA).date()
     fuente = "INVENTARIO" if _INVENTARIO_INDICIO.search(texto) and not _VENTAS_INDICIO.search(texto) else "VENTAS"
     tabla = _VENTAS if fuente == "VENTAS" else _INVENTARIO
     notas: list[str] = []
@@ -110,7 +119,8 @@ def interpretar_por_reglas(peticion: str) -> tuple[dict | None, list[str], str |
         if m and m.group(1) not in _NO_VALORES:
             filtros.append({"campo": campo, "operador": "IGUAL", "valor": m.group(1).upper() if campo == "TALLA" else m.group(1)})
             texto_tabla = texto_tabla.replace(m.group(0), " ")  # «talla M» filtra; no pide la columna Talla
-    agregado = bool(_POR.search(texto_tabla) or _AGRUPA.search(texto_tabla))
+    agregado = bool(_POR.search(texto_tabla) or _AGRUPA.search(texto_tabla)
+                    or (_TOTAL.search(texto_tabla) and not _DETALLE.search(texto_tabla)))
     columnas = _campos(texto_tabla, tabla, agregado)
     if agregado:
         dims_por = [_DIM.get(d, d.upper()) for d in _POR.findall(texto_tabla)]
@@ -130,8 +140,16 @@ def interpretar_por_reglas(peticion: str) -> tuple[dict | None, list[str], str |
         else:
             return None, notas, ("¿Qué quieres ver? Por ejemplo: «ventas de esta semana por producto» o "
                                  "«detalle de ventas del mes con cliente, producto y total».")
+    rango = {}
+    pedidas = fechas_pedidas(texto, hoy)
     if fuente == "INVENTARIO":
         periodo = "TODO"
+    elif pedidas.pregunta:
+        return None, notas, pedidas.pregunta
+    elif pedidas.desde:  # fechas explícitas del texto: día, mes o rango (reglas visibles en fechas_peticion)
+        periodo = "RANGO"
+        rango = {"desde": pedidas.desde.isoformat(), "hasta": pedidas.hasta.isoformat()}
+        notas.extend(pedidas.notas)
     else:
         periodo = next((p for patron, p in _PERIODOS if re.search(patron, texto)), None)
         if periodo is None:
@@ -154,7 +172,7 @@ def interpretar_por_reglas(peticion: str) -> tuple[dict | None, list[str], str |
     m = re.search(r"\btop (\d{1,3})\b", texto)
     limite = min(500, max(1, int(m.group(1)))) if m else (50 if agregado else 200)
     spec = {"version": 2, "titulo": _titulo(fuente, agregado, columnas), "fuente": fuente,
-            "tipo": "AGREGADO" if agregado else "DETALLE", "columnas": columnas, "filtros": filtros, "periodo": periodo,
+            "tipo": "AGREGADO" if agregado else "DETALLE", "columnas": columnas, "filtros": filtros, "periodo": periodo, **rango,
             "orden": orden, "limite": limite, "grafico": {"tipo": _grafico(texto), "eje": eje if _grafico(texto) != "NINGUNO" else None},
             "formatos": _formatos(texto)}
     return spec, notas, None
@@ -237,7 +255,16 @@ def reforzar(peticion: str, datos: dict, metricas: set[str], dimensiones: set[st
     if fuente == "VENTAS" and re.search(r"\bcancelad", texto) and not any(f.get("campo") == "ESTADO" for f in filtros):
         filtros.append({"campo": "ESTADO", "operador": "IGUAL", "valor": "CANCELADO"})
     datos["filtros"] = filtros
+    if fuente == "VENTAS" and datos.get("tipo") == "DETALLE" and _TOTAL.search(texto) and not _DETALLE.search(texto) \
+            and not any(c in dimensiones for c in datos.get("columnas") or []):
+        datos["tipo"] = "AGREGADO"  # la normalización convierte «total comprado» en «ventas (Bs)»
+        notas.append("La petición pide un total (ingresos): se muestra agregado, no el detalle de cada venta.")
     return datos, notas
+
+
+def periodo_relativo(texto: str) -> str | None:
+    """Periodo relativo nombrado en el texto normalizado («esta semana», «mes pasado»…), o None."""
+    return next((p for patron, p in _PERIODOS if re.search(patron, texto)), None)
 
 
 def _etiqueta(fuente: str, campo: str) -> str:

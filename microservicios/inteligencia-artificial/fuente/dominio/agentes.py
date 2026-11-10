@@ -11,7 +11,7 @@ AGENTES: tuple[Agente, ...] = ("monitoreo", "reportes", "inventario", "clientes"
 
 HERRAMIENTAS: dict[str, frozenset[str]] = {
     "monitoreo": frozenset({"obtener_ventas", "obtener_stock_bajo", "obtener_alertas"}),
-    "reportes": frozenset({"obtener_ventas", "obtener_productos", "generar_reporte"}),
+    "reportes": frozenset({"obtener_ventas", "obtener_productos", "generar_reporte", "obtener_indicadores_demostracion"}),
     "inventario": frozenset({"obtener_productos", "obtener_stock_bajo", "proponer_reposicion"}),
     "clientes": frozenset({"obtener_segmentos"}),
 }
@@ -28,7 +28,9 @@ CONSULTAS_BASE: dict[str, list[tuple[str, dict]]] = {
 ROLES: dict[str, str] = {
     "monitoreo": "Eres el agente de Monitoreo de CLB Store, una tienda de ropa en Bolivia. Resumes cómo va el negocio: "
                  "ventas de hoy y de la semana, pedidos, alertas de stock bajo.",
-    "reportes": "Eres el agente de Reportes de CLB Store. Explicas qué productos, tallas o categorías se venden más.",
+    "reportes": "Eres el agente de Reportes de CLB Store. Explicas qué productos, tallas o categorías se venden más. Si la "
+                "misión habla del conjunto de demostración, dataset sintético o tablero de inteligencia de negocios, usa "
+                "obtener_indicadores_demostracion y di siempre que esas cifras son sintéticas, no ventas reales.",
     "inventario": "Eres el agente de Inventario de CLB Store. Detectas variantes con stock crítico y puedes PROPONER "
                   "reposiciones (una persona las confirma después; tú nunca modificas el stock).",
     "clientes": "Eres el agente de Clientes de CLB Store. Describes los segmentos de clientes encontrados por K-Means.",
@@ -52,7 +54,8 @@ def agentes_por_palabras(mision: str) -> list[Agente]:
     """Delegación determinista del orquestador cuando el modelo no está disponible."""
     texto = mision.lower()
     elegidos = [a for a, palabras in (("monitoreo", ("monitor", "negocio", "hoy", "resumen", "cómo va", "como va")),
-                                      ("reportes", ("reporte", "vend", "talla", "categor")),
+                                      ("reportes", ("reporte", "vend", "talla", "categor", "demostraci", "sintetic",
+                                                    "sintétic", "indicador", "ingreso", "dataset")),
                                       ("inventario", ("stock", "inventario", "repon", "existencia")),
                                       ("clientes", ("cliente", "segment")))
                 if any(p in texto for p in palabras)]

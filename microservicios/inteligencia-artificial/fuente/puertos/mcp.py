@@ -22,6 +22,7 @@ from fuente.aplicacion.herramientas import GobiernoHerramientas, HerramientaRech
 from fuente.dominio.agentes import AGENTES
 from fuente.dominio.catalogo_reportes import EspecificacionV2
 from fuente.dominio.reportes import Agrupacion, Periodo
+from fuente.infraestructura.analitica import texto_bs
 from fuente.infraestructura.identidad import IdentidadNoDisponible, TokenInvalido, VerificadorTokens
 from fuente.puertos.graphql import esquema
 
@@ -36,6 +37,8 @@ PRODUCTOS = "query ($limite: Int!) { productos(limite: $limite) { identificador 
 STOCK_BAJO = "{ stockBajo { identificador sku nombre talla color disponible minimo } }"
 ALERTAS = "query ($limite: Int!) { alertas(limite: $limite) { sku nombre disponible minimo fecha } }"
 DATOS_REPORTE = "query ($especificacion: JSON!) { datosReporte(especificacion: $especificacion) }"
+INDICADORES_DEMOSTRACION = ("query ($desde: Date, $hasta: Date, $categoria: String, $producto: String) { "
+                            "indicadoresDemostracion(desde: $desde, hasta: $hasta, categoria: $categoria, producto: $producto) }")
 SEGMENTOS = ("{ segmentosClientes { clientes silueta datosAl segmentos { grupo nombre descripcion clientes recenciaDias "
              "frecuencia montoBs diversidad } } }")
 
@@ -125,6 +128,34 @@ def crear_servidor_mcp(consultas: ConsultarAnalitica, gobierno: GobiernoHerramie
             r = (await graphql(SEGMENTOS))["segmentosClientes"]
             return {"clientes": r["clientes"], "silueta": r["silueta"], "datos_al": r["datosAl"], "segmentos": r["segmentos"]}
         return await ejecutar(ctx, "obtener_segmentos", {}, accion)
+
+    @servidor.tool(description="Indicadores del conjunto de DEMOSTRACIÓN (datos sintéticos, no ventas reales): ingresos, "
+                               "pedidos, unidades, ticket promedio, evolución mensual, productos y categorías con filtros "
+                               "opcionales de fechas (ambas), categoría y producto; y la segmentación K-Means del dataset completo.")
+    async def obtener_indicadores_demostracion(ctx: Context, desde: datetime.date | None = None, hasta: datetime.date | None = None,
+                                               categoria: Annotated[str, Field(max_length=60)] | None = None,
+                                               producto: Annotated[str, Field(max_length=60)] | None = None) -> dict:
+        argumentos = {"desde": desde.isoformat() if desde else None, "hasta": hasta.isoformat() if hasta else None,
+                      "categoria": categoria, "producto": producto}
+
+        async def accion():
+            r = (await graphql(INDICADORES_DEMOSTRACION, argumentos))["indicadoresDemostracion"]
+            if not r.get("disponible"):
+                return {"conjunto": "DEMOSTRACION", "mensaje": r.get("mensaje")}
+            k, seg = r["kpi"], r.get("segmentacion") or {}
+            return {"conjunto": "DEMOSTRACION", "aviso": r["nota"], "periodo": r["periodo"]["texto"],
+                    "filtros": {"categoria": categoria, "producto": producto},
+                    "ingresos_bs": texto_bs(k["ingresos_centavos"]), "pedidos_confirmados": k["pedidos"],
+                    "unidades": k["unidades"], "ticket_promedio_bs": texto_bs(k["ticket_promedio_centavos"]),
+                    "clientes": k["clientes"],
+                    "mensual": [{"mes": m["mes"], "ingresos_bs": texto_bs(m["monto_centavos"]), "pedidos": m["pedidos"]}
+                                for m in r["mensual"]],
+                    "productos_mas_vendidos": [{"producto": p["producto"], "unidades": p["unidades"]} for p in r["productos"][:5]],
+                    "segmentacion": {"alcance": r["alcance_segmentacion"], "silueta": seg.get("silueta"),
+                                     "segmentos": [{"nombre": s["nombre"], "clientes": s["clientes"]}
+                                                   for s in seg.get("segmentos", [])]} if seg else "pendiente de entrenar",
+                    "registros_dataset": r["dataset"]["total_registros"], "fecha_corte": r["dataset"]["fecha_corte"]}
+        return await ejecutar(ctx, "obtener_indicadores_demostracion", argumentos, accion)
 
     @servidor.tool(description="Calcula un reporte (catálogo v2: fuente, tipo, columnas, filtros, periodo, orden, gráfico "
                                "y formatos validados). Las cifras salen del modelo de lectura; no admite SQL.")

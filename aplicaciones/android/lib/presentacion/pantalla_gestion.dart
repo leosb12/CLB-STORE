@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 
 import 'comunes.dart';
 import 'estado_gestion.dart';
 import 'estado_tienda.dart';
+import 'exportar_actividad.dart' show fechaHora;
 import 'microfono.dart';
+import 'pantalla_actividad.dart';
 import 'pantalla_existencias.dart';
 import 'tema.dart';
 import 'reporte_v2.dart';
@@ -124,8 +128,18 @@ class _PantallaGestionState extends State<PantallaGestion> {
                 _Seccion(
                   Icons.insights_outlined,
                   'Monitorea mi negocio',
-                  'Los agentes revisan ventas, stock, clientes y reportes.',
-                  () => _abrir(PantallaMision(g)),
+                  'Pide en tus palabras o por voz; los agentes consultan ventas, stock, clientes y reportes.',
+                  () async {
+                    final voz = await vozDisponible(g);
+                    _abrir(
+                      PantallaMision(
+                        g,
+                        microfono: voz
+                            ? (alTexto) => BotonMicrofono(g, alTexto)
+                            : null,
+                      ),
+                    );
+                  },
                 ),
                 _Seccion(
                   Icons.notifications_none,
@@ -165,6 +179,12 @@ class _PantallaGestionState extends State<PantallaGestion> {
                   () => _abrir(PantallaProductosAdmin(widget.tienda)),
                   contador: widget.tienda.pendientesAdministracion,
                   colorContador: Clb.cobre,
+                ),
+                _Seccion(
+                  Icons.history,
+                  'Registro de actividad',
+                  'Qué se hizo en este teléfono y cuándo; exportable a TXT, PDF o Excel.',
+                  () => _abrir(PantallaActividad(widget.tienda)),
                 ),
               ],
             ),
@@ -208,44 +228,135 @@ class _Seccion extends StatelessWidget {
   );
 }
 
-/// «Monitorea mi negocio»: primero lo que concluye cada agente; las herramientas usadas, en «Ver detalles».
-class PantallaMision extends StatelessWidget {
-  const PantallaMision(this.g, {super.key});
+/// «Monitorea mi negocio»: misión libre (texto o voz) o el acceso rápido «Monitorear ahora». El texto llega tal cual al
+/// orquestador por GraphQL (`ejecutarMision`); la pantalla muestra solo lo que devuelve: agentes, respuestas y
+/// herramientas MCP invocadas. Nada se inventa ni se completa en el teléfono.
+class PantallaMision extends StatefulWidget {
+  const PantallaMision(this.g, {super.key, this.microfono});
   final EstadoGestion g;
 
+  /// Botón de voz (transcriptor `/voz` del servidor); null si este teléfono no puede grabar o no hay conexión.
+  final Widget Function(void Function(String texto) alTexto)? microfono;
+
+  @override
+  State<PantallaMision> createState() => _PantallaMisionState();
+}
+
+class _PantallaMisionState extends State<PantallaMision> {
   static const _nombres = {
     'monitoreo': 'Monitoreo',
     'reportes': 'Reportes',
     'inventario': 'Inventario',
     'clientes': 'Clientes',
   };
+  final _texto = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _texto.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _texto.dispose();
+    super.dispose();
+  }
+
+  bool get _valida {
+    final n = _texto.text.trim().length;
+    return n >= 3 && n <= 500;
+  }
 
   @override
   Widget build(BuildContext context) {
+    final g = widget.g;
     final t = Theme.of(context);
+    final tenue = t.textTheme.bodySmall?.copyWith(
+      color: t.colorScheme.onSurfaceVariant,
+    );
     return ListenableBuilder(
       listenable: g,
       builder: (context, _) {
-        final agentes = (g.mision?['agentes'] as List?) ?? const [];
+        final puede = !g.ocupado && g.conectada;
+        final mision = g.mision;
+        final agentes = ((mision?['agentes'] as List?) ?? const []).cast<Map>();
         return Scaffold(
           appBar: _barra(context, 'Monitorea mi negocio'),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              const Text(
-                'El orquestador reparte la misión entre los agentes de Monitoreo, Reportes, Inventario y Clientes. '
-                'Cada uno solo usa sus herramientas autorizadas y las cifras salen de los datos reales.',
+              Semantics(
+                label: 'Misión',
+                child: TextField(
+                  controller: _texto,
+                  minLines: 3,
+                  maxLines: 6,
+                  maxLength: 500,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(
+                    // Sin etiqueta flotante: el placeholder queda visible antes de escribir.
+                    hintText: '¿Qué querés monitorear de tu negocio?',
+                  ),
+                ),
               ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: g.ocupado || !g.conectada ? null : g.monitorear,
+              Row(
+                children: [
+                  if (widget.microfono != null) ...[
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: t.colorScheme.outline),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: widget.microfono!((texto) {
+                        // El dictado queda en el campo para revisarlo; la misión sale solo al pulsar «Ejecutar».
+                        _texto.text = texto;
+                        _texto.selection = TextSelection.collapsed(
+                          offset: texto.length,
+                        );
+                      }),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: puede && _valida
+                          ? () {
+                              FocusScope.of(context).unfocus();
+                              g.monitorear(_texto.text.trim());
+                            }
+                          : null,
+                      icon: const Icon(Icons.send),
+                      label: const Text('Ejecutar misión'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                widget.microfono != null
+                    ? 'Micrófono: toca para dictar y otra vez para terminar; revisa el texto antes de ejecutar.'
+                    : 'El dictado necesita conexión con el servidor y un teléfono que grabe audio.',
+                style: tenue,
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: puede ? g.monitorear : null,
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Monitorear ahora'),
               ),
+              const SizedBox(height: 4),
+              Text(
+                'Acceso rápido: revisión general de ventas, stock, clientes y reportes. Las misiones solo consultan; '
+                'una reposición sugerida queda como propuesta que confirmas en «Propuestas de reposición».',
+                style: tenue,
+              ),
               if (!g.conectada) ...[
-                const SizedBox(height: 8),
-                const Text(
+                const SizedBox(height: 12),
+                avisoEnLinea(
+                  context,
                   'Necesita conexión con el servidor de gestión. Abajo queda la última misión guardada.',
+                  icono: Icons.cloud_off_outlined,
                 ),
               ],
               if (g.ocupado) ...[
@@ -254,51 +365,47 @@ class PantallaMision extends StatelessWidget {
                   semanticsLabel: 'Los agentes están trabajando',
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Los agentes están revisando el negocio; suele tardar menos de un minuto.',
+                Text(
+                  'Los agentes consultan sus herramientas en el servidor; puede tardar hasta un par de minutos.',
+                  style: t.textTheme.bodyMedium,
                 ),
               ],
               if (g.aviso != null) ...[
                 const SizedBox(height: 12),
-                avisoEnLinea(context, g.aviso!),
+                avisoEnLinea(context, g.aviso!, icono: Icons.error_outline),
               ],
-              if (g.mision != null) ...[
-                const SizedBox(height: 24),
-                Text(
-                  'Resultado · ${fechaCorta(DateTime.tryParse('${g.mision!['fecha']}') ?? DateTime.now())}',
-                  style: t.textTheme.titleLarge,
-                ),
-                for (final a in agentes.cast<Map>()) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    _nombres[a['agente']] ?? '${a['agente']}',
-                    style: t.textTheme.titleMedium,
+              if (mision != null) ...[
+                const SizedBox(height: 28),
+                Text('Resultado', style: t.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    '«${mision['mision']}»',
+                    style: t.textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 4),
-                  Text('${a['respuesta']}'),
-                  ExpansionTile(
-                    tilePadding: EdgeInsets.zero,
-                    title: const Text('Ver detalles'),
-                    children: [
-                      for (final f
-                          in ((a['fuentes'] as List?) ?? const []).cast<Map>())
-                        ListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.build_outlined, size: 18),
-                          title: Text('${f['herramienta']}'),
-                        ),
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          a['generativa'] == true
-                              ? 'Redactado por el modelo local y verificado contra las cifras.'
-                              : 'Plantilla no generativa (sin modelo de lenguaje disponible).',
-                          style: t.textTheme.bodySmall,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${fechaHora(DateTime.tryParse('${mision['fecha']}') ?? DateTime.now())}'
+                  ' · ${agentes.length} ${agentes.length == 1 ? 'agente' : 'agentes'}'
+                  '${g.conectada ? '' : ' · copia guardada'}',
+                  style: tenue?.copyWith(
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+                if (agentes.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text(
+                      'Los agentes no devolvieron resultados para esta misión.',
+                    ),
+                  ),
+                for (final a in agentes) ...[
+                  const Divider(height: 32),
+                  _ResultadoAgente(
+                    a,
+                    nombre: _nombres[a['agente']] ?? '${a['agente']}',
                   ),
                 ],
               ],
@@ -307,6 +414,111 @@ class PantallaMision extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+/// Lo que concluyó un agente; en «Ver detalles», solo las herramientas que realmente invocó según la respuesta.
+class _ResultadoAgente extends StatelessWidget {
+  const _ResultadoAgente(this.a, {required this.nombre});
+  final Map a;
+  final String nombre;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final fuentes = ((a['fuentes'] as List?) ?? const []).cast<Map>();
+    final permitidas = ((a['herramientas_permitidas'] as List?) ?? const [])
+        .join(', ');
+    final tenue = t.textTheme.bodySmall?.copyWith(
+      color: t.colorScheme.onSurfaceVariant,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(nombre, style: t.textTheme.titleMedium),
+        const SizedBox(height: 2),
+        Text(
+          a['generativa'] == true
+              ? 'Redactado por el modelo del servidor y verificado contra las cifras'
+              : 'Resumen verificado, sin modelo de lenguaje',
+          style: tenue,
+        ),
+        const SizedBox(height: 8),
+        SelectableText(
+          '${a['respuesta'] ?? ''}',
+          style: t.textTheme.bodyMedium,
+        ),
+        if (a['observacion'] is String) ...[
+          const SizedBox(height: 6),
+          Text('${a['observacion']}', style: tenue),
+        ],
+        ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(bottom: 8),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          title: Text(
+            'Ver detalles · ${fuentes.length} ${fuentes.length == 1 ? 'herramienta' : 'herramientas'}',
+          ),
+          children: [
+            Text('Herramientas utilizadas', style: t.textTheme.titleSmall),
+            if (fuentes.isEmpty)
+              const Text('Este agente no invocó herramientas.'),
+            for (final f in fuentes)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      _error(f) == null
+                          ? Icons.build_outlined
+                          : Icons.error_outline,
+                      size: 18,
+                      color: _error(f) == null
+                          ? t.colorScheme.onSurfaceVariant
+                          : t.colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${f['herramienta']}',
+                            style: t.textTheme.bodyMedium,
+                          ),
+                          if (f['argumentos'] is Map &&
+                              (f['argumentos'] as Map).isNotEmpty)
+                            Text(jsonEncode(f['argumentos']), style: tenue),
+                          if (_error(f) != null)
+                            Text(
+                              'No respondió: ${_error(f)}',
+                              style: tenue?.copyWith(
+                                color: t.colorScheme.error,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 12),
+            Text('Fuentes de los datos', style: t.textTheme.titleSmall),
+            Text(
+              'Herramientas MCP del servidor de CLB Store con la identidad del vendedor'
+              '${permitidas.isEmpty ? '.' : '; permitidas a este agente: $permitidas.'}',
+              style: tenue,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  static String? _error(Map f) {
+    final r = f['resultado'];
+    return r is Map && r['error'] != null ? '${r['error']}' : null;
   }
 }
 

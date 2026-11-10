@@ -4,6 +4,7 @@ import '../dominio/casos_de_uso.dart';
 import '../dominio/modelos.dart';
 import 'comunes.dart';
 import 'estado_tienda.dart';
+import 'pantalla_entrega.dart';
 
 class PantallaCarrito extends StatefulWidget {
   const PantallaCarrito(
@@ -24,6 +25,11 @@ class _PantallaCarritoState extends State<PantallaCarrito> {
   bool _confirmando = false;
 
   Future<void> _confirmar() async {
+    // Paso visual de entrega: solo orienta; el pedido y su JSON no cambian.
+    final seguir = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => PantallaEntrega(widget.estado)),
+    );
+    if (seguir != true || !mounted) return;
     setState(() => _confirmando = true);
     try {
       await widget.estado.confirmar();

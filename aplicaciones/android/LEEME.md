@@ -129,6 +129,53 @@ El código FCM se conserva y sus pruebas pasan; esta APK muestra push no disponi
 Firebase, por lo que no se verificó recepción push real en esta instalación. Las notificaciones locales sí se
 observaron en NotificationManager de Android, con permiso concedido y los dos ID/tag propios.
 
+## Versión 1.0.13+14: actividad, sucursales, entrega y misiones libres (10-nov-2026)
+
+Solo cliente Flutter y manifiesto Android; backend, Keycloak, SAGA, cola, idempotencia y JSON del pedido sin cambios.
+
+- **Registro de actividad** (Gestión → «Registro de actividad», rol vendedor/admin). Base propia `clb_actividad.db`
+  (no migra `clb_android.db`), aislada por `sub` de la cuenta, límite de 1000 eventos por cuenta. Registra sesión,
+  catálogo, carrito, pedidos, sincronización de la cola, conectividad, notificaciones, IA, misiones MCP, micrófono,
+  sucursales, ubicación/rutas y errores no capturados. Los textos los arma la app y además pasan por `sanear()`
+  (quita JWT, `Bearer`, correos y coordenadas). Filtro por categoría; exporta TXT, PDF y Excel. `pdf` y `excel` son
+  incompatibles con `image ^4.12` (archive 3 vs 4): el PDF lo escribe `exportar_actividad.dart` (Helvetica WinAnsi) y
+  el `.xlsx` se arma con `archive`.
+- **Sucursales** (nueva pestaña): `flutter_map` + teselas OpenStreetMap, `geolocator`. Cinco sucursales de demostración
+  fijas en Santa Cruz (`dominio/sucursales.dart`), rotuladas como ficticias. Distancia geográfica en línea recta
+  (haversine); la ruta vial la calcula Google Maps u otra app (`url_launcher`). La posición propia vive solo en memoria.
+  Con 6 destinos (vendedor) la barra muestra la etiqueta solo del destino elegido.
+- **Lugar de entrega**: «Confirmar pedido» abre antes `PantallaEntrega` (GPS si se autoriza, o tocar el mapa; sucursal
+  más cercana, coordenadas temporales, «Ver ruta»). «Continuar con el pedido» llama a la confirmación existente sin
+  modificarla. Las coordenadas no se guardan ni viajan con el pedido; se descartan al salir. Sin red se avisa que mapa
+  base y rutas necesitan internet y el pedido sigue entrando a la cola como siempre.
+- **Monitorea mi negocio**: campo libre (3–500 caracteres), micrófono con el transcriptor existente `/voz` (el texto
+  queda editable; la misión sale solo con «Ejecutar misión») y «Monitorear ahora» como acceso rápido. Envía el texto
+  tal cual a `ejecutarMision` (GraphQL, JWT de Keycloak). Muestra por agente la respuesta, si fue redactada por el modelo
+  o es el resumen verificado, la observación y, en «Ver detalles», solo las herramientas MCP que figuran en `fuentes`
+  (con argumentos y error si lo hubo) y las permitidas al agente. Las misiones no escriben: la reposición queda como
+  propuesta que se confirma en su pantalla.
+
+Pruebas: `flutter test --dart-define-from-file=configuracion-nube.json` → 144 aprobadas, 4 omitidas (nuevas:
+`test/dominio/sucursales_test.dart`, `test/datos/registro_actividad_test.dart`, `test/presentacion/mision_libre_test.dart`).
+`flutter analyze`: sin errores ni advertencias.
+
+Comprobado en Samsung SM-S911U (release `1.0.13+14`, `configuracion-nube.json`, `adb install -r` sin borrar datos):
+- Logs: «Agregar al carrito» con fecha y hora; persiste tras cambiar de pestaña y tras `am force-stop` + reabrir.
+  Exporta TXT, PDF y Excel por el menú de compartir. Eventos de otra identidad (sesión anterior) no se muestran.
+- Sucursales: permiso de ubicación pedido al abrir la pestaña; 5 marcadores y punto propio en la primera vista;
+  más cercana Oeste a 1,7 km en línea recta; «Ver ruta» abre Google Maps (2,3 km por calle).
+- Entrega: GPS o punto manual (−17.79026, −63.17651 → Centro a 972 m, verificado a mano); ruta Centro → punto en
+  Google Maps (1,9 km por calle); «Continuar» → pedido confirmado por Ventas con la notificación existente. Sin red:
+  aviso de mapa/rutas, pedido en la cola con «Pedido pendiente» y confirmado al reconectar, sin duplicados.
+- Ninguna coordenada en el almacenamiento privado de la app (búsqueda en las 250 piezas con la variante debug,
+  misma firma), ni JWT/`Bearer` en `clb_actividad.db`.
+- Misiones: «Monitorear ahora» → 4 agentes; misión libre de reposición → solo Inventario con `obtener_stock_bajo` y
+  `obtener_productos`; misión dictada (transcriptor `/voz`, texto corregido a mano antes de ejecutar) → Monitoreo e
+  Inventario; «Elimina todos los productos… precios en cero» → los agentes se niegan, solo herramientas de lectura y
+  catálogo intacto.
+- No probado en el teléfono: cerrar sesión (no se cerró la sesión del vendedor) y recepción de un rechazo 403 de un
+  cliente sin rol admin (cubierto por `explicar()` y las pruebas existentes).
+
 ## Notificaciones push (Firebase)
 `android/app/google-services.json` es configuración local y no se versiona. Obtenerlo en Firebase Console → Configuración
 del proyecto → app Android `bo.clb.store` → descargar `google-services.json`, y copiarlo en `android/app/`. Sin ese

@@ -1,0 +1,49 @@
+# Worker CatVTON en la GPU del PC, solo en loopback (127.0.0.1:18081) para que cloudflared lo publique (ver LEEME.md).
+# Uso: docker compose -f compose.vton.yaml --env-file .env up -d   (o gpu.ps1 -Modo vton)
+# Mismo Dockerfile, contrato asíncrono y validación JWT que el perfil vton de infraestructura/bases-de-datos.
+name: clb-tunel-gpu
+
+services:
+  vton:
+    # Compilada con TORCH_CUDA_ARCH_LIST=12.0+PTX: RTX 5060 Laptop, compute capability 12.0 (no el 7.5 de la T4).
+    image: clb_ia_vton:local
+    build:
+      context: ../../microservicios/inteligencia-artificial
+      dockerfile: Dockerfile.vton
+      args: { TORCH_CUDA_ARCH_LIST: "12.0+PTX" }
+    container_name: clb_worker_vton_tunel
+    init: true
+    # Solo se enciende para presentar: no arranca con Docker Desktop ni retiene VRAM sin pedirlo.
+    restart: on-failure:3
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    gpus: all
+    mem_limit: ${CLB_VTON_RAM:-4g}
+    memswap_limit: ${CLB_VTON_RAM_SWAP:-5g}
+    cpus: 4
+    environment:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      # Keycloak que emite los tokens de los usuarios: el emisor debe coincidir con «iss»; el interno sirve el JWKS.
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_EMISOR:?Defina CLB_IDENTIDAD_EMISOR}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO:?Defina CLB_IDENTIDAD_INTERNO}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18081:8000"
+    volumes:
+      - ../../microservicios/inteligencia-artificial/weights:/weights:ro
+      - resultados:/resultados
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/salud')"]
+      start_period: 900s
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  # Trabajos (SQLite) y resultados de 24 h; separado del volumen del stack local clb_resultados_vton.
+  resultados:
+    name: clb_resultados_vton_tunel

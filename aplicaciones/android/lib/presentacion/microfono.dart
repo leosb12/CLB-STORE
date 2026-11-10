@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import 'package:record/record.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../dominio/actividad.dart';
 import 'estado_gestion.dart';
 
 /// ¿Se puede dictar aquí? Grabar AAC en el teléfono y transcribir en el servidor (faster-whisper local de CLB).
@@ -49,13 +50,22 @@ class _BotonMicrofonoState extends State<BotonMicrofono> {
     try {
       if (!_grabando) {
         if (!await _grabadora.hasPermission()) {
+          widget.g.tienda.registrar(
+            CategoriaActividad.microfono,
+            'Permiso de micrófono',
+            'Permiso denegado.',
+            Severidad.warning,
+          );
           mensajero.showSnackBar(
-            const SnackBar(
-              content: Text('Permite el micrófono para dictar el reporte.'),
-            ),
+            const SnackBar(content: Text('Permite el micrófono para dictar.')),
           );
           return;
         }
+        widget.g.tienda.registrar(
+          CategoriaActividad.microfono,
+          'Dictado',
+          'Grabación iniciada.',
+        );
         _ruta = p.join(await getDatabasesPath(), 'clb_voz.m4a');
         await _grabadora.start(
           const RecordConfig(
@@ -78,7 +88,19 @@ class _BotonMicrofonoState extends State<BotonMicrofono> {
       final audio = await archivo.readAsBytes();
       await archivo.delete();
       widget.alTexto(await widget.g.transcribir(audio));
+      widget.g.tienda.registrar(
+        CategoriaActividad.microfono,
+        'Transcripción',
+        'Audio transcrito por el servidor; el texto queda para revisar.',
+        Severidad.success,
+      );
     } on Object catch (e) {
+      widget.g.tienda.registrar(
+        CategoriaActividad.microfono,
+        'Transcripción',
+        explicar(e),
+        Severidad.error,
+      );
       mensajero.showSnackBar(SnackBar(content: Text(explicar(e))));
     } finally {
       if (mounted) setState(() => _transcribiendo = false);
@@ -95,7 +117,7 @@ class _BotonMicrofonoState extends State<BotonMicrofono> {
           ),
         )
       : IconButton(
-          tooltip: _grabando ? 'Terminar y transcribir' : 'Dictar el reporte',
+          tooltip: _grabando ? 'Terminar y transcribir' : 'Dictar por voz',
           onPressed: _alternar,
           icon: Icon(
             _grabando ? Icons.stop_circle_outlined : Icons.mic_none,

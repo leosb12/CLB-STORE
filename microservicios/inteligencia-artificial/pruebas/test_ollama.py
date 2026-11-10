@@ -23,6 +23,19 @@ async def llm():
         yield modelo
 
 
+async def test_envia_el_token_de_access_solo_cuando_se_configura():
+    vistas = []
+
+    def responder(solicitud):
+        vistas.append(solicitud.headers.get("CF-Access-Client-Id"))
+        return httpx.Response(200, json={"message": {"content": "{}"}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(responder)) as http:
+        await ModeloOllama(http, "https://ollama.ejemplo", MODELO, cabeceras={"CF-Access-Client-Id": "id"}).json("s", "u", {})
+        await ModeloOllama(http, "http://127.0.0.1:11434", MODELO).json("s", "u", {})
+    assert vistas == ["id", None]
+
+
 async def test_el_modelo_traduce_la_peticion_de_la_demo(llm):
     interpretacion = await GenerarReporte(llm, HerramientasFalsas(), RepositorioMemoria()).interpretar(
         "ventas por talla esta semana, barras en el panel")

@@ -1,0 +1,7 @@
+# Tablero de inteligencia de negocios (Dash). Versiones fijadas.
+dash==4.4.1
+plotly==7.0.0
+# OIDC (Keycloak): state, nonce, PKCE y validación del id_token.
+authlib==1.9.4
+httpx==0.28.1
+gunicorn==26.2.0

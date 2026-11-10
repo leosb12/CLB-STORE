@@ -23,6 +23,7 @@ from fuente.aplicacion.tallas import RecomendarTalla
 from fuente.infraestructura.analitica import RepositorioPostgres
 from fuente.infraestructura.aprendizaje import AgrupadorKMeans, ModeloTallasLogistico
 from fuente.infraestructura.configuracion import Configuracion
+from fuente.infraestructura.dataset_demostracion import RepositorioDemostracion
 from fuente.infraestructura.herramientas_mcp import HerramientasMcp
 from fuente.infraestructura.identidad import VerificadorTokens
 from fuente.infraestructura.ollama import ModeloOllama
@@ -43,11 +44,18 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
     repositorio = reemplazos.get("repositorio") or RepositorioPostgres(c.conexion, c.analitica_esquema)
     token = TokenDeServicio(http, c.token_url, c.identidad_secreto)
     residencia = os.environ.get('CLB_IA_MODELO_RESIDENCIA', '30m')
+    access = {"CF-Access-Client-Id": c.ollama_access_id, "CF-Access-Client-Secret": c.ollama_access_clave} if c.ollama_access_id else None
     llm = reemplazos.get("llm") or ModeloOllama(http, c.ollama_url, c.modelo,
         residencia=-1 if residencia == '-1' else residencia,
-        contexto=int(os.environ.get('CLB_IA_MODELO_CONTEXTO', '4096')))
+        contexto=int(os.environ.get('CLB_IA_MODELO_CONTEXTO', '4096')),
+        cabeceras=access)
     herramientas = HerramientasMcp(c.mcp_url)
-    consultas = ConsultarAnalitica(repositorio, AgrupadorKMeans())
+    # Dataset sintético aislado (esquema demo_*): solo lectura para el tablero, reportes y agentes; sin ingesta.
+    if "demostracion" in reemplazos or "repositorio" in reemplazos:
+        demostracion = reemplazos.get("demostracion")
+    else:
+        demostracion = RepositorioDemostracion(c.conexion, c.bi_esquema, c.analitica_esquema) if c.bi_esquema else None
+    consultas = ConsultarAnalitica(repositorio, AgrupadorKMeans(), demostracion=demostracion)
     modelo_tallas = ModeloTallasLogistico()
     servicios = SimpleNamespace(
         repositorio=repositorio, consultas=consultas, llm=llm, modelo_tallas=modelo_tallas,
@@ -75,6 +83,8 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
     @contextlib.asynccontextmanager
     async def vida(_app: FastAPI):
         await repositorio.abrir()
+        if demostracion:
+            await demostracion.abrir()
         tarea = asyncio.create_task(ingerir_periodicamente()) if c.intervalo_ingesta > 0 else None
         try:
             async with servidor_mcp.session_manager.run():
@@ -84,6 +94,8 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
                 tarea.cancel()
             await http.aclose()
             await repositorio.cerrar()
+            if demostracion:
+                await demostracion.cerrar()
 
     app = FastAPI(title="CLB Store — Inteligencia Artificial", version="1.0.0", lifespan=vida, docs_url=None, redoc_url=None)
     app.state.servicios, app.state.verificador = servicios, verificador

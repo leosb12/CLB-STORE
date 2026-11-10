@@ -13,7 +13,10 @@ try {
     )
     $archivos = @(git -c core.quotepath=false ls-files -- $rutas)
     if ($LASTEXITCODE) { throw 'No se pudo enumerar el código.' }
-    $archivos += @('infraestructura/gcp/preparar.py','infraestructura/gcp/Caddyfile','infraestructura/gcp/actualizar.sh')
+    # Tablero BI: también los archivos aún no rastreados (respeta .gitignore: sin .venv ni cachés).
+    $archivos += @(git -c core.quotepath=false ls-files --cached --others --exclude-standard -- 'aplicaciones/inteligencia-negocios')
+    if ($LASTEXITCODE) { throw 'No se pudo enumerar el tablero BI.' }
+    $archivos += @('infraestructura/gcp/preparar.py','infraestructura/gcp/Caddyfile','infraestructura/gcp/actualizar.sh','infraestructura/gcp/cliente-bi.sh')
     $archivos += 'microservicios/inventario/fuente/Adaptadores/Salida/ArchivosCompartidos.php'
     $archivos = $archivos | Sort-Object -Unique
     $archivos = $archivos | Where-Object { (Test-Path -LiteralPath $_ -PathType Leaf) -and $_ -notmatch '(^|/)\.env(\.|$)' }

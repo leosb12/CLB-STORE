@@ -4,9 +4,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends git build-essen
 COPY requirements-vton.txt /tmp/requirements-vton.txt
 RUN pip install -r /tmp/requirements-vton.txt
 # Kernels CUDA para DensePose en RTX 5060 (Blackwell); no se admite fallback CPU.
-# AWS T4 usa 7.5: --build-arg CLB_CUDA_ARQUITECTURAS=7.5. El valor local conserva Blackwell.
+# AWS/Azure T4 usa 7.5: --build-arg CLB_CUDA_ARQUITECTURAS=7.5. El valor local conserva Blackwell.
 ARG CLB_CUDA_ARQUITECTURAS="12.0+PTX"
-RUN git clone https://github.com/facebookresearch/detectron2.git /opt/detectron2 && cd /opt/detectron2 && git checkout b0fe2f0a5bb6496f65246ef35687a386a9f19202 && FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="$CLB_CUDA_ARQUITECTURAS" MAX_JOBS=1 pip install --no-build-isolation . && pip install --no-build-isolation ./projects/DensePose
+ARG TORCH_CUDA_ARCH_LIST="${CLB_CUDA_ARQUITECTURAS}"
+RUN git clone https://github.com/facebookresearch/detectron2.git /opt/detectron2 && cd /opt/detectron2 && git checkout b0fe2f0a5bb6496f65246ef35687a386a9f19202 && FORCE_CUDA=1 TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST}" MAX_JOBS=1 pip install --no-build-isolation . && pip install --no-build-isolation ./projects/DensePose
 RUN git clone https://github.com/Zheng-Chong/CatVTON.git /opt/CatVTON && cd /opt/CatVTON && git checkout 7818397f25613beedb3d861a34769f607cfcf3b1
 COPY adaptar_catvton.py /tmp/adaptar_catvton.py
 RUN python /tmp/adaptar_catvton.py /opt/CatVTON

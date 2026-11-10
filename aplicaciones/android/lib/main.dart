@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:sqflite/sqflite.dart';
 
 import 'datos/administracion_rest.dart';
 import 'datos/almacen_sqlite.dart';
+import 'datos/registro_actividad_sqlite.dart';
+import 'dominio/actividad.dart';
 import 'datos/detector_movenet.dart';
 import 'datos/compositor_camiseta.dart';
 import 'datos/rest.dart';
@@ -34,6 +37,10 @@ Future<void> main() async {
   final almacen = await AlmacenSqlite.abrir(
     databaseFactory,
     join(await getDatabasesPath(), 'clb_android.db'),
+  );
+  final actividad = await RegistroActividadSqlite.abrir(
+    databaseFactory,
+    join(await getDatabasesPath(), 'clb_actividad.db'),
   );
   final cliente = ClienteJson(
     http.Client(),
@@ -138,6 +145,7 @@ Future<void> main() async {
     fuenteAvisos: AvisosRest(cliente),
     instalacion: IdentidadInstalacionSegura(),
     crearCompositor: CompositorCamisetaLocal.new,
+    actividad: actividad,
     elegirFoto: (camara) async {
       final foto = await selector.pickImage(
         source: camara ? ImageSource.camera : ImageSource.gallery,
@@ -148,6 +156,23 @@ Future<void> main() async {
       return foto?.readAsBytes();
     },
   );
+  // Errores de la app al registro de actividad: tipo y mensaje saneado, sin cambiar cómo se informan.
+  void anotarError(Object error) => estado.registrar(
+    CategoriaActividad.errores,
+    error.runtimeType.toString(),
+    '$error'.split('\n').first,
+    Severidad.error,
+  );
+  final informarFlutter = FlutterError.onError;
+  FlutterError.onError = (detalles) {
+    anotarError(detalles.exception);
+    informarFlutter?.call(detalles);
+  };
+  final informarPlataforma = PlatformDispatcher.instance.onError;
+  PlatformDispatcher.instance.onError = (error, pila) {
+    anotarError(error);
+    return informarPlataforma?.call(error, pila) ?? false;
+  };
   runApp(AppClb(estado));
   unawaited(notificacionesLocales.iniciar());
   // Push en segundo plano: un fallo o la falta de red/configuración de Firebase no retrasa ni impide el arranque.

@@ -1,0 +1,204 @@
+# DESPLIEGUE VIGENTE: Ventas + PostgreSQL clb_ventas, y en la misma VM IA (perfil «ia») + PostgreSQL clb_analitica propio (ver LEEME.md).
+# En la VM: cd /srv/clb/ventas && docker compose -f compose.ventas.yaml --env-file /srv/clb/.env.ventas up -d --no-build
+# La imagen clb_ventas:azure se compila en el PC y se carga en la VM (publicar-ventas.ps1); no contiene secretos.
+# Solo Caddy publica puertos (80 para ACME, 443 HTTPS). PostgreSQL queda en una red interna sin salida.
+name: clb-ventas
+
+x-logs: &logs
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  postgres:
+    image: postgres:17.6-bookworm
+    restart: unless-stopped
+    environment:
+      # Superusuario solo para administración y respaldos; Ventas usa el rol clb_ventas, dueño de su base.
+      POSTGRES_USER: clb_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${CLB_POSTGRES_ADMIN_CLAVE:?Defina CLB_POSTGRES_ADMIN_CLAVE}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+      CLB_POSTGRES_CLAVE: ${CLB_POSTGRES_CLAVE:?Defina CLB_POSTGRES_CLAVE}
+    configs:
+      - source: inicializar_ventas
+        target: /docker-entrypoint-initdb.d/20-ventas.sh
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks: [datos]
+    mem_limit: 768m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U clb_ventas -d clb_ventas']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    logging: *logs
+
+  ventas:
+    image: clb_ventas:azure
+    build:
+      context: ../../microservicios/ventas
+    restart: unless-stopped
+    init: true
+    environment:
+      CLB_VENTAS_PUERTO_INTERNO: "8080"
+      CLB_POSTGRES_SERVIDOR: postgres
+      CLB_POSTGRES_PUERTO: "5432"
+      CLB_POSTGRES_BASE: clb_ventas
+      CLB_POSTGRES_USUARIO: clb_ventas
+      CLB_POSTGRES_CLAVE: ${CLB_POSTGRES_CLAVE:?Defina CLB_POSTGRES_CLAVE}
+      # Integración (datos del compañero). Vacías = pendiente: Ventas arranca, rechaza todo token (401) y la SAGA
+      # no puede reservar. No se rellenan con valores ficticios.
+      CLB_INVENTARIO_URL: ${CLB_INVENTARIO_URL:-}
+      CLB_CLIENTES_URL: ${CLB_CLIENTES_URL:-}
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_EMISOR:-}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO:-}
+      CLB_IDENTIDAD_SECRETO_VENTAS: ${CLB_IDENTIDAD_SECRETO_VENTAS:-}
+    # El healthcheck (/salud con select 1) viene del Dockerfile.
+    networks: [datos, aplicaciones]
+    # El heap sigue -XX:MaxRAMPercentage=60 del Dockerfile (≈ 600 MiB).
+    mem_limit: 1g
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging: *logs
+
+  # --- Inteligencia Artificial: base clb_analitica privada (instancia propia, independiente de clb_ventas) ---
+  postgres-analitica:
+    image: postgres:17.6-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: clb_admin
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: ${CLB_ANALITICA_ADMIN_CLAVE:?Defina CLB_ANALITICA_ADMIN_CLAVE}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8
+      CLB_ANALITICA_CLAVE: ${CLB_ANALITICA_CLAVE:?Defina CLB_ANALITICA_CLAVE}
+    configs:
+      - source: inicializar_analitica
+        target: /docker-entrypoint-initdb.d/20-analitica.sh
+    volumes:
+      - postgres-analitica:/var/lib/postgresql/data
+    networks: [analitica]
+    mem_limit: 384m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U clb_analitica -d clb_analitica']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+    logging: *logs
+
+  # Perfil «ia»: necesitan el Keycloak del compañero (emisor y secreto clb-ia); sin él no arrancan.
+  # docker compose ... --profile ia up -d --no-build
+  ia:
+    profiles: [ia]
+    image: clb_ia:azure
+    build:
+      context: ../../microservicios/inteligencia-artificial
+    restart: unless-stopped
+    init: true
+    environment:
+      CLB_ANALITICA_SERVIDOR: postgres-analitica
+      CLB_ANALITICA_PUERTO: "5432"
+      CLB_ANALITICA_CLAVE: ${CLB_ANALITICA_CLAVE:?Defina CLB_ANALITICA_CLAVE}
+      # Ventas está en esta misma VM: IA lee sus eventos por la red interna, sin pasar por Caddy.
+      CLB_VENTAS_URL: http://ventas:8080
+      CLB_INVENTARIO_URL: ${CLB_INVENTARIO_URL:-}
+      CLB_CLIENTES_URL: ${CLB_CLIENTES_URL:-}
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_EMISOR:-}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO:-}
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA:-}
+      # Ollama en la GPU del integrante, detrás de Cloudflare Access (infraestructura/tunel-gpu).
+      CLB_IA_OLLAMA_URL: ${CLB_IA_OLLAMA_URL:-https://clb-ollama.leonardoserrate.xyz}
+      CLB_IA_OLLAMA_ACCESS_ID: ${CLB_IA_OLLAMA_ACCESS_ID:-}
+      CLB_IA_OLLAMA_ACCESS_CLAVE: ${CLB_IA_OLLAMA_ACCESS_CLAVE:-}
+      CLB_IA_MODELO: qwen3:8b
+      CLB_IA_MODELO_VOZ: small
+    volumes:
+      # faster-whisper «small» se descarga una vez aquí (pico medido: 746 MiB al transcribir).
+      - modelos-ia:/modelos
+    networks: [analitica, aplicaciones]
+    mem_limit: 1280m
+    depends_on:
+      postgres-analitica:
+        condition: service_healthy
+    logging: *logs
+
+  prendas:
+    profiles: [ia]
+    image: clb_ia_prendas:azure
+    build:
+      context: ../../microservicios/inteligencia-artificial
+      dockerfile: Dockerfile.prendas
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      # Solo conexiones salientes: reclama trabajos en Inventario con el token de servicio clb-ia.
+      CLB_INVENTARIO_URL: ${CLB_INVENTARIO_URL:-}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO:-}
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA:-}
+    volumes:
+      - /srv/clb/modelos-prendas:/modelos-prendas:ro
+    networks: [aplicaciones]
+    # Pico medido de U²-Net al preparar una prenda: 835 MiB.
+    mem_limit: 1280m
+    cpus: 1.5
+    logging: *logs
+
+  caddy:
+    image: caddy:2.10.2
+    restart: unless-stopped
+    environment:
+      CLB_VENTAS_DOMINIO: ${CLB_VENTAS_DOMINIO:?Defina CLB_VENTAS_DOMINIO}
+      CLB_IA_DOMINIO: ${CLB_IA_DOMINIO:-ia.leonardoserrate.xyz}
+      # IP/CIDR (separadas por espacio) de IA y n8n para /api/v1/interno/*. Por defecto, nadie.
+      CLB_VENTAS_ORIGENES_INTERNOS: ${CLB_VENTAS_ORIGENES_INTERNOS:-127.0.0.1/32}
+      # IP de salida de n8n para /api/v1/interno/notificaciones de IA. Por defecto, nadie.
+      CLB_IA_ORIGENES_INTERNOS: ${CLB_IA_ORIGENES_INTERNOS:-127.0.0.1/32}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.ventas:/etc/caddy/Caddyfile:ro
+      - caddy-datos:/data
+      - caddy-config:/config
+    networks: [aplicaciones]
+    mem_limit: 128m
+    logging: *logs
+
+configs:
+  # Solo corre con el volumen vacío. La clave llega por variable de entorno, nunca en la línea SQL.
+  inicializar_ventas:
+    content: |
+      psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --dbname postgres <<'SQL'
+      \getenv clave CLB_POSTGRES_CLAVE
+      SELECT format('CREATE ROLE clb_ventas LOGIN PASSWORD %L', :'clave') \gexec
+      CREATE DATABASE clb_ventas OWNER clb_ventas ENCODING 'UTF8';
+      REVOKE ALL ON DATABASE clb_ventas FROM PUBLIC;
+      SQL
+  # Solo crea clb_analitica y su rol; no toca ninguna otra base.
+  inicializar_analitica:
+    content: |
+      psql -v ON_ERROR_STOP=1 --username "$$POSTGRES_USER" --dbname postgres <<'SQL'
+      \getenv clave CLB_ANALITICA_CLAVE
+      SELECT format('CREATE ROLE clb_analitica LOGIN PASSWORD %L', :'clave') \gexec
+      CREATE DATABASE clb_analitica OWNER clb_analitica ENCODING 'UTF8';
+      REVOKE ALL ON DATABASE clb_analitica FROM PUBLIC;
+      SQL
+
+volumes:
+  postgres:
+  postgres-analitica:
+  modelos-ia:
+  caddy-datos:
+  caddy-config:
+
+networks:
+  # Redes sin salida a Internet: solo Ventas llega a su PostgreSQL y solo IA a clb_analitica.
+  datos: { internal: true }
+  analitica: { internal: true }
+  aplicaciones:

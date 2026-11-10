@@ -86,6 +86,7 @@ _DESDE_VENTAS = ("from pedidos p join lineas_venta l on l.pedido = p.identificad
 SQL_CAMPOS = {
     "VENTAS": {
         "FECHA": "to_char(p.fecha_creacion at time zone 'America/La_Paz', 'YYYY-MM-DD')",
+        "MES": "to_char(p.fecha_creacion at time zone 'America/La_Paz', 'YYYY-MM')",
         "PEDIDO": "left(p.identificador::text, 8)", "ESTADO": "p.estado",
         "CLIENTE": "coalesce(c.nombre, 'Sin nombre registrado')",
         "PRODUCTO": "l.nombre", "SKU": "l.sku", "CATEGORIA": "l.categoria", "TALLA": "l.talla", "COLOR": "l.color",
@@ -329,7 +330,7 @@ class RepositorioPostgres:
                 totales = {campo: _plano(fila[f"t{i}"]) or 0 for i, campo in enumerate(sumas)}
             puntos = []
             if grafico:
-                orden_g = "1 asc" if grafico["eje"] == "FECHA" else "2 desc nulls last, 1 asc"
+                orden_g = "1 asc" if grafico["eje"] in ("FECHA", "MES") else "2 desc nulls last, 1 asc"
                 puntos = await (await c.execute(
                     f"select {sql[grafico['eje']]} clave, {sql[grafico['valor']]} valor {desde}{where} group by 1 "
                     f"order by {orden_g} limit 30", parametros)).fetchall()

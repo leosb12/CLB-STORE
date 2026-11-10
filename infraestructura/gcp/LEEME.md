@@ -21,3 +21,28 @@ un bloque OPTIONS anidado y no admite el reemplazo genérico de locations. Valid
 recarga sin reiniciar servicios y una fotografía de prueba enviada desde la APK release del Samsung: trabajo
 LISTO e imagen visible sin conexión. El túnel sin Access y la API de trabajos sin JWT devolvieron 401.
 Conservar las credenciales solo en el `.env` y la configuración privada generada; no agregarlas a clientes web/móvil.
+
+## Tablero de inteligencia de negocios (`https://store.leonardoserrate.xyz/bi/`)
+
+Servicio `bi` (Dash, imagen `clb_bi:gcp`), en el mismo origen que la tienda: Caddy → web → pasarela → `bi:8050`. Usa el
+Keycloak de esta VM (cliente confidencial `clb-bi`, código + PKCE) y lee IA de Azure por la pasarela. `preparar.py`
+**agrega** al `.env` `CLB_IDENTIDAD_SECRETO_BI` y `CLB_BI_SECRETO_SESION` solo si faltan. `cliente-bi.sh` crea o actualiza
+el cliente con el administrador existente, y `actualizar.sh` lo ejecuta en cada entrega. `actualizar.ps1` incluye
+`aplicaciones/inteligencia-negocios` aunque no esté rastreado.
+
+Primera puesta en marcha (10-nov-2026), dirigida y sin `actualizar.sh` completo:
+1. Respaldo en `~/.clb-gcp/respaldos/bi-20261110-1823` e imagen `clb_web:gcp-previo-bi`.
+2. Archivos del BI copiados sobre la entrega activa y `preparar.py` ejecutado.
+3. `build web bi`, `bash cliente-bi.sh` y `up -d --no-deps --wait bi web`; el corte de la web fue de unos 8 s.
+4. `nginx -s reload` de la pasarela.
+
+Keycloak, n8n, Inventario, probador y borde no se reiniciaron.
+
+Volver atrás:
+```bash
+R=~/.clb-gcp/respaldos/bi-20261110-1823; E=$(readlink -f ~/.clb-gcp/activa)
+cp -a $R/compose.generado.yaml $R/privado $E/ && sudo docker tag clb_web:gcp-previo-bi clb_web:gcp
+cd $E && sudo docker compose -f compose.generado.yaml up -d --no-deps web && sudo docker rm -f clb_frontend_bi_dash
+sudo docker exec clb_pasarela nginx -s reload
+```
+

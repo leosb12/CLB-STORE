@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
+import '../dominio/actividad.dart';
 import '../dominio/administracion.dart';
 import '../dominio/modelos.dart';
 import 'estado_tienda.dart';
@@ -122,20 +123,59 @@ class EstadoGestion extends ChangeNotifier {
     }
   }
 
-  /// «Monitorea mi negocio»: el orquestador delega en los agentes; el resultado queda guardado para verlo sin red.
-  Future<void> monitorear([String texto = 'Monitorea mi negocio']) =>
-      _remoto((fuente, token) async {
-        mision = await fuente.mision(texto, token);
-        await _guardar();
-      });
+  /// Misión predefinida del botón «Monitorear ahora».
+  static const misionRapida = 'Monitorea mi negocio';
+
+  /// «Monitorea mi negocio» o una misión libre: el texto del vendedor llega tal cual al orquestador (GraphQL
+  /// `ejecutarMision`), que elige agentes y herramientas MCP autorizadas. El resultado queda guardado para verlo sin red.
+  Future<void> monitorear([String texto = misionRapida]) async {
+    tienda.registrar(
+      CategoriaActividad.mcp,
+      texto == misionRapida ? 'Monitorear ahora' : 'Misión libre',
+      'Misión enviada a los agentes.',
+    );
+    await _remoto((fuente, token) async {
+      mision = await fuente.mision(texto, token);
+      await _guardar();
+    });
+    final agentes = ((mision?['agentes'] as List?) ?? const []).cast<Map>();
+    if (aviso != null) {
+      tienda.registrar(
+        CategoriaActividad.mcp,
+        'Misión rechazada o fallida',
+        aviso!,
+        Severidad.error,
+      );
+    } else {
+      final herramientas = {
+        for (final a in agentes)
+          for (final f in ((a['fuentes'] as List?) ?? const []).cast<Map>())
+            '${f['herramienta']}',
+      };
+      tienda.registrar(
+        CategoriaActividad.mcp,
+        'Misión completada',
+        'Agentes: ${agentes.map((a) => a['agente']).join(', ')} · '
+            '${herramientas.length} herramientas MCP: ${herramientas.join(', ')}',
+        Severidad.success,
+      );
+    }
+  }
 
   /// Mismo backend que la web: el modelo de lenguaje corre en el servidor (Ollama), no en el teléfono.
-  Future<void> generarReporte(String peticion, {List<String>? formatos}) =>
-      _remoto((fuente, token) async {
-        reporte = await fuente.reporte(peticion, token, formatos: formatos);
-        reporteDeCopia = false;
-        await _guardar();
-      });
+  Future<void> generarReporte(String peticion, {List<String>? formatos}) async {
+    await _remoto((fuente, token) async {
+      reporte = await fuente.reporte(peticion, token, formatos: formatos);
+      reporteDeCopia = false;
+      await _guardar();
+    });
+    tienda.registrar(
+      CategoriaActividad.ia,
+      'Reporte generativo',
+      aviso ?? 'Reporte generado por el servidor.',
+      aviso == null ? Severidad.success : Severidad.error,
+    );
+  }
 
   /// Excel o PDF del reporte actual (REST binario); `null` sin reporte o sin sesión.
   Future<Uint8List?> archivo(String formato) async {

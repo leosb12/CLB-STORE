@@ -387,6 +387,38 @@ services:
       retries: 5
       start_period: 10s
 
+  bi:
+    # Tablero de inteligencia de negocios (Python + Dash) en /bi/, solo web y solo administradores (SSO clb-bi).
+    # Lee únicamente el GraphQL de gestión de IA (dataset sintético aislado demo_bi) y el modelo de tallas público.
+    # Sin puerto publicado: la pasarela lo remite en /bi/ y la web lo sirve en su mismo origen.
+    image: clb_bi:local
+    build:
+      context: ../../aplicaciones/inteligencia-negocios
+    container_name: clb_frontend_bi_dash
+    restart: unless-stopped
+    init: true
+    labels:
+      clb.componente: "Tablero de inteligencia de negocios — KPI, K-Means y regresión logística"
+      clb.tecnologia: "Python 3.12 + Dash/Plotly"
+    environment:
+      CLB_IDENTIDAD_SECRETO_BI: ${CLB_IDENTIDAD_SECRETO_BI:?Defina CLB_IDENTIDAD_SECRETO_BI}
+      CLB_BI_SECRETO_SESION: ${CLB_BI_SECRETO_SESION:?Defina CLB_BI_SECRETO_SESION}
+      CLB_BI_ORIGENES: ${CLB_BI_ORIGENES:?Defina CLB_BI_ORIGENES}
+      CLB_BI_IDENTIDAD_PUBLICA: ${CLB_IDENTIDAD_URL_PUBLICA:-http://127.0.0.1:18000/identidad}
+      CLB_BI_IDENTIDAD_INTERNA: http://identidad:8080/identidad
+      CLB_BI_IA_URL: http://pasarela:8080
+      CLB_BI_URL_GESTION: /gestion
+    networks: [aplicaciones]
+    depends_on:
+      identidad:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8050/bi/salud', timeout=4)"]
+      interval: 15s
+      timeout: 6s
+      retries: 5
+      start_period: 15s
+
   probador:
     # Microfrontend React del probador virtual (TensorFlow.js + MoveNet local). Contenedor y build propios; sin puerto
     # publicado: la web lo remite en /probador/ para compartir origen, CSP y Service Worker. La web no depende de él.

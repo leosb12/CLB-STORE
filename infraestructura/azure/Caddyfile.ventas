@@ -1,0 +1,92 @@
+# DESPLIEGUE VIGENTE: entrada HTTPS de Ventas en Azure. Rutas iguales a infraestructura/pasarela/nginx.conf.
+# Certificado Let's Encrypt por HTTP-01 (puerto 80): emisión y renovación automáticas.
+# Sin CORS: el frontend entra por la pasarela del compañero, que ya los agrega. Ventas valida el JWT y los roles.
+{$CLB_VENTAS_DOMINIO} {
+	# Caddy redacta Authorization y Cookie en sus logs.
+	log
+	# route conserva el orden escrito (sin él, Caddy evalúa handle antes que respond).
+	route {
+		# Igual que la pasarela: un ";" permitiría que el backend interprete otra ruta.
+		@punto_y_coma expression {uri}.contains(";")
+		respond @punto_y_coma 400
+
+		handle /salud {
+			reverse_proxy ventas:8080
+		}
+
+		# La SAGA de compra es síncrona: misma espera que la pasarela (90 s).
+		handle /api/v1/pedidos* {
+			request_body {
+				max_size 1MB
+			}
+			reverse_proxy ventas:8080 {
+				transport http {
+					dial_timeout 5s
+					response_header_timeout 90s
+				}
+			}
+		}
+
+		# Endpoints internos (rol servicio): solo desde las IP de salida de IA y n8n. Para el resto, 404.
+		@interno_autorizado {
+			path_regexp ^/api/v1/interno/(eventos|pedidos/[^/]+/comprobante)$
+			remote_ip {$CLB_VENTAS_ORIGENES_INTERNOS}
+		}
+		handle @interno_autorizado {
+			request_body {
+				max_size 2MB
+			}
+			reverse_proxy ventas:8080
+		}
+
+		handle {
+			header Content-Type application/json
+			respond `{"mensaje":"La ruta solicitada no existe.","código":"NO_ENCONTRADO"}` 404
+		}
+	}
+}
+
+# Backend IA (perfil «ia» de compose.ventas.yaml). Mismas rutas que la pasarela; /mcp es interno y nunca se publica.
+# Si el contenedor ia está apagado, estas rutas responden 502 y Ventas no se ve afectada.
+{$CLB_IA_DOMINIO} {
+	log
+	route {
+		@punto_y_coma expression {uri}.contains(";")
+		respond @punto_y_coma 400
+
+		handle /salud {
+			reverse_proxy ia:8000
+		}
+
+		# Reportes y agentes pueden tardar (LLM): misma espera y tamaño (audio de voz) que la pasarela.
+		@publica path_regexp ^/api/v1/(reportes|agentes|voz|tallas|graphql|notificaciones|demostracion)(/|$)
+		handle @publica {
+			request_body {
+				max_size 6MB
+			}
+			reverse_proxy ia:8000 {
+				transport http {
+					dial_timeout 5s
+					response_header_timeout 300s
+				}
+			}
+		}
+
+		# Notificaciones de n8n (rol servicio): solo desde su IP de salida.
+		@interno_autorizado {
+			path /api/v1/interno/notificaciones
+			remote_ip {$CLB_IA_ORIGENES_INTERNOS}
+		}
+		handle @interno_autorizado {
+			request_body {
+				max_size 1MB
+			}
+			reverse_proxy ia:8000
+		}
+
+		handle {
+			header Content-Type application/json
+			respond `{"mensaje":"La ruta solicitada no existe.","código":"NO_ENCONTRADO"}` 404
+		}
+	}
+}

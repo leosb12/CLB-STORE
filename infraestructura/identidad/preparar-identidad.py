@@ -3,6 +3,8 @@
 - Fija el secreto del cliente de servicio clb-ventas (client credentials).
 - Crea si faltan los clientes de servicio clb-ia (fase 8) y clb-n8n (fase 10), con rol servicio, y fija sus secretos.
 - Crea o actualiza los usuarios de demostración cliente.demo (rol cliente) y admin.demo (roles admin y cliente).
+- Crea o actualiza el cliente confidencial clb-bi (tablero de inteligencia de negocios, código + PKCE S256) con las
+  redirecciones de CLB_BI_ORIGENES y fija su secreto.
 - Crea el cliente clb-demostracion (password grant) SOLO para los scripts de demostración locales.
 
 Uso (con el contenedor clb_identidad saludable):  python preparar-identidad.py
@@ -52,6 +54,24 @@ def usuario(env, nombre, correo, nombre_pila, clave_env, roles):
     print(f"  ✓ usuario {nombre} ({', '.join(roles)})")
 
 
+def cliente_tablero(env):
+    """Tablero Dash en /bi/ (servidor): secreto propio, solo código + PKCE, sin contraseñas ni cuentas de servicio."""
+    origenes = [o.strip().rstrip("/") for o in exigir(env, "CLB_BI_ORIGENES").split(",") if o.strip()]
+    ajustes = ["-s", "name=CLB Store — tablero de inteligencia de negocios", "-s", "enabled=true", "-s", "publicClient=false",
+               "-s", "standardFlowEnabled=true", "-s", "directAccessGrantsEnabled=false", "-s", "serviceAccountsEnabled=false",
+               "-s", "implicitFlowEnabled=false", "-s", f"redirectUris={json.dumps([f'{o}/bi/callback' for o in origenes])}",
+               "-s", "attributes.\"pkce.code.challenge.method\"=S256",
+               "-s", 'defaultClientScopes=["basic","clb-api","profile"]']
+    existente = json.loads(kcadm("get", "clients", "-r", "clb", "-q", "clientId=clb-bi", "--fields", "id").stdout)
+    if existente:
+        kcadm("update", f"clients/{existente[0]['id']}", "-r", "clb", *[a for a in ajustes if not a.startswith("defaultClientScopes")])
+    else:
+        kcadm("create", "clients", "-r", "clb", "-s", "clientId=clb-bi", *ajustes)
+    identificador = json.loads(kcadm("get", "clients", "-r", "clb", "-q", "clientId=clb-bi", "--fields", "id").stdout)[0]["id"]
+    kcadm("update", f"clients/{identificador}", "-r", "clb", "-s", f"secret={exigir(env, 'CLB_IDENTIDAD_SECRETO_BI')}")
+    print(f"  ✓ cliente clb-bi (código + PKCE S256; {len(origenes)} orígenes)")
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     env = leer_env()
@@ -74,6 +94,7 @@ def main():
         print(f"  ✓ cliente de servicio {cliente} (rol servicio)")
     usuario(env, "cliente.demo", "cliente.demo@clb.local", "Cliente", "CLB_IDENTIDAD_CLAVE_CLIENTE_DEMO", ["cliente"])
     usuario(env, "admin.demo", "admin.demo@clb.local", "Administrador", "CLB_IDENTIDAD_CLAVE_ADMIN_DEMO", ["admin", "cliente"])
+    cliente_tablero(env)
     # Solo para scripts de demostración locales y solo con la bandera explícita: obtiene tokens sin navegador.
     # Las apps usan Code + PKCE. Nunca se habilita en cloud.
     if env.get("CLB_IDENTIDAD_DEMOSTRACION") != "true":

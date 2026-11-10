@@ -12,15 +12,17 @@ MAX_TOKENS_JSON = 700
 
 class ModeloOllama:
     def __init__(self, http: httpx.AsyncClient, url: str, modelo: str, limite_segundos: float = 60,
-                 residencia: str | int = '30m', contexto: int = 4096):
+                 residencia: str | int = '30m', contexto: int = 4096, cabeceras: dict | None = None):
         self.http, self.url, self.modelo, self.limite = http, f"{url}/api/chat", modelo, limite_segundos
         self.residencia, self.contexto = residencia, contexto
+        # Token de servicio de Cloudflare Access cuando Ollama se publica por túnel; solo viaja a esta URL.
+        self.cabeceras = cabeceras or {}
 
     async def _chat(self, cuerpo: dict, opciones: dict | None = None) -> dict:
         cuerpo = {"model": self.modelo, "stream": False, "think": False, "keep_alive": self.residencia,
                   "options": {"temperature": 0, "num_ctx": self.contexto, **(opciones or {})}, **cuerpo}
         try:
-            respuesta = await self.http.post(self.url, json=cuerpo, timeout=self.limite)
+            respuesta = await self.http.post(self.url, json=cuerpo, headers=self.cabeceras, timeout=self.limite)
         except httpx.TimeoutException as error:
             raise ModeloNoDisponible(f"Ollama no respondió en {self.limite:.0f} s.", "TIMEOUT") from error
         except httpx.HTTPError as error:
@@ -47,6 +49,6 @@ class ModeloOllama:
 
     async def disponible(self) -> bool:
         try:
-            return (await self.http.get(self.url.replace("/api/chat", "/api/tags"), timeout=3)).status_code == 200
+            return (await self.http.get(self.url.replace("/api/chat", "/api/tags"), headers=self.cabeceras, timeout=3)).status_code == 200
         except httpx.HTTPError:
             return False

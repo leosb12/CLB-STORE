@@ -138,6 +138,18 @@ async def reporte_excel(identificador: uuid.UUID, usuario: Admin, request: Reque
                     headers={"Content-Disposition": f'attachment; filename="clb-reporte-{str(identificador)[:8]}.xlsx"'})
 
 
+@api.get("/demostracion/dataset/{nombre}.csv")
+async def dataset_demostracion_csv(nombre: Literal["completo", "clientes", "pedidos", "lineas_venta", "existencias"],
+                                   usuario: Admin, request: Request):
+    """Dataset SINTÉTICO de inteligencia de negocios en CSV (solo admin). Archivo, no consulta: por REST, como Excel/PDF."""
+    resultado = await _servicios(request).consultas.dataset_csv(nombre)
+    if resultado is None:
+        raise ErrorHttp(404, "DATASET_NO_GENERADO", "El dataset de demostración no está generado.")
+    contenido, meta = resultado
+    return Response(contenido, media_type="text/csv; charset=utf-8", headers={
+        "Content-Disposition": f'attachment; filename="clb-demostracion-{nombre}-{meta["hash"][:8]}.csv"'})
+
+
 @api.get("/reportes/{identificador}/pdf")
 async def reporte_pdf(identificador: uuid.UUID, usuario: Admin, request: Request):
     reporte = await _reporte(request, identificador)

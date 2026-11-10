@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import '../dominio/actividad.dart';
 import '../dominio/avisos.dart';
 import '../dominio/casos_de_uso.dart';
 import '../dominio/contratos.dart';
@@ -39,6 +40,7 @@ class EstadoTienda extends ChangeNotifier {
     this.existencias,
     this.ingesta,
     this.avisosLocales,
+    this.actividad,
   }) : _almacen = almacen,
        _catalogo = sincronizarCatalogo,
        _confirmar = confirmarPedido,
@@ -77,6 +79,30 @@ class EstadoTienda extends ChangeNotifier {
   final FuenteAvisos? fuenteAvisos;
   final IdentidadInstalacion? instalacion;
   final AvisosLocales? avisosLocales;
+
+  /// Registro de actividad persistente por cuenta (opcional: sin él la app funciona igual).
+  final RegistroActividad? actividad;
+
+  /// Anota un evento de la cuenta actual sin esperar ni fallar.
+  void registrar(
+    String categoria,
+    String funcionalidad,
+    String descripcion, [
+    Severidad severidad = Severidad.info,
+  ]) {
+    final registro = actividad;
+    if (registro == null) return;
+    unawaited(
+      registro.registrar(
+        titular?.sub ?? '',
+        categoria,
+        funcionalidad,
+        descripcion,
+        severidad,
+      ),
+    );
+  }
+
   Future<Operacion>? _confirmacionEnCurso;
   Future<void>? _envioEnCurso;
 
@@ -218,9 +244,17 @@ class EstadoTienda extends ChangeNotifier {
     final avisos = this.avisos;
     if (avisos == null) return;
     _suscripcionesAvisos.addAll([
-      avisos.recibidos.listen((a) => avisoEnPrimerPlano.value = a),
+      avisos.recibidos.listen((a) {
+        avisoEnPrimerPlano.value = a;
+        registrar(
+          CategoriaActividad.notificaciones,
+          'Aviso recibido',
+          a.titulo,
+        );
+      }),
       avisos.tocados.listen((a) {
         if (a.abrePedidos) pestanaSolicitada.value = 2;
+        registrar(CategoriaActividad.notificaciones, 'Aviso abierto', a.titulo);
       }),
       // Token renovado: el vínculo confirmado ya no vale; se vuelve a registrar.
       avisos.renovaciones.listen((_) async {
@@ -523,6 +557,8 @@ class EstadoTienda extends ChangeNotifier {
     sincronizandoCatalogo = true;
     errorCatalogo = null;
     notifyListeners();
+    final antes = enLinea;
+    final productosAntes = productos.length;
     try {
       await _catalogo.ejecutar();
       enLinea = true;
@@ -537,7 +573,41 @@ class EstadoTienda extends ChangeNotifier {
       sincronizandoCatalogo = false;
       await _recargar();
     }
+    // Solo cambios: el reintento periódico sin red no llena el registro.
+    if (antes != enLinea) {
+      registrar(
+        CategoriaActividad.conectividad,
+        enLinea ? 'Conexión recuperada' : 'Sin conexión',
+        enLinea
+            ? 'La tienda responde de nuevo.'
+            : 'La tienda no responde; se usa la copia guardada.',
+        enLinea ? Severidad.success : Severidad.warning,
+      );
+    }
+    if (errorCatalogo != null && errorCatalogo != _ultimoErrorCatalogo) {
+      registrar(
+        CategoriaActividad.catalogo,
+        'Actualizar catálogo',
+        errorCatalogo!,
+        Severidad.error,
+      );
+    } else if (errorCatalogo == null &&
+        enLinea &&
+        (!_catalogoAnotado || productos.length != productosAntes)) {
+      // Primera descarga del arranque o cambio de surtido; los refrescos iguales no se anotan.
+      _catalogoAnotado = true;
+      registrar(
+        CategoriaActividad.catalogo,
+        'Catálogo actualizado',
+        '${productos.length} productos descargados.',
+        Severidad.success,
+      );
+    }
+    _ultimoErrorCatalogo = errorCatalogo;
   }
+
+  String? _ultimoErrorCatalogo;
+  bool _catalogoAnotado = false;
 
   List<Variante> _cacheVariantes = const [];
   String? _cacheProducto;
@@ -552,12 +622,25 @@ class EstadoTienda extends ChangeNotifier {
   Future<void> agregar(Producto producto, Variante variante) async {
     await carrito.agregar(producto, variante);
     await _recargar();
+    registrar(
+      CategoriaActividad.carrito,
+      'Agregar al carrito',
+      '${producto.nombre} · talla ${variante.talla} · ${variante.color}',
+      Severidad.success,
+    );
     await _avisarLocal(() => avisosLocales?.productoAgregado());
   }
 
   Future<void> cambiarCantidad(LineaCarrito linea, int cantidad) async {
     await carrito.cambiar(linea, cantidad);
     await _recargar();
+    registrar(
+      CategoriaActividad.carrito,
+      cantidad <= 0 ? 'Quitar del carrito' : 'Cambiar cantidad',
+      cantidad <= 0
+          ? '${linea.nombre} · talla ${linea.talla}'
+          : '${linea.nombre} · talla ${linea.talla}: $cantidad unidades',
+    );
   }
 
   /// Deja el pedido en la cola del teléfono e intenta enviarlo enseguida.
@@ -567,6 +650,14 @@ class EstadoTienda extends ChangeNotifier {
   Future<Operacion> _confirmarYNotificar() async {
     final op = await _confirmar.ejecutar();
     await _recargar();
+    registrar(
+      CategoriaActividad.pedidos,
+      'Confirmar pedido',
+      enLinea
+          ? 'Pedido guardado en el teléfono y enviándose a la tienda.'
+          : 'Pedido guardado en el teléfono; se enviará al volver la conexión.',
+      enLinea ? Severidad.success : Severidad.warning,
+    );
     if (!enLinea) {
       await _avisarLocal(
         () => avisosLocales?.pedidoRegistrado(pendiente: true),
@@ -607,6 +698,13 @@ class EstadoTienda extends ChangeNotifier {
   Future<void> _avisarLocal(Future<void>? Function() emitir) async {
     try {
       await emitir();
+      if (avisosLocales != null) {
+        registrar(
+          CategoriaActividad.notificaciones,
+          'Notificación local',
+          'Se mostró un aviso del carrito o del pedido.',
+        );
+      }
     } catch (_) {
       // El permiso denegado o un fallo del sistema no invalidan una operación ya guardada.
     }
@@ -616,6 +714,7 @@ class EstadoTienda extends ChangeNotifier {
       _enviarPedidos(forzar: forzar).whenComplete(() => _envioEnCurso = null);
 
   Future<void> _enviarPedidos({bool forzar = false}) async {
+    final antes = pendientes + pendientesAdministracion;
     enviandoPedidos = true;
     notifyListeners();
     try {
@@ -623,6 +722,18 @@ class EstadoTienda extends ChangeNotifier {
     } finally {
       enviandoPedidos = false;
       await _recargar();
+    }
+    // Solo cuando había algo en la cola y cambió: los ciclos vacíos de 5 s no se anotan.
+    final despues = pendientes + pendientesAdministracion;
+    if (antes > 0 && despues != antes) {
+      registrar(
+        CategoriaActividad.sincronizacion,
+        'Enviar cola',
+        despues == 0
+            ? '$antes operaciones sincronizadas con la tienda.'
+            : '${antes - despues} enviadas · $despues siguen pendientes.',
+        despues == 0 ? Severidad.success : Severidad.info,
+      );
     }
   }
 
@@ -641,14 +752,45 @@ class EstadoTienda extends ChangeNotifier {
 
   Future<PedidoVenta> reenviar(Operacion op) async {
     try {
-      return await _pedidos.reenviar(op);
+      final pedido = await _pedidos.reenviar(op);
+      registrar(
+        CategoriaActividad.pedidos,
+        'Reenviar pedido',
+        'Pedido reenviado con su misma clave.',
+        Severidad.success,
+      );
+      return pedido;
+    } on Object {
+      registrar(
+        CategoriaActividad.pedidos,
+        'Reenviar pedido',
+        'No se pudo reenviar el pedido.',
+        Severidad.error,
+      );
+      rethrow;
     } finally {
       await _recargar();
     }
   }
 
   Future<void> iniciarSesion() async {
-    titular = await _sesion.iniciar();
+    try {
+      titular = await _sesion.iniciar();
+    } on Object {
+      registrar(
+        CategoriaActividad.sesion,
+        'Iniciar sesión',
+        'No se completó el inicio de sesión.',
+        Severidad.error,
+      );
+      rethrow;
+    }
+    registrar(
+      CategoriaActividad.sesion,
+      'Iniciar sesión',
+      esAdmin ? 'Sesión iniciada con rol de vendedor.' : 'Sesión iniciada.',
+      Severidad.success,
+    );
     _limpiarPedidos();
     await _recargar();
     unawaited(_alRecuperarRed(forzar: true));
@@ -659,6 +801,7 @@ class EstadoTienda extends ChangeNotifier {
   static const cacheAdministrativa = ['gestion', 'existencias:', 'ingesta:'];
 
   Future<void> cerrarSesion() async {
+    registrar(CategoriaActividad.sesion, 'Cerrar sesión', 'Sesión cerrada.');
     // Teléfono compartido: las fotos corporales, los resultados y los datos del negocio no sobreviven a la sesión.
     await colaFotografica?.borrarDatosLocales();
     await _almacen.borrarPreferencias(cacheAdministrativa);

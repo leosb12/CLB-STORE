@@ -11,6 +11,63 @@ Cambios del 9-nov-2026:
 - **Android:** Firebase (push) se inicializa en segundo plano y nunca bloquea el arranque. La app compila y funciona sin `google-services.json`, que no se versiona.
 - **Avisos de pedido (F2/F3):** pedido confirmado y pedido cancelado, por Push (FCM) y correo (Resend). Ventas → n8n (flujo C) → Clientes (`notificaciones/`, registro durable, reclamo atómico, reintentos) → proveedor. Android vincula la instalación con la cuenta (Keystore, convergencia en serie también con cambios de cuenta en vuelo), guarda preferencias Push/Correo en la cola offline con versión e Idempotency-Key, ofrece «Permitir notificaciones» y abre «Pedidos» al tocar el aviso. En primer plano emite notificación nativa del sistema arriba (`IMPORTANCE_HIGH`) y SnackBar inferior en simultáneo. Envíos reales: Push habilitado (`CLB_NOTIFICACIONES_HABILITADAS=true`) y correo habilitado (`CLB_NOTIFICACIONES_CORREO_HABILITADO=true`).
 
+## Inteligencia de negocios, 10-nov-2026 (pregunta 5)
+
+Tablero Dash solo web en `/bi/` (Gestión → «Inteligencia de negocios»), con SSO `clb-bi` y el dataset sintético aislado
+`demo_bi`: 10.058 registros (1.000 clientes, 3.683 pedidos, 5.319 líneas, 56 existencias), semilla 7 y hash `fdd2f8ff…`.
+Guías: [tablero](../aplicaciones/inteligencia-negocios/LEEME.md) y [decisiones](decisiones.md#inteligencia-de-negocios-10-nov-2026).
+
+| Verificación (stack local) | Resultado |
+|---|---|
+| Aislamiento | `public` (pedidos 110, líneas 146, existencias 166, clientes 17, eventos 124) y `clb_ventas.pedidos` (110) iguales antes y después de generar, entrenar y usar el tablero. Prueba automática equivalente en un esquema temporal |
+| Ingresos de octubre de 2026 en `demo_bi` | Tablero **Bs 138.450,00 / 276 pedidos** = reporte con `conjunto: DEMOSTRACION` (total 13.845.000 centavos, también en Excel) = reporte por lenguaje natural («Ingresos de octubre de 2026 del conjunto de demostración»; lo interpretaron las reglas porque la salida del LLM no fue compatible) = misión al agente de reportes (`obtener_indicadores_demostracion`: 138450.00 Bs, 276; el verificador descartó la redacción del LLM y mostró el resumen verificado) = SQL independiente |
+| K-Means | k = 5 por silueta (0,577) sobre 981 clientes con compras; regenerar deja la segmentación «pendiente» y reentrenar da el mismo resultado |
+| Regresión logística | Modelo operativo sin cambios: exactitud 94,5 % en 400 casos de prueba (1.600 de entrenamiento, sintéticos); simulador → M 89 % |
+| SSO y permisos (Playwright, Chrome) | `admin.demo`: Gestión → botón → tablero sin pedir contraseña; `cliente.demo`: «Se requiere rol administrador» (IA 403). 1280 y 390 px sin desborde ni errores de consola |
+| Descarga CSV (Playwright) | Dataset completo 5.319 filas; clientes 1.000, pedidos 3.683, líneas 5.319, existencias 56; todos con BOM UTF-8 y `;`. Sin token 401, cliente 403, nombre fuera de lista 422 |
+| Pruebas | IA `pytest` 148 aprobadas (5 nuevas de dataset, paridad, invalidación, permisos y misión); tablero 11 (OIDC: `state`, `nonce`, `aud`, `exp`, firma e `iss` rechazados); web `npm test` 78/78 y `npm run build` correcto (aviso previo de presupuesto, 617 kB) |
+
+Pendientes exactos: Azure; CSP para `/bi/` (Dash usa scripts en línea); `realm-clb.json` no incluye `clb-bi`, que lo crea
+`preparar-identidad.py`; el formulario de ajuste de la web no ofrece elegir `MES` ni el conjunto (los conserva al
+regenerar); la vista de reporte de Angular muestra el aviso genérico de antigüedad de datos también para la demostración.
+Las demos crearon tres reportes y dos misiones reales en el historial y la auditoría de IA.
+
+## Inteligencia de negocios en la nube, 10-nov-2026
+
+URL: **https://store.leonardoserrate.xyz/bi/**. El tablero corre en GCP, en la VM de web, Keycloak y pasarela. IA y
+`clb_analitica.demo_bi` siguen en Azure. AWS no cambió. Procedimientos y vuelta atrás: [GCP](../infraestructura/gcp/LEEME.md)
+y [Azure](../infraestructura/azure/LEEME.md#16-inteligencia-artificial-en-la-misma-vm-backend-ia-clb_analitica-y-worker_prendas).
+
+| Verificación en la nube | Resultado |
+|---|---|
+| Interrupciones | IA en Azure: 8 s. Web en GCP: unos 8 s. Caddy de Azure y la pasarela de GCP se recargaron sin reiniciarse; Ventas, Keycloak, n8n, Inventario y el probador no se reiniciaron |
+| SSO (Chrome real, cuenta admin) | Del botón de Gestión al tablero. Tras cerrar la sesión del tablero, `/bi/ingresar` volvió sin formulario de contraseña. No hay tokens en la URL y la cookie no es visible desde JavaScript |
+| Protección sin sesión | `/bi/` redirige a ingresar (PKCE S256, `nonce`, redirección https). Dash interno, CSV y GraphQL dan 401. `/bi/` por `api.` da 400 |
+| Ingresos de octubre de 2026 (`demo_bi`) | Tablero Bs 138.450,00 / 276 = reporte desde el tablero (y su Excel: 138450 y 276) = reporte por lenguaje natural (interpretado por reglas) = agente de reportes (138450.00 Bs; redacción del LLM descartada por el verificador) = SQL independiente 13.845.000 centavos / 276 |
+| Modelos | K-Means con k = 5 y silueta 0,577. Regresión logística con 94,5 % de exactitud; simulador → M 89 % |
+| Aislamiento | `clb_analitica.public` 11/11/123/3/12 y 11 pedidos en Ventas, iguales antes y después. Solo crecieron los reportes de prueba (6 → 9) |
+| CSV en la nube | Existencias verificado (56 filas, BOM). Las demás descargas respondieron sin error; Chrome bloqueó las descargas múltiples y no se verificó su contenido en el navegador |
+| No ejecutado | Rechazo en el navegador de una cuenta sin rol admin: no había una cuenta así disponible. El 403 está cubierto por pruebas automáticas y en local |
+
+**Segunda entrega (10-nov, 19:2x UTC):**
+- **Despliegue.**
+  - IA en Azure: imagen desplegada más solo las correcciones de fechas, verificador y diagnóstico; respaldo `clb_ia:azure-previo-fechas`; corte de 9 s.
+  - Tablero en GCP: ajuste visual solo de `bi`; respaldo `clb_bi:gcp-previo-visual` y `~/.clb-gcp/respaldos/bi-visual-*`; corte de 8 s.
+  - No se reiniciaron otros servicios.
+- **Pruebas en la nube**, con resultado leído en el historial de Azure y SQL independiente:
+  - **Tablero:** SSO sin contraseña tras reiniciar `bi`; ningún texto de demostración ni técnico; octubre 2026 Bs 138.450,00 / 276; Buzos en octubre Bs 28.829,00; K-Means con 981 puntos sin cambio por filtros; regresión logística con 94,5 % y simulador M 89 %.
+  - **Reporte desde el tablero** (`MANUAL`): 13.845.000 / 276 / 581.
+  - **Reportes por LLM:**
+    - «Ingresos de octubre de 2026» → 13.845.000;
+    - «ingresos de octubre» sin año → octubre de 2026, 13.845.000;
+    - «ventas por talla de este mes» → `OPERACION`, S 7 / L 2 / M 1, igual que SQL sobre `public`.
+  - **Reportes por respaldo de reglas:**
+    - «Ingresos de octubre de 2026», con Ollama sin conexión en ese momento → agregado de `MONTO`, 13.845.000;
+    - 15/10/2026 → el LLM se salió del catálogo y la observación lo detalla; agregado de `MONTO` 669.700 = SQL.
+  - **Pregunta:** «hasta el 15/10/2026» pide la fecha inicial.
+  - **Agente:** respuesta del LLM aceptada, «Bs 138,450.00», sin rechazo del verificador.
+- **Límite observado:** por LLM, «cantidad de pedidos» se interpretó como unidades.
+
 ## Android de nube, 10-nov-2026
 
 APK release `1.0.12+13` instalada y probada en Samsung SM-S918U1 sin borrar datos: pedido original recuperado y
@@ -49,6 +106,18 @@ Resultados en el equipo de desarrollo, con el stack local levantado. Las pruebas
 | S23, Gestión con sesión admin | Las peticiones del teléfono fueron solo `POST /api/v1/graphql` |
 | `demo-compra-saga.py` (con logs de Ventas, Inventario y Clientes) | Todo ✓: compra, idempotencia, stock insuficiente, falla real de Clientes con compensación y reversa de puntos al volver |
 | `demo-automatizacion.py` | Todo ✓: flujos A y B, n8n caído sin pérdida y sin duplicados al volver |
+
+## Despliegue en la nube (auditado el 10-nov-2026)
+
+| Verificación | Resultado |
+|---|---|
+| Azure `clb-ventas-vm`: Ventas, IA, worker_prendas, `clb_ventas`, `clb_analitica`, Caddy | 6 contenedores arriba (4 con healthcheck, sanos); certificados Let's Encrypt de `ventas` e `ia` válidos hasta 2027-02-08; PostgreSQL sin puertos |
+| Tráfico real en 2 h | 8 compras 201 y 6 pedidos `CONFIRMADO`; 6 comprobantes; n8n → eventos 659 × 200; tienda → IA GraphQL 394 × 200; sin `ERROR` en Ventas ni IA |
+| Controles de acceso | Sin token 401; rutas internas, `/mcp` y rutas no publicadas → 404 desde IP no autorizada; 443 del NSG solo para el administrador, GCP y AWS |
+| GPU por Cloudflare Tunnel | Ollama y VTON 401 sin token de Access; token cruzado 401; IA en Azure → qwen3:8b 200 en 8,7 s; 4 trabajos VTON reales sin errores |
+| DNS | Nameservers en Cloudflare; 1.1.1.1 y 8.8.8.8 coinciden en todos los nombres, MX y SPF |
+
+Guías: `infraestructura/azure/LEEME.md` y `infraestructura/tunel-gpu/LEEME.md`.
 
 ## Evidencia histórica (27-oct, no re-ejecutada)
 

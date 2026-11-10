@@ -18,7 +18,7 @@ if [[ -f "$anterior/privado/operador.txt" && ! -f privado/operador.txt ]]; then
 fi
 compose=(sudo docker compose -f compose.generado.yaml)
 "${compose[@]}" config --quiet
-imagenes=(clb_inventario clb_web clb_probador)
+imagenes=(clb_inventario clb_web clb_probador clb_bi)
 anteriores=()
 for imagen in "${imagenes[@]}"; do
     anteriores+=("$(sudo docker image inspect -f '{{.Id}}' "$imagen:gcp" 2>/dev/null || true)")
@@ -30,11 +30,11 @@ restaurar() {
         fi
     done
 }
-if ! "${compose[@]}" --parallel 1 build inventario web probador; then
+if ! "${compose[@]}" --parallel 1 build inventario web probador bi; then
     restaurar
     exit 1
 fi
-servicios=(postgres-sso identidad pasarela web probador automatizacion borde)
+servicios=(postgres-sso identidad pasarela web probador automatizacion borde bi)
 if grep -q '^CLB_MONGO_URI=.' .env; then
     servicios+=(inventario)
 fi
@@ -52,5 +52,6 @@ if ! "${compose[@]}" up -d --wait --wait-timeout 600 "${servicios[@]}"; then
     fi
     exit 1
 fi
+bash cliente-bi.sh
 ln -sfn "$PWD" "$estado/activa"
 "${compose[@]}" ps

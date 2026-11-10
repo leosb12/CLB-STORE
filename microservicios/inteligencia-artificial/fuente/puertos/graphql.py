@@ -196,6 +196,18 @@ class Consulta:
                             segmentos=[Segmento(grupo=s["grupo"], nombre=s["nombre"], descripcion=s["descripcion"],
                                                 clientes=s["clientes"], **s["centroide"]) for s in r["segmentos"]])
 
+    @strawberry.field(description="Inteligencia de negocios sobre el dataset SINTÉTICO de demostración (aislado de la "
+                                  "operación): KPI, evolución mensual, productos, categorías y segmentación K-Means guardada. "
+                                  "Cada bloque es un reporte v2 con conjunto DEMOSTRACION: mismas fórmulas que datosReporte.")
+    async def indicadores_demostracion(self, info: Info, desde: date | None = None, hasta: date | None = None,
+                                       categoria: str | None = None, producto: str | None = None) -> JSON:
+        if bool(desde) != bool(hasta):
+            raise ValueError("Indique fecha desde y hasta, o ninguna para todo el historial.")
+        try:
+            return jsonable_encoder(await _consultas(info).indicadores_demostracion(desde, hasta, categoria, producto))
+        except ValidationError as error:
+            raise ValueError("Filtros inválidos: " + "; ".join(e["msg"] for e in error.errors())[:300]) from error
+
 
 # --- Gestión empresarial (R5): consultas y acciones de negocio de las interfaces de gestión web y Android. ---------------
 # Delegan en los mismos casos de uso que las rutas REST equivalentes; no añaden reglas. Los errores llevan

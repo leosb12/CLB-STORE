@@ -27,6 +27,13 @@ flowchart TB
 
 Angular y React se organizan por funcionalidad en dominio/aplicación/adaptadores/presentación. Angular no depende de React ni TensorFlow.js; el probador no conoce Angular ni la implementación de OIDC. En el modo generativo recibe un puerto de sesión que entrega titular/cabeceras, sin importar el SDK de identidad. Flutter tiene Presentation, Domain y Data; `main.dart` compone implementaciones.
 
+## Inteligencia de negocios (Dash, `/bi/`)
+
+Cuarto frontend, en Python (Dash/Plotly) y solo web: `dominio/aplicacion/adaptadores/presentacion`. Se abre desde Gestión
+en otra pestaña, en el mismo origen; la web nginx lo remite a la pasarela y el Service Worker excluye `/bi/**`. SSO
+propio con Keycloak (`clb-bi`, Authlib) y tokens solo en el servidor. Consume únicamente el GraphQL de gestión
+(`indicadoresDemostracion`, `generarReporte`) y el modelo de tallas público. Guía: `aplicaciones/inteligencia-negocios/LEEME.md`.
+
 ## Contrato e interacción
 
 - `<clb-probador>` recibe `prenda`: identidad, SKU, nombre, categoría, imagen y tallas. La extensión opcional `recurso` añade color y anclas de textura; `catalogo` (opcional) ofrece prendas para combinar arriba y abajo.

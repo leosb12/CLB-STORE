@@ -18,7 +18,12 @@ from fuente.aplicacion.interfaces import (Herramientas, InventarioEscritura, Mod
                                           RechazoDeServicio, RepositorioAnalitica)
 from fuente.dominio.agentes import (AGENTES, CONSULTAS_BASE, HERRAMIENTAS, LIMITE_MISION, REGLAS, ROLES, Agente,
                                     agentes_por_palabras, autorizada)
-from fuente.dominio.reportes import sin_delimitadores
+from fuente.dominio.catalogo_reportes import normalizar_texto
+from fuente.dominio.demostracion import conjunto_de
+from fuente.dominio.fechas_peticion import fechas_pedidas
+from fuente.dominio.reportes import ZONA_BOLIVIA, sin_delimitadores
+
+DEMOSTRACION = "obtener_indicadores_demostracion"
 
 MAXIMO_RONDAS = 4
 MAXIMO_LLAMADAS = 8          # por agente y misión, además de sus consultas base
@@ -87,7 +92,14 @@ class EjecutarMision:
 
             # Datos primero: las consultas base del agente se ejecutan siempre, así el modelo redacta sobre cifras reales
             # (sin esto, qwen3 a veces responde sin consultar e inventa números).
-            for nombre, argumentos in CONSULTAS_BASE[agente]:
+            base = CONSULTAS_BASE[agente]
+            # Una misión sobre el dataset sintético se responde con él (no con ventas reales): mismo «datos primero».
+            if conjunto_de(mision) == "DEMOSTRACION" and autorizada(agente, DEMOSTRACION):
+                pedidas = fechas_pedidas(normalizar_texto(mision), datetime.now(ZONA_BOLIVIA).date())
+                # Fechas incompletas («hasta X» sin inicio): no se consulta un periodo inventado; el modelo pregunta.
+                base = [] if pedidas.pregunta else [(DEMOSTRACION, {"desde": pedidas.desde.isoformat(),
+                                                                  "hasta": pedidas.hasta.isoformat()} if pedidas.desde else {})]
+            for nombre, argumentos in base:
                 await invocar(nombre, argumentos, del_modelo=False)
             plantilla = {"agente": agente, "respuesta": _plantilla(agente, fuentes), "fuentes": fuentes, "generativa": False,
                          "herramientas_permitidas": sorted(HERRAMIENTAS[agente])}
@@ -103,7 +115,9 @@ class EjecutarMision:
         inventadas = cifras_no_respaldadas(respuesta, [f["resultado"] for f in fuentes], mision)
         if inventadas or not respuesta:
             # Verificador de cifras: un número que no sale de las herramientas invalida la redacción del modelo.
-            await self.repositorio.auditar(usuario, agente, "verificador_cifras", {"cifras": inventadas[:10]}, False,
+            # La redacción descartada queda en la auditoría para poder diagnosticar el rechazo.
+            await self.repositorio.auditar(usuario, agente, "verificador_cifras",
+                                           {"cifras": inventadas[:10], "respuesta": (respuesta or "")[:1500]}, False,
                                            "respuesta del modelo descartada")
             return {**plantilla, "fuentes": fuentes, "respuesta_descartada": respuesta,
                     "observacion": "El modelo mencionó cifras que no están en los datos consultados; se muestra el resumen verificado."}
@@ -147,6 +161,34 @@ _DECIMAL_TEXTO = re.compile(r"^-?\d+(?:\.\d+)?$")
 _SIN_CIFRAS = {"identificador", "variante", "producto", "sku", "fecha", "datos_al", "datosAl", "cliente", "miembros", "clave"}
 
 
+_ANIO = re.compile(r"(?<!\d)(?:19|20)\d{2}(?!\d)")
+_MESES = "enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre"
+# Expresiones de FECHA (no cifras de negocio): «15 de octubre de 2026», «octubre de 2026», «01/10/2026», «2026-10-31»,
+# «año 2026». Un año suelto («se vendieron 2026 Bs», «en 2026 hubo…») no es contexto de fecha y sigue verificándose.
+_FECHA = re.compile(
+    rf"(?:(?<!\d)\d{{1,2}}\s+de\s+)?\b(?:{_MESES})(?:\s+(?:de|del))?\s+((?:19|20)\d{{2}})(?!\d)"
+    r"|(?<!\d)\d{1,2}/\d{1,2}/((?:19|20)\d{2})(?!\d)"
+    r"|(?<!\d)((?:19|20)\d{2})-\d{2}(?:-\d{2})?(?!\d)"
+    r"|\b(?:del año|en el año|año)\s+((?:19|20)\d{2})(?!\d)", re.IGNORECASE)
+
+
+def _anios(dato, salida: set[str]):
+    """Años que aparecen en los textos de la misión o de los datos de las herramientas (incluidas fechas)."""
+    if isinstance(dato, str):
+        salida.update(_ANIO.findall(dato))
+    elif isinstance(dato, dict):
+        for v in dato.values():
+            _anios(v, salida)
+    elif isinstance(dato, list):
+        for v in dato:
+            _anios(v, salida)
+
+
+def _sin_fechas(texto: str, anios: set[str]) -> str:
+    """Quita del texto las fechas cuyo año está respaldado; una fecha con un año no respaldado se deja y se verifica."""
+    return _FECHA.sub(lambda m: " " if next(a for a in m.groups() if a) in anios else m.group(0), texto)
+
+
 def _lectura(texto: str) -> Decimal | None:
     """«1.320» y «25.000» son miles (formato boliviano); «1320,50» y «0.62» son decimales; con ambos separadores
     («22.260,00» o «22,260.00») el último es el decimal."""
@@ -186,7 +228,9 @@ def _valores(dato, salida: set[Decimal], clave: str = ""):
 
 
 def cifras_no_respaldadas(texto: str, datos: list, mision: str = "") -> list[str]:
-    """Cifras del texto que no aparecen en los datos. De la misión solo cuentan enteros pequeños (fechas, «top 5»).
+    """Cifras del texto que no aparecen en los datos. De la misión solo cuentan enteros pequeños (días, «top 5»).
+    Las fechas («octubre de 2026», «01/10/2026») no son cifras: se ignoran si su año está en la misión o en los datos;
+    un año fuera de una fecha («2026 Bs») se verifica como cualquier cifra.
     Límite conocido: no detecta cifras escritas con palabras ni una cifra real atribuida a otro concepto."""
     permitidos: set[Decimal] = set()
     _valores(datos, permitidos)
@@ -194,8 +238,10 @@ def cifras_no_respaldadas(texto: str, datos: list, mision: str = "") -> list[str
         valor = _lectura(n)
         if valor is not None and valor <= 31:
             permitidos.add(valor)
+    anios: set[str] = set()
+    _anios([datos, mision], anios)
     sueltos = []
-    for n in _NUMERO.findall(texto or ""):
+    for n in _NUMERO.findall(_sin_fechas(texto or "", anios)):
         valor = _lectura(n)
         if valor is None or round(valor, 2) not in permitidos:
             sueltos.append(n)
@@ -222,6 +268,13 @@ def _plantilla(agente: Agente, fuentes: list[dict]) -> str:
         elif nombre == "obtener_productos":
             productos = datos.get("productos", [])
             partes.append(f"{len(productos)} productos con existencias registradas [{nombre}].")
+        elif nombre == DEMOSTRACION:
+            if "ingresos_bs" not in datos:
+                partes.append(f"{datos.get('mensaje', 'Sin datos de demostración.')} [{nombre}]")
+            else:
+                partes.append(f"Datos sintéticos de demostración, {datos['periodo']}: ingresos {datos['ingresos_bs']} Bs, "
+                              f"{datos['pedidos_confirmados']} pedidos confirmados, {datos['unidades']} unidades y ticket "
+                              f"promedio {datos['ticket_promedio_bs']} Bs [{nombre}].")
         elif nombre == "obtener_segmentos":
             grupos = datos.get("segmentos", [])
             if not grupos:

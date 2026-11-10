@@ -7,7 +7,11 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Dictar un reporte (solo admin); el audio se borra del teléfono tras transcribirlo. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Sucursales y lugar de entrega: la ubicación solo se usa en pantalla; no se guarda ni se envía a CLB Store. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
     <!-- MainActivity sin taskAffinity vacío (plantilla de Flutter): con él, la redirección OIDC llega a otra tarea y AppAuth
          pierde el estado de la solicitud («No stored state»). -->

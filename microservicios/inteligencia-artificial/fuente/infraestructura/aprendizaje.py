@@ -56,14 +56,17 @@ class AgrupadorKMeans:
     Con pocos clientes la silueta premia grupos de una sola persona: se exigen al menos 2 por grupo y k ≤ n/3.
     Un cliente atípico (|z| > 3 en alguna característica, p. ej. muchas más compras que el resto) quedaría solo en cualquier
     agrupación e impediría todas: cada atípico va a un grupo propio (son pocos por definición y pueden serlo en sentidos
-    opuestos, p. ej. un VIP y un cliente dormido) y K-Means agrupa al resto. La silueta informada es la del resto."""
+    opuestos, p. ej. un VIP y un cliente dormido) y K-Means agrupa al resto. La silueta informada es la del resto.
+    Con muestras grandes, |z| > 3 ya no señala casos aislados sino la cola de la distribución (con 1.000 clientes hay
+    decenas): si hay más de MAXIMO_ATIPICOS, nadie se aparta y K-Means agrupa a todos (los grupos de 1 ya se descartan)."""
 
     Z_ATIPICO = 3.0
+    MAXIMO_ATIPICOS = 3
 
     def agrupar(self, filas: list[list[float]]) -> tuple[list[int], list[list[float]], float | None]:
         x = np.array(filas, dtype=float)
         atipico = (np.abs(StandardScaler().fit_transform(x)) > self.Z_ATIPICO).any(axis=1)
-        if atipico.any() and (~atipico).sum() >= 6:
+        if 0 < atipico.sum() <= self.MAXIMO_ATIPICOS and (~atipico).sum() >= 6:
             etiquetas, centroides, silueta = self._kmeans(x[~atipico])
             resto, grupos = iter(etiquetas), []
             for i, a in enumerate(atipico):
