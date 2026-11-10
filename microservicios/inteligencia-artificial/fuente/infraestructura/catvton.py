@@ -78,8 +78,13 @@ class MotorCatVTON:
 
         if not torch.cuda.is_available():
             raise ErrorProbador("GPU_NO_DISPONIBLE", "El motor fotográfico no está disponible en este servidor. Usa la vista local o inténtalo más tarde.", 503)
+        fraccion = float(os.environ.get('CLB_VTON_FRACCION_GPU', '1.0'))
+        if not 0 < fraccion <= 1:
+            raise ValueError('CLB_VTON_FRACCION_GPU debe estar entre 0 y 1.')
+        if fraccion < 1:
+            torch.cuda.set_per_process_memory_fraction(fraccion)
         self.torch = torch
-        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.benchmark = os.environ.get('CLB_VTON_CUDNN_BENCHMARK', 'true').lower() == 'true'
         torch.set_num_threads(max(1, min(4, os.cpu_count() or 1)))
         self.oclusiones = DetectorOclusiones(raiz / "objetos/fasterrcnn.pth")
         modelos = raiz / manifiesto["rutas"]["catvton"]

@@ -8,7 +8,7 @@ Plataforma académica de tienda de ropa: web Angular/PWA, probador React y app A
 2. Cargar el [catálogo limpio](infraestructura/datos-equipo/LEEME.md): 14 prendas, 56 variantes y recursos del probador. No contiene ventas, contraseñas ni perfiles personales.
 3. Abrir la tienda en <http://127.0.0.1:14200> y entrar con una cuenta creada en la instalación local.
 
-El repositorio funciona por sí mismo: no necesita la carpeta externa `contexto/` ni historiales de conversaciones. El despliegue incluido es **local**; publicar en Internet requiere configurar HTTPS, identidad, secretos, persistencia y los servicios de IA.
+El repositorio funciona por sí mismo: no necesita la carpeta externa `contexto/` ni historiales de conversaciones. El entorno base es **local**. Clientes, S3 y DynamoDB están desplegados en AWS; acceso comprobado en `https://clientes.leonardoserrate.xyz/salud` (también por IP). La [guía AWS](infraestructura/aws/LEEME.md) documenta actualización, pruebas, costos, identidad pendiente, certificado renovable y configuración del dominio. La publicación de los demás componentes requiere su preparación específica.
 
 ## Componentes
 
@@ -28,6 +28,7 @@ El repositorio funciona por sí mismo: no necesita la carpeta externa `contexto/
 - [Probador](docs/probador.md): RA 3D local, vista rápida 2D local y fotografía generativa en servidor.
 - Guías: [web](aplicaciones/web/LEEME.md), [Android](aplicaciones/android/LEEME.md), [React](aplicaciones/probador-virtual/LEEME.md), [automatización](infraestructura/automatizacion/LEEME.md).
 - Backend: [Ventas](microservicios/ventas/LEEME.md), [Inventario](microservicios/inventario/LEEME.md), [Clientes](microservicios/clientes/LEEME.md), [IA](microservicios/inteligencia-artificial/LEEME.md), [CatVTON](microservicios/inteligencia-artificial/VTON.md).
+- [AWS: Clientes, archivos privados y DynamoDB](infraestructura/aws/LEEME.md), actualización por un comando y costos.
 
 ## Trabajar en equipo
 

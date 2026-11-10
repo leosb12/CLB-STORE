@@ -15,11 +15,38 @@ const pasarela = String.fromEnvironment(
   defaultValue: 'http://127.0.0.1:18000',
 );
 
+// En nube cada servicio conserva su dominio; en local todos usan la pasarela.
+const urlInventario = String.fromEnvironment(
+  'CLB_INVENTARIO_URL',
+  defaultValue: pasarela,
+);
+const urlVentas = String.fromEnvironment(
+  'CLB_VENTAS_URL',
+  defaultValue: pasarela,
+);
+const urlIA = String.fromEnvironment('CLB_IA_URL', defaultValue: pasarela);
+const urlClientes = String.fromEnvironment(
+  'CLB_CLIENTES_URL',
+  defaultValue: pasarela,
+);
+// La pasarela añade las cabeceras privadas de Access para CatVTON.
+const urlProbador = String.fromEnvironment(
+  'CLB_PROBADOR_URL',
+  defaultValue: pasarela,
+);
+
 /// GET/POST JSON con errores traducidos al dominio: sin red → [SinConexion]; estado ≠ 2xx → [ErrorRemoto].
 class ClienteJson {
-  ClienteJson(this._http, {this.base = '$pasarela/api/v1'});
+  ClienteJson(
+    this._http, {
+    this.base = '$pasarela/api/v1',
+    this.destinos = const {},
+  });
   final http.Client _http;
   final String base;
+
+  /// Prefijos del contrato y bases /api/v1 de sus servicios propietarios.
+  final Map<String, String> destinos;
 
   Future<Map<String, dynamic>> pedir(
     String metodo,
@@ -64,8 +91,16 @@ class ClienteJson {
     return _json(await _enviar(solicitud, plazo));
   }
 
-  Uri _uri(String ruta, Map<String, String>? consulta) =>
-      Uri.parse('$base$ruta').replace(queryParameters: consulta);
+  Uri _uri(String ruta, Map<String, String>? consulta) {
+    var destino = base;
+    for (final entrada in destinos.entries) {
+      if (ruta == entrada.key || ruta.startsWith('${entrada.key}/')) {
+        destino = entrada.value;
+        break;
+      }
+    }
+    return Uri.parse('$destino$ruta').replace(queryParameters: consulta);
+  }
 
   /// Sin red → [SinConexion]; estado ≠ 2xx → [ErrorRemoto] con el mensaje del servicio si lo trae.
   Future<http.Response> _enviar(

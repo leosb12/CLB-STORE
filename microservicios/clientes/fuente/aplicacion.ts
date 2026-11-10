@@ -10,6 +10,9 @@ import type { RepositorioFidelizacion } from "./fidelizacion/datos/repositorio-f
 import { ModuloFidelizacion } from "./fidelizacion/modulo-fidelizacion.js";
 import { ServicioFidelizacion } from "./fidelizacion/negocio/servicio-fidelizacion.js";
 import { ModuloNotificaciones, type DependenciasNotificaciones } from "./notificaciones/modulo-notificaciones.js";
+import { ModuloArchivos } from "./archivos/modulo.js";
+import type { ServicioArchivos } from "./archivos/negocio.js";
+import { configuracion } from "./configuracion.js";
 
 @Controller("salud")
 class ControladorSalud {
@@ -36,16 +39,18 @@ class ModuloIdentidad {
 @Module({})
 class ModuloClientes {
   static con(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens,
-    notificaciones?: DependenciasNotificaciones): DynamicModule {
+    notificaciones?: DependenciasNotificaciones, archivos?: ServicioArchivos): DynamicModule {
     return { module: ModuloClientes, controllers: [ControladorSalud],
       imports: [ModuloIdentidad.con(verificador), ModuloFidelizacion.con(fidelizacion), ModuloPerfiles.con(perfiles),
-        ...(notificaciones ? [ModuloNotificaciones.con(notificaciones)] : [])] };
+        ...(notificaciones ? [ModuloNotificaciones.con(notificaciones)] : []), ...(archivos ? [ModuloArchivos.con(archivos)] : [])] };
   }
 }
 
 export async function crearAplicacion(fidelizacion: RepositorioFidelizacion, perfiles: RepositorioPerfiles, verificador: VerificadorTokens,
-  notificaciones?: DependenciasNotificaciones): Promise<INestApplication> {
-  const aplicación = await NestFactory.create(ModuloClientes.con(fidelizacion, perfiles, verificador, notificaciones), { logger: ["error", "warn"] });
+  notificaciones?: DependenciasNotificaciones, archivos?: ServicioArchivos): Promise<INestApplication> {
+  const aplicación = await NestFactory.create(ModuloClientes.con(fidelizacion, perfiles, verificador, notificaciones, archivos), { logger: ["error", "warn"] });
+  if (configuracion.origenes.length) aplicación.enableCors({ origin: configuracion.origenes,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], allowedHeaders: ["Authorization", "Content-Type", "Idempotency-Key"], maxAge: 300 });
   aplicación.useGlobalPipes(new ValidationPipe({
     whitelist: true, forbidNonWhitelisted: true,
     exceptionFactory: errores => new UnprocessableEntityException({

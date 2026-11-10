@@ -4,8 +4,11 @@ const local = entorno === "local" || entorno === "pruebas";
 
 export const configuracion = {
   puerto: Number(process.env.CLB_CLIENTES_PUERTO_INTERNO ?? 3000),
+  host: process.env.CLB_CLIENTES_HOST ?? "0.0.0.0",
+  origenes: (process.env.CLB_CORS_ORIGENES ?? "").split(",").map(v => v.trim()).filter(Boolean),
   entorno,
   tabla: process.env.CLB_CLIENTES_TABLA ?? "clb_fidelizacion",
+  archivos: { bucket: process.env.CLB_S3_BUCKET, tabla: process.env.CLB_ARCHIVOS_TABLA ?? "clb_archivos" },
   dynamodb: {
     // Fuera de local no hay valores por defecto: se usan el endpoint real y la cadena de credenciales de AWS (rol IAM).
     endpoint: process.env.CLB_DYNAMODB_ENDPOINT ?? (local ? "http://127.0.0.1:8000" : undefined),

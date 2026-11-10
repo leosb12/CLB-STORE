@@ -1,0 +1,9 @@
+{
+  "CLB_PASARELA": "https://api.leonardoserrate.xyz",
+  "CLB_INVENTARIO_URL": "https://api.leonardoserrate.xyz",
+  "CLB_VENTAS_URL": "https://api.leonardoserrate.xyz",
+  "CLB_IA_URL": "https://api.leonardoserrate.xyz",
+  "CLB_CLIENTES_URL": "https://clientes.leonardoserrate.xyz",
+  "CLB_PROBADOR_URL": "https://api.leonardoserrate.xyz",
+  "CLB_IDENTIDAD_EMISOR": "https://auth.leonardoserrate.xyz/identidad/realms/clb"
+}

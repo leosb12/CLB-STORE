@@ -61,7 +61,8 @@ test("tokens de otro emisor, otra audiencia o vencidos se rechazan", async () =>
   const cuerpo = { identificador_pedido: randomUUID(), identificador_cliente: randomUUID(), total_centavos: 1000 };
   for (const token of [await firmar(randomUUID(), ["servicio"], { emisor: "http://atacante/realms/clb" }),
     await firmar(randomUUID(), ["servicio"], { audiencia: "otra-api" }),
-    await firmar(randomUUID(), ["servicio"], { vence: "-1m" }), "no-es-un-jwt"]) {
+    await firmar(randomUUID(), ["servicio"], { vence: "-1m" }),
+    await firmar(randomUUID(), ["servicio"], { sinExpiracion: true }), "no-es-un-jwt"]) {
     assert.equal((await enviar("/api/v1/interno/fidelizacion/acreditaciones", cuerpo, { token })).status, 401);
   }
 });

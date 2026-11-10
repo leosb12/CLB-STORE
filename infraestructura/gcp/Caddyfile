@@ -1,0 +1,33 @@
+{
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+}
+
+store.leonardoserrate.xyz {
+    reverse_proxy web:8080
+}
+
+probador.leonardoserrate.xyz {
+    redir / https://store.leonardoserrate.xyz/probador
+    reverse_proxy probador:8080
+}
+
+api.leonardoserrate.xyz {
+    @inventarioAzure {
+        remote_ip 52.162.217.223
+        path /api/v1/interno/eventos /api/v1/interno/reservas /api/v1/interno/reservas/* /api/v1/interno/recursos-probador/*
+    }
+    @privado path /identidad /identidad/* /api/v1/interno /api/v1/interno/*
+    route {
+        reverse_proxy @inventarioAzure inventario:8000
+        respond @privado 404
+        reverse_proxy pasarela:8080
+    }
+}
+
+auth.leonardoserrate.xyz {
+    @realm path /identidad/realms/clb/* /identidad/resources/*
+    handle @realm {
+        reverse_proxy identidad:8080
+    }
+    respond 404
+}

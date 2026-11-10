@@ -38,6 +38,7 @@ class EstadoTienda extends ChangeNotifier {
     this.gestion,
     this.existencias,
     this.ingesta,
+    this.avisosLocales,
   }) : _almacen = almacen,
        _catalogo = sincronizarCatalogo,
        _confirmar = confirmarPedido,
@@ -75,6 +76,9 @@ class EstadoTienda extends ChangeNotifier {
   final AvisosDispositivo? avisos;
   final FuenteAvisos? fuenteAvisos;
   final IdentidadInstalacion? instalacion;
+  final AvisosLocales? avisosLocales;
+  Future<Operacion>? _confirmacionEnCurso;
+  Future<void>? _envioEnCurso;
 
   /// Preferencias del titular (copia local por cuenta); `pendientes` mientras un cambio espera en la cola.
   PreferenciasAvisos preferenciasAvisos = PreferenciasAvisos.porDefecto;
@@ -347,7 +351,9 @@ class EstadoTienda extends ChangeNotifier {
         !enviandoPedidos) {
       // Nunca salió: su clave no se usó, así que se edita en el lugar (misma clave, misma versión o antecesor).
       await _almacen.guardarOperacion(
-        ultima.copiar(datos: {...?ultima.datos, 'push': push, 'correo': correo}),
+        ultima.copiar(
+          datos: {...?ultima.datos, 'push': push, 'correo': correo},
+        ),
       );
     } else {
       // Si el anterior ya salió (resultado incierto o en vuelo), su clave y cuerpo no se tocan: este va tras él.
@@ -546,6 +552,7 @@ class EstadoTienda extends ChangeNotifier {
   Future<void> agregar(Producto producto, Variante variante) async {
     await carrito.agregar(producto, variante);
     await _recargar();
+    await _avisarLocal(() => avisosLocales?.productoAgregado());
   }
 
   Future<void> cambiarCantidad(LineaCarrito linea, int cantidad) async {
@@ -554,15 +561,61 @@ class EstadoTienda extends ChangeNotifier {
   }
 
   /// Deja el pedido en la cola del teléfono e intenta enviarlo enseguida.
-  Future<Operacion> confirmar() async {
+  Future<Operacion> confirmar() => _confirmacionEnCurso ??=
+      _confirmarYNotificar().whenComplete(() => _confirmacionEnCurso = null);
+
+  Future<Operacion> _confirmarYNotificar() async {
     final op = await _confirmar.ejecutar();
     await _recargar();
-    unawaited(enviarPedidos(forzar: true));
+    if (!enLinea) {
+      await _avisarLocal(
+        () => avisosLocales?.pedidoRegistrado(pendiente: true),
+      );
+      unawaited(enviarPedidos(forzar: true));
+    } else {
+      unawaited(_enviarYNotificar(op));
+    }
     return op;
   }
 
-  Future<void> enviarPedidos({bool forzar = false}) async {
-    if (enviandoPedidos) return;
+  Future<void> _enviarYNotificar(Operacion op) async {
+    try {
+      await enviarPedidos(forzar: true);
+      if (_cerrado || (await _sesion.titular())?.sub != op.titular) return;
+      final actual = (await _almacen.operaciones())
+          .where((o) => o.identificador == op.identificador)
+          .firstOrNull;
+      if (actual == null) return;
+      if (actual.estado == EstadoOperacion.pendiente ||
+          actual.estado == EstadoOperacion.enviando) {
+        await _avisarLocal(
+          () => avisosLocales?.pedidoRegistrado(pendiente: true),
+        );
+      } else if (actual.estado == EstadoOperacion.confirmada &&
+          actual.resultado != null &&
+          actual.resultado!.estado != EstadoPedido.cancelado &&
+          actual.resultado!.estado != EstadoPedido.enRevision) {
+        await _avisarLocal(
+          () => avisosLocales?.pedidoRegistrado(pendiente: false),
+        );
+      }
+    } catch (_) {
+      // Un fallo de envío/lectura no es un registro exitoso.
+    }
+  }
+
+  Future<void> _avisarLocal(Future<void>? Function() emitir) async {
+    try {
+      await emitir();
+    } catch (_) {
+      // El permiso denegado o un fallo del sistema no invalidan una operación ya guardada.
+    }
+  }
+
+  Future<void> enviarPedidos({bool forzar = false}) => _envioEnCurso ??=
+      _enviarPedidos(forzar: forzar).whenComplete(() => _envioEnCurso = null);
+
+  Future<void> _enviarPedidos({bool forzar = false}) async {
     enviandoPedidos = true;
     notifyListeners();
     try {

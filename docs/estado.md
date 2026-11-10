@@ -1,6 +1,6 @@
 # Estado de entrega y revisión
 
-Actualizado: 9 de noviembre de 2026. Alcance académico: requisitos [R1–R21](requisitos-docente.md), implementación y [trazabilidad](iconix/trazabilidad.md). Las cuentas y datos de ejecución no se versionan. El catálogo limpio está en [datos-equipo](../infraestructura/datos-equipo/LEEME.md). Plan de pulido en curso (temporal): [plan-pulido-final.md](plan-pulido-final.md).
+Actualizado: 10 de noviembre de 2026. Alcance académico: requisitos [R1–R21](requisitos-docente.md), implementación y [trazabilidad](iconix/trazabilidad.md). Las cuentas y datos de ejecución no se versionan. El catálogo limpio está en [datos-equipo](../infraestructura/datos-equipo/LEEME.md). Plan de pulido en curso (temporal): [plan-pulido-final.md](plan-pulido-final.md).
 
 ## Implementado
 
@@ -10,6 +10,18 @@ Cambios del 9-nov-2026:
 - **R5:** las consultas y acciones de negocio de gestión (reportes, agentes, alertas, productos, variantes, stock e ingesta) pasan por el GraphQL de gestión en web y Android, incluidos los procesadores de las colas offline. IA delega en sus casos de uso y en el contrato REST propietario de Inventario. Audio, fotos y descargas siguen por REST como decisión técnica. Detalle en [backend](arquitectura/backend.md#r5--gestión-empresarial-sobre-graphql-9-nov-2026).
 - **Android:** Firebase (push) se inicializa en segundo plano y nunca bloquea el arranque. La app compila y funciona sin `google-services.json`, que no se versiona.
 - **Avisos de pedido (F2/F3):** pedido confirmado y pedido cancelado, por Push (FCM) y correo (Resend). Ventas → n8n (flujo C) → Clientes (`notificaciones/`, registro durable, reclamo atómico, reintentos) → proveedor. Android vincula la instalación con la cuenta (Keystore, convergencia en serie también con cambios de cuenta en vuelo), guarda preferencias Push/Correo en la cola offline con versión e Idempotency-Key, ofrece «Permitir notificaciones» y abre «Pedidos» al tocar el aviso. En primer plano emite notificación nativa del sistema arriba (`IMPORTANCE_HIGH`) y SnackBar inferior en simultáneo. Envíos reales: Push habilitado (`CLB_NOTIFICACIONES_HABILITADAS=true`) y correo habilitado (`CLB_NOTIFICACIONES_CORREO_HABILITADO=true`).
+
+## Android de nube, 10-nov-2026
+
+APK release `1.0.12+13` instalada y probada en Samsung SM-S918U1 sin borrar datos: pedido original recuperado y
+confirmado con la misma identidad, compras online/offline, notificaciones locales independientes de Firebase,
+reenvío idempotente, login comprador/admin, gestión y reporte interpretado por el servidor. Ventas e IA usan la
+pasarela HTTPS porque Azure restringe el acceso directo. Suite Flutter: 137 aprobadas, 4 omitidas.
+Detalle y reproducción en [la guía Android](../aplicaciones/android/LEEME.md#validación-de-la-apk-de-nube-10-nov-2026).
+CatVTON: corregidas las cabeceras Host/Cloudflare Access de la ruta de trabajos en GCP; foto de prueba real
+procesada a LISTO, presentada en el teléfono y visible en modo avión. Túnel y API rechazan solicitudes sin sus
+respectivas identidades. FCM conserva su implementación, pero no se verificó recepción push real por faltar la
+configuración local de Firebase. RA y cámara también se abrieron en modo avión.
 
 ## Evidencia ejecutada el 9-nov-2026
 
@@ -49,7 +61,9 @@ Resultados en el equipo de desarrollo, con el stack local levantado. Las pruebas
 
 ## Pendientes y límites
 
-- **Bloqueado en este equipo:** PHPUnit de Inventario y la suite Playwright de administración web: PHP no está instalado y la imagen de Inventario no trae dependencias de desarrollo. La suite Playwright de administración además debe adaptarse al GraphQL de gestión, porque su montaje no levanta IA.
+- **AWS solicitado el 9-nov:** cuenta `clb-despliegue`, Ohio; EC2, S3 privado y DynamoDB reales creados. Clientes responde por **HTTPS en `clientes.leonardoserrate.xyz:443`** (alternativa `3.136.183.205:443`), certificado público validado, salud y DynamoDB ACTIVO. HTTP por IP solo permite salud; HTTP del dominio redirige a HTTPS; rutas privadas rechazan solicitudes sin identidad. 42 pruebas y siete verificaciones reales de almacenamiento/persistencia, incluida fidelización idempotente con compensación. Recuperación automática ante una versión defectuosa comprobada. Adaptador opcional S3 de Inventario implementado: 71 pruebas de dominio/aplicación/adaptadores aprobadas. Keycloak y las conexiones entre nubes siguen pendientes de sus despliegues externos. Dominio activado tras la migración DNS del usuario a Namecheap; certificado público y renovación Caddy configurados. Tras propagación, DNS normal y HTTPS comprobados desde esta PC y EC2; no se alteró la IP. Operación, evidencias, límites, costo y configuración del dominio en la [guía AWS](../infraestructura/aws/LEEME.md).
+
+- **Inventario en este equipo:** PHP 8.4 y PHPUnit disponibles; se ejecutaron las 71 pruebas sin MongoDB mencionadas arriba. La suite completa con MongoDB/reinicio requiere su entorno y no se declara reejecutada. La suite Playwright de administración debe adaptarse al GraphQL de gestión, porque su montaje no levanta IA.
 - **Pendiente de autorización:** ver en el S23 el aviso de sesión vencida con Gestión abierta. «Sin conexión» ya se vio en el teléfono; el caso vencido está cubierto por `sesion_vencida_test.dart` y por el arranque en frío tras un `invalid_grant`. Forzarlo requiere revocar la sesión en Keycloak con la cuenta administradora del realm (no autorizado en esta sesión) o esperar la caducidad SSO (8 h).
 - **Correo real pendiente:** las cuentas demo tienen correos `@clb.local`, no buzones confirmados. Activar `CLB_NOTIFICACIONES_CORREO_HABILITADO=true` solo con una cuenta de prueba cuyo correo sea un buzón controlado, y confirmar la recepción en ese buzón (aceptación de Resend ≠ recepción).
 - **Push:** FCM no garantiza la entrega (TTL 1 h, batería, permiso). El aviso usa el icono por defecto de Flutter y el canal `fcm_fallback_notification_channel`. El cambio de cuenta en el teléfono se verificó en pruebas y en el servidor (reasignación atómica), no con una segunda cuenta en el S23.

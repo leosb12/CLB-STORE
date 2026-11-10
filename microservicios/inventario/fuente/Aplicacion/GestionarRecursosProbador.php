@@ -46,7 +46,8 @@ final readonly class GestionarRecursosProbador implements PuertoGestionarRecurso
         if (trim($color) === '' || mb_strlen($color) > 80 || $versión < 1) {
             throw new ErrorDeRecurso('Indica color y versión válida.');
         }
-        $archivo = $this->archivos->guardar($binario, 'original');
+        $producto = $this->repositorio->leer($id);
+        $archivo = $this->archivos->guardar($binario, 'original', ($producto['nombre'] ?? 'Prenda de catalogo').' '.$color.' frontal');
         $huella = hash('sha256', json_encode([$archivo['sha256'], $versión, $color], JSON_THROW_ON_ERROR));
 
         return $this->cambiar($id, function ($p, $f) use ($clave, $huella, $archivo, $versión, $color) {
@@ -101,7 +102,9 @@ final readonly class GestionarRecursosProbador implements PuertoGestionarRecurso
 
     private function visible(array $t): array
     {
-        return array_intersect_key($t, array_flip(['identificador', 'estado', 'color', 'creado', 'mensaje', 'recurso', 'version_publicada', 'calidad']));
+        $visible = array_intersect_key($t, array_flip(['identificador', 'estado', 'color', 'creado', 'mensaje', 'recurso', 'version_publicada', 'calidad', 'almacenamiento']));
+        if (isset($t['original']['ruta_s3'])) $visible['almacenamiento']['original'] = $t['original']['ruta_s3'];
+        return $visible;
     }
 
     public function reclamar(int $ahora): ?array
@@ -192,15 +195,19 @@ final readonly class GestionarRecursosProbador implements PuertoGestionarRecurso
                 if (($recurso['calidad']['nivel'] ?? '') === 'no_apta') {
                     throw new ErrorDeRecurso('Una fotografía que no cumple el estándar no puede quedar lista para publicar.');
                 }
-                $archivo = $this->archivos->guardar($textura ?? '', 'textura');
-                $originalMaestro = $this->archivos->guardar($maestro ?? '', 'maestro');
+                $descripcion = ($p['nombre'] ?? 'Prenda de catalogo').' '.$t['color'];
+                $archivo = $this->archivos->guardar($textura ?? '', 'textura', $descripcion.' frontal');
+                $originalMaestro = $this->archivos->guardar($maestro ?? '', 'maestro', $descripcion.' maestro');
+                if (isset($archivo['ruta_s3'])) $t['almacenamiento']['frontal'] = $archivo['ruta_s3'];
+                if (isset($originalMaestro['ruta_s3'])) $t['almacenamiento']['maestro'] = $originalMaestro['ruta_s3'];
                 if ($archivo['sha256'] !== $recurso['sha256'] || $archivo['bytes'] !== $recurso['bytes']
                     || $archivo['ancho'] !== $recurso['ancho'] || $archivo['alto'] !== $recurso['alto']) {
                     throw new ErrorDeRecurso('La textura no coincide con sus metadatos.');
                 }
                 if (isset($recurso['espalda'])) {
                     // Espalda deducida para la realidad aumentada: mismo formato y verificación que la textura.
-                    $dorso = $this->archivos->guardar($espalda ?? '', 'textura');
+                    $dorso = $this->archivos->guardar($espalda ?? '', 'textura', $descripcion.' espalda');
+                    if (isset($dorso['ruta_s3'])) $t['almacenamiento']['espalda'] = $dorso['ruta_s3'];
                     if ($dorso['sha256'] !== $recurso['espalda']['sha256'] || $dorso['bytes'] !== $recurso['espalda']['bytes']
                         || $dorso['ancho'] !== 768 || $dorso['alto'] !== 1024) {
                         throw new ErrorDeRecurso('La espalda no coincide con sus metadatos.');

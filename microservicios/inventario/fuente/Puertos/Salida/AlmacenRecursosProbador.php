@@ -6,7 +6,7 @@ namespace Clb\Inventario\Puertos\Salida;
 
 interface AlmacenRecursosProbador
 {
-    public function guardar(string $binario, string $tipo): array;
+    public function guardar(string $binario, string $tipo, string $descripcion = 'prenda de catalogo'): array;
 
     public function leer(string $hash, string $tipo): string;
 

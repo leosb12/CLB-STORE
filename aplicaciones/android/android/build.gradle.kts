@@ -18,6 +18,15 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+// Permite usar un NDK instalado también en los plugins nativos (por ejemplo JNI).
+subprojects {
+    afterEvaluate {
+        providers.gradleProperty("clbNdkVersion").orNull?.let { version ->
+            extensions.findByType<LibraryExtension>()?.ndkVersion = version
+        }
+    }
+}
+
 subprojects {
     project.evaluationDependsOn(":app")
     // Flutter/Kotlin compila este plugin a JVM 17; su Java 11 provoca el rechazo de Gradle 8.

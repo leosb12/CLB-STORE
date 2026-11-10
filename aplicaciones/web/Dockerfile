@@ -4,6 +4,10 @@ WORKDIR /aplicacion/clb_web
 COPY package.json package-lock.json ./
 RUN npx --yes npm@11.6.2 ci --no-audit --no-fund
 COPY . .
+ARG CLB_IDENTIDAD_AUTORIDAD
+RUN if [ -n "$CLB_IDENTIDAD_AUTORIDAD" ]; then \
+      node -e "const fs = require('node:fs'); const ruta = 'public/configuracion.json'; const config = JSON.parse(fs.readFileSync(ruta)); config.identidad.autoridad = process.env.CLB_IDENTIDAD_AUTORIDAD; fs.writeFileSync(ruta, JSON.stringify(config));"; \
+    fi
 RUN npm run build
 
 FROM nginx:stable-alpine AS aplicacion

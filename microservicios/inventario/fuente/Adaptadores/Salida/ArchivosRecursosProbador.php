@@ -20,7 +20,7 @@ final readonly class ArchivosRecursosProbador implements AlmacenRecursosProbador
         return $this->raíz.'/'.$tipo.'/'.$hash;
     }
 
-    public function guardar(string $binario, string $tipo): array
+    public function guardar(string $binario, string $tipo, string $descripcion = 'prenda de catalogo'): array
     {
         if (! in_array($tipo, ['original', 'textura', 'maestro'], true) || strlen($binario) > 10485760 || strlen($binario) < 24) {
             throw new ErrorDeRecurso('El archivo está vacío o supera 10 MiB.');

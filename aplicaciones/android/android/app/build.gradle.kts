@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -7,12 +9,18 @@ plugins {
     id("com.google.gms.google-services") apply false
 }
 
+val archivoFirma = rootProject.file("key.properties")
+val propiedadesFirma = Properties().apply {
+    if (archivoFirma.exists()) archivoFirma.inputStream().use { load(it) }
+}
+
 android {
     namespace = "bo.clb.clb_store"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = providers.gradleProperty("clbNdkVersion").getOrElse(flutter.ndkVersion)
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -32,16 +40,30 @@ android {
         manifestPlaceholders["appAuthRedirectScheme"] = "bo.clb.store"
     }
 
+    signingConfigs {
+        if (archivoFirma.exists()) {
+            create("publicacion") {
+                keyAlias = propiedadesFirma.getProperty("keyAlias")
+                keyPassword = propiedadesFirma.getProperty("keyPassword")
+                storeFile = file(propiedadesFirma.getProperty("storeFile"))
+                storePassword = propiedadesFirma.getProperty("storePassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // ponytail: firma de depuración para la demo local; una publicación necesita su propio almacén de claves.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (archivoFirma.exists()) signingConfigs.getByName("publicacion") else signingConfigs.getByName("debug")
         }
     }
 }
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 // google-services.json es configuración local (no se versiona). `--android-project-arg=clbSinFirebase=true` permite

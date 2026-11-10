@@ -1,0 +1,122 @@
+name: clb-ia
+services:
+  postgres:
+    image: ${CLB_POSTGRES_IMAGEN:-postgres:16-bookworm}
+    env_file: /etc/clb/ia-postgres.env
+    restart: unless-stopped
+    command: [postgres, -c, shared_buffers=128MB, -c, max_connections=40, -c, work_mem=8MB]
+    volumes:
+      - /opt/clb/ia/datos/postgres:/var/lib/postgresql/data
+      - ./inicializar-analitica.sh:/docker-entrypoint-initdb.d/20-analitica.sh:ro
+    mem_limit: 768m
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d clb_analitica']
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  ollama:
+    image: ${CLB_OLLAMA_IMAGEN:-ollama/ollama:latest}
+    restart: unless-stopped
+    gpus: all
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_PARALLEL: '1'
+      OLLAMA_MAX_LOADED_MODELS: '1'
+      OLLAMA_CONTEXT_LENGTH: '4096'
+      OLLAMA_FLASH_ATTENTION: '1'
+      OLLAMA_KV_CACHE_TYPE: q8_0
+      # Reservar VRAM para CatVTON: el reparto efectivo debe comprobarse en la T4.
+      OLLAMA_GPU_OVERHEAD: '8589934592'
+      OLLAMA_KEEP_ALIVE: '-1'
+    volumes:
+      - /opt/clb/ia/modelos/ollama:/root/.ollama
+    mem_limit: 7g
+    cpus: 2.0
+  ia:
+    image: clb-ia-cpu:${CLB_VERSION:?Definir CLB_VERSION}
+    build:
+      context: ./servicio
+      dockerfile: Dockerfile.prendas
+    command: [uvicorn, --factory, 'fuente.infraestructura.arranque:app_desde_entorno', --host, 0.0.0.0, --port, '8000', --no-access-log]
+    restart: unless-stopped
+    environment: &entorno_ia
+      CLB_ANALITICA_SERVIDOR: postgres
+      CLB_ANALITICA_PUERTO: '5432'
+      CLB_ANALITICA_BASE: clb_analitica
+      CLB_ANALITICA_USUARIO: clb_analitica
+      CLB_ANALITICA_CLAVE: ${CLB_ANALITICA_CLAVE:?Configurar clave privada}
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_EMISOR}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO}
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA}
+      CLB_CLIENTES_URL: ${CLB_CLIENTES_URL}
+      CLB_INVENTARIO_URL: ${CLB_INVENTARIO_URL}
+      CLB_VENTAS_URL: ${CLB_VENTAS_URL}
+      CLB_IA_INTERVALO_INGESTA: ${CLB_IA_INTERVALO_INGESTA:-0}
+      CLB_IA_OLLAMA_URL: http://ollama:11434
+      CLB_IA_MODELO: qwen3:8b
+      CLB_IA_MODELO_RESIDENCIA: '-1'
+      CLB_IA_MODELO_CONTEXTO: '4096'
+      CLB_IA_MODELO_VOZ: small
+      CLB_IA_HILOS_VOZ: '2'
+      CLB_IA_DIRECTORIO_MODELOS: /modelos/voz
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    ports: ['127.0.0.1:8000:8000']
+    volumes:
+      - /opt/clb/ia/modelos/voz:/modelos/voz
+    depends_on:
+      postgres: {condition: service_healthy}
+    mem_limit: 3g
+    cpu_shares: 1024
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/salud", timeout=8)']
+      interval: 20s
+      timeout: 10s
+      retries: 6
+      start_period: 60s
+  prendas:
+    image: clb-ia-cpu:${CLB_VERSION:?Definir CLB_VERSION}
+    command: [python, -m, fuente.infraestructura.worker_prendas]
+    restart: unless-stopped
+    environment:
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO}
+      CLB_IDENTIDAD_SECRETO_IA: ${CLB_IDENTIDAD_SECRETO_IA}
+      CLB_INVENTARIO_URL: ${CLB_INVENTARIO_URL}
+      CLB_PRENDAS_MODELO: /modelos-prendas/u2net.onnx
+      CLB_PRENDAS_SHA256: 8d10d2f3bb75ae3b6d527c77944fc5e7dcd94b29809d47a739a7a728a912b491
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    volumes: ['/opt/clb/ia/modelos/prendas:/modelos-prendas:ro']
+    mem_limit: 2g
+    cpus: 1.5
+  vton:
+    image: clb-ia-vton:${CLB_VERSION:?Definir CLB_VERSION}
+    build:
+      context: ./servicio
+      dockerfile: Dockerfile.vton
+      args:
+        CLB_CUDA_ARQUITECTURAS: '7.5'
+    restart: unless-stopped
+    gpus: all
+    environment:
+      CLB_IDENTIDAD_EMISOR: ${CLB_IDENTIDAD_EMISOR}
+      CLB_IDENTIDAD_INTERNO: ${CLB_IDENTIDAD_INTERNO}
+      CLB_VTON_PESOS: /weights
+      CLB_VTON_CACHE: /resultados
+      CLB_VTON_FRACCION_GPU: '0.50'
+      CLB_VTON_CUDNN_BENCHMARK: 'false'
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      OMP_NUM_THREADS: '2'
+    ports: ['127.0.0.1:8001:8000']
+    volumes:
+      - /opt/clb/ia/modelos/vton:/weights:ro
+      - /opt/clb/ia/datos/vton:/resultados
+    mem_limit: 6g
+    memswap_limit: 7g
+    cpus: 2.0
+    healthcheck:
+      test: [CMD, python, -c, 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/salud", timeout=8)']
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 900s

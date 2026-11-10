@@ -11,12 +11,14 @@ MAX_TOKENS_JSON = 700
 
 
 class ModeloOllama:
-    def __init__(self, http: httpx.AsyncClient, url: str, modelo: str, limite_segundos: float = 60):
+    def __init__(self, http: httpx.AsyncClient, url: str, modelo: str, limite_segundos: float = 60,
+                 residencia: str | int = '30m', contexto: int = 4096):
         self.http, self.url, self.modelo, self.limite = http, f"{url}/api/chat", modelo, limite_segundos
+        self.residencia, self.contexto = residencia, contexto
 
     async def _chat(self, cuerpo: dict, opciones: dict | None = None) -> dict:
-        cuerpo = {"model": self.modelo, "stream": False, "think": False, "keep_alive": "30m",
-                  "options": {"temperature": 0, **(opciones or {})}, **cuerpo}
+        cuerpo = {"model": self.modelo, "stream": False, "think": False, "keep_alive": self.residencia,
+                  "options": {"temperature": 0, "num_ctx": self.contexto, **(opciones or {})}, **cuerpo}
         try:
             respuesta = await self.http.post(self.url, json=cuerpo, timeout=self.limite)
         except httpx.TimeoutException as error:

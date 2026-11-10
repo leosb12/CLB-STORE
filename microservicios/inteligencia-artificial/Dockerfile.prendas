@@ -5,6 +5,7 @@ WORKDIR /app
 COPY requirements.txt requirements-prendas.txt ./
 RUN --mount=type=cache,id=clb_pip,target=/root/.cache/pip pip install pip==26.2.2 && pip install -r requirements-prendas.txt
 COPY fuente ./fuente
+COPY preparar-modelo-prendas.py ./preparar-modelo-prendas.py
 RUN useradd --uid 10001 --create-home clb
 USER clb
 CMD ["python", "-m", "fuente.infraestructura.worker_prendas"]

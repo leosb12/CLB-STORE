@@ -9,10 +9,11 @@ export async function emisorDePrueba() {
   const { publicKey, privateKey } = await generateKeyPair("RS256");
   const jwk = { ...(await exportJWK(publicKey)), kid: "prueba", alg: "RS256" };
   const verificador = new VerificadorTokens(createLocalJWKSet({ keys: [jwk] }), EMISOR);
-  const firmar = (sub: string, roles: string[], opciones: { emisor?: string; audiencia?: string; vence?: string; correo?: string; nombre?: string } = {}) =>
-    new SignJWT({ realm_access: { roles }, ...(opciones.correo ? { email: opciones.correo } : {}), ...(opciones.nombre ? { name: opciones.nombre } : {}) }).setProtectedHeader({ alg: "RS256", kid: "prueba" }).setSubject(sub)
-      .setIssuer(opciones.emisor ?? EMISOR).setAudience(opciones.audiencia ?? "clb-api").setIssuedAt()
-      .setExpirationTime(opciones.vence ?? "5m").sign(privateKey);
+  const firmar = (sub: string, roles: string[], opciones: { emisor?: string; audiencia?: string; vence?: string; sinExpiracion?: boolean; correo?: string; nombre?: string } = {}) => {
+    const jwt = new SignJWT({ realm_access: { roles }, ...(opciones.correo ? { email: opciones.correo } : {}), ...(opciones.nombre ? { name: opciones.nombre } : {}) }).setProtectedHeader({ alg: "RS256", kid: "prueba" }).setSubject(sub)
+      .setIssuer(opciones.emisor ?? EMISOR).setAudience(opciones.audiencia ?? "clb-api").setIssuedAt();
+    return (opciones.sinExpiracion ? jwt : jwt.setExpirationTime(opciones.vence ?? "5m")).sign(privateKey);
+  };
   return { verificador, firmar };
 }
 

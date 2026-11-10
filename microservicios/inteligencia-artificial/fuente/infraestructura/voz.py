@@ -22,7 +22,8 @@ class TranscriptorWhisper:
     def _cargar(self):
         if self._modelo is None:
             from faster_whisper import WhisperModel  # carga diferida: el arranque del servicio no espera al modelo
-            self._modelo = WhisperModel(self.nombre, device="cpu", compute_type="int8", download_root=self.directorio)
+            self._modelo = WhisperModel(self.nombre, device="cpu", compute_type="int8", download_root=self.directorio,
+                                        cpu_threads=int(os.environ.get('CLB_IA_HILOS_VOZ', '2')))
         return self._modelo
 
     def _transcribir(self, audio: bytes) -> str:

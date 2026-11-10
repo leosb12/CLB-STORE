@@ -2,6 +2,16 @@
 
 Requiere PHP 8.4 o posterior, Composer, ext-mongodb 2.5 y MongoDB local de la fase 1.
 
+## Archivos compartidos en AWS (opcional)
+
+`ArchivosCompartidos` implementa el puerto existente mediante la API HTTPS de Clientes y URLs S3 firmadas. Conserva validaciones de imágenes, hashes y publicación explícita; S3 permanece privado. La URL vacía conserva almacenamiento local. Para activarlo en Azure/GCP configurar `CLB_ARCHIVOS_URL=https://clientes.leonardoserrate.xyz`, `CLB_ARCHIVOS_URL_TOKEN` con el endpoint HTTPS real del realm `clb`, y `CLB_IDENTIDAD_SECRETO_INVENTARIO` con el secreto privado del cliente `clb-inventario`, rol `servicio`, audiencia `clb-api`. Keycloak público todavía es una dependencia externa pendiente.
+
+Persistir el volumen `CLB_RECURSOS_DIRECTORIO`, incluidos caché y `comprobantes-s3`: guarda claves estables antes de llamar a AWS y conserva rutas sin tokens ni URLs firmadas. Los resultados de ingesta exponen las rutas confirmadas en `almacenamiento`. Un reintento con respuesta incierta reutiliza clave, bytes y descripción. Los recursos anteriores siguen leyéndose desde el volumen; no se migran ni se borran automáticamente. Más detalles en la [guía AWS](../../infraestructura/aws/LEEME.md).
+
+Verificación sin MongoDB: `php vendor/bin/phpunit --testsuite Dominio,Aplicacion,Adaptadores` → 71 pruebas, 187 aserciones. Incluye HTTP simulado para pérdida de respuesta, PUT 412, hash corrupto, credenciales no transmitidas a S3 y lectura pública bloqueada antes de publicación. La conexión real desde el despliegue del compañero se prueba cuando exista su identidad pública.
+
+## Ejecutar localmente
+
 1. Ejecutar `composer install` con la extensión habilitada.
 2. Copiar `.env.example` a `.env` y configurar el usuario limitado a `clb_inventario`.
 3. Ejecutar `php artisan key:generate` y `php artisan serve --host=127.0.0.1 --port=18080`.

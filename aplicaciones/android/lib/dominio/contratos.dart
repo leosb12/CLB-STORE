@@ -27,6 +27,12 @@ abstract interface class FuenteVentas {
   Future<PedidoVenta> consultar(String identificador, String token);
 }
 
+/// Avisos inmediatos del teléfono, independientes de Firebase y de la red.
+abstract interface class AvisosLocales {
+  Future<void> productoAgregado();
+  Future<void> pedidoRegistrado({required bool pendiente});
+}
+
 /// Persistencia del dispositivo. Cada método es atómico.
 abstract interface class AlmacenLocal {
   Future<void> guardarHistorial(String titular, HistorialPedidos historial);
@@ -78,6 +84,7 @@ abstract interface class FuenteGestion {
     bool confirmar,
     String token,
   );
+
   /// `formatos`: elección explícita en la pantalla (PANTALLA, PDF, EXCEL); `null` = lo que diga la petición.
   Future<Map<String, dynamic>> reporte(
     String peticion,
@@ -148,7 +155,12 @@ abstract interface class FuenteAvisos {
   Future<PreferenciasAvisos> preferencias(String token);
 
   /// Asocia esta instalación (y su token push) con la cuenta del JWT; el secreto prueba que es el mismo teléfono.
-  Future<void> vincular(String instalacion, String tokenPush, String secreto, String token);
+  Future<void> vincular(
+    String instalacion,
+    String tokenPush,
+    String secreto,
+    String token,
+  );
 
   /// Sin sesión: basta el secreto de la instalación (cierre de sesión sin red, convergido al reconectar).
   Future<void> desvincular(String instalacion, String secreto);

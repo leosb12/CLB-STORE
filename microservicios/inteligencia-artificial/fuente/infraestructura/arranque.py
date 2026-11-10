@@ -5,6 +5,7 @@ Ejecutar: `uvicorn --factory fuente.infraestructura.arranque:app_desde_entorno -
 import asyncio
 import contextlib
 import logging
+import os
 from types import SimpleNamespace
 
 import httpx
@@ -41,7 +42,10 @@ def crear_aplicacion(configuracion: Configuracion | None = None, **reemplazos) -
     http = httpx.AsyncClient(timeout=15)
     repositorio = reemplazos.get("repositorio") or RepositorioPostgres(c.conexion, c.analitica_esquema)
     token = TokenDeServicio(http, c.token_url, c.identidad_secreto)
-    llm = reemplazos.get("llm") or ModeloOllama(http, c.ollama_url, c.modelo)
+    residencia = os.environ.get('CLB_IA_MODELO_RESIDENCIA', '30m')
+    llm = reemplazos.get("llm") or ModeloOllama(http, c.ollama_url, c.modelo,
+        residencia=-1 if residencia == '-1' else residencia,
+        contexto=int(os.environ.get('CLB_IA_MODELO_CONTEXTO', '4096')))
     herramientas = HerramientasMcp(c.mcp_url)
     consultas = ConsultarAnalitica(repositorio, AgrupadorKMeans())
     modelo_tallas = ModeloTallasLogistico()

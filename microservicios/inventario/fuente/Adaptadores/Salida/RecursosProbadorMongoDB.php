@@ -21,7 +21,7 @@ final readonly class RecursosProbadorMongoDB implements RepositorioRecursosProba
             throw new ErrorDeRecurso('Producto inexistente.', 404);
         }
 
-        return ['version' => (int) ($p['versión_sincronización'] ?? 1), 'categoria' => $p['categoría'],
+        return ['version' => (int) ($p['versión_sincronización'] ?? 1), 'categoria' => $p['categoría'], 'nombre' => $p['nombre'],
             'flujo' => isset($p['clb_recursos']) ? json_decode(json_encode($p['clb_recursos'], JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR) : null];
     }
 

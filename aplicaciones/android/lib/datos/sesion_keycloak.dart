@@ -20,7 +20,10 @@ class SesionKeycloak implements Sesion {
 
   static const cliente = 'clb-android';
   static const redireccion = 'bo.clb.store:/oauth2redirect';
-  static const emisor = '$pasarela/identidad/realms/clb';
+  static const emisor = String.fromEnvironment(
+    'CLB_IDENTIDAD_EMISOR',
+    defaultValue: '$pasarela/identidad/realms/clb',
+  );
   // HTTP solo hacia la laptop local (adb reverse); en cloud la pasarela es HTTPS y esto queda en false.
   static final _inseguro = emisor.startsWith('http://');
 

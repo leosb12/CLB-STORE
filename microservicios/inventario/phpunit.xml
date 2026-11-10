@@ -5,6 +5,7 @@
     <testsuites>
         <testsuite name="Dominio"><directory>pruebas/Dominio</directory></testsuite>
         <testsuite name="Aplicacion"><directory>pruebas/Aplicacion</directory></testsuite>
+        <testsuite name="Adaptadores"><directory>pruebas/Adaptadores</directory></testsuite>
         <testsuite name="Integracion"><directory>pruebas/Integracion</directory></testsuite>
         <testsuite name="Http"><directory>pruebas/Http</directory></testsuite>
     </testsuites>

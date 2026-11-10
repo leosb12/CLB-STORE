@@ -6,6 +6,9 @@ import { crearClienteDynamoDB, RepositorioDynamoDB } from "./fidelizacion/datos/
 import { RepositorioPerfilesDynamoDB } from "./perfiles/datos/repositorio-perfiles.js";
 import { RepositorioNotificacionesDynamoDB } from "./notificaciones/datos/repositorio-notificaciones.js";
 import { CorreoResend, PushFcm, cuentaDesdeEntorno, sinConfigurar } from "./notificaciones/datos/proveedores.js";
+import { S3Client } from "@aws-sdk/client-s3";
+import { AlmacenS3, RegistroDynamoArchivos } from "./archivos/datos.js";
+import { ServicioArchivos } from "./archivos/negocio.js";
 
 const dynamodb = crearClienteDynamoDB();
 const repositorio = new RepositorioDynamoDB(dynamodb, configuracion.tabla);
@@ -27,5 +30,6 @@ const aplicación = await crearAplicacion(repositorio, new RepositorioPerfilesDy
   repositorio: new RepositorioNotificacionesDynamoDB(dynamodb, configuracion.tabla),
   push: cuentaFcm ? new PushFcm(cuentaFcm) : sinConfigurar,
   correo: habilitadas && correoHabilitado && claveCorreo && remitente ? new CorreoResend(claveCorreo, remitente) : sinConfigurar,
-});
-await aplicación.listen(configuracion.puerto, "0.0.0.0");
+}, configuracion.archivos.bucket ? new ServicioArchivos(new RegistroDynamoArchivos(dynamodb, configuracion.archivos.tabla),
+  new AlmacenS3(new S3Client({ region: configuracion.dynamodb.region }), configuracion.archivos.bucket), configuracion.archivos.bucket) : undefined);
+await aplicación.listen(configuracion.puerto, configuracion.host);

@@ -32,6 +32,33 @@ La pasarela no se publica en la red Wi-Fi: el túnel de adb mantiene el mismo em
 (`http://127.0.0.1:18000/identidad/realms/clb`). Para otro despliegue: `--dart-define=CLB_PASARELA=https://...`.
 HTTP en claro solo hacia `127.0.0.1`, `localhost` y `10.0.2.2` (`android/app/src/main/res/xml/network_security_config.xml`).
 
+### APK para el despliegue en nube
+
+`configuracion-nube.json` contiene únicamente URLs públicas. El catálogo, los recursos y CatVTON pasan por
+`https://api.leonardoserrate.xyz`; los pedidos, gestión GraphQL, reportes, voz y tallas también pasan por esa
+pasarela. Azure permite el acceso desde GCP; sus dominios directos son upstreams del servidor, no bases móviles.
+Los perfiles y avisos de pedido usan
+`https://clientes.leonardoserrate.xyz`. Keycloak usa el emisor
+`https://auth.leonardoserrate.xyz/identidad/realms/clb`, cliente público `clb-android`, PKCE y redirección
+`bo.clb.store:/oauth2redirect`. Las cabeceras privadas de Cloudflare Access se añaden en la pasarela.
+
+Con Flutter 3.41.9 (Dart 3.11.5), Java 17 y Android SDK 36, desde esta carpeta:
+
+```powershell
+./preparar-probador.ps1
+flutter build apk --release --target lib/main.dart --dart-define-from-file=configuracion-nube.json --build-name=1.0.10 --build-number=11
+```
+
+Para seleccionar un NDK ya instalado, añadir `--android-project-arg=clbNdkVersion=27.0.12077973`; la selección se
+aplica también a los plugins nativos. Si Android Studio ofrece otro JDK, Gradle puede fijarse a Java 17 mediante
+`GRADLE_OPTS=-Dorg.gradle.java.home="RUTA_DEL_JDK_17"` en el proceso de compilación.
+
+Salida: `build/app/outputs/flutter-apk/app-release.apk`. La compilación local conserva su configuración predeterminada
+cuando no se pasan estas variables. La firma de publicación se lee de `android/key.properties` (ignorado por Git),
+con `storeFile`, `storePassword`, `keyAlias` y `keyPassword`; conservar este archivo y su JKS para futuras actualizaciones.
+Si no existe, la configuración histórica de desarrollo sigue usando la firma debug. Los tokens y secretos de servicios
+no forman parte de la configuración de la APK.
+
 Usuario: `cliente.demo` (clave en `infraestructura/bases-de-datos/.env`, igual que en la web). En un emulador nuevo, Chrome
 muestra su bienvenida la primera vez: «Use without an account».
 
@@ -44,6 +71,64 @@ flutter test integration_test -d <dispositivo>      # en Android: MoveNet con TF
 ```
 La prueba contra el stack crea un pedido real de 1 unidad con `cliente.demo` (como las demostraciones).
 
+## Notificaciones locales (carrito y pedido)
+
+`flutter_local_notifications` funciona sin Internet ni Firebase. Después de guardar el carrito muestra «Producto
+agregado» / «Tu prenda se agregó correctamente al carrito.». Un pedido aceptado por Ventas muestra «Pedido registrado» /
+«Tu pedido fue registrado correctamente.»; si queda en la cola existente, muestra «Pedido pendiente» /
+«Tu pedido fue guardado y se enviará cuando vuelva la conexión.». Un rechazo definitivo/cancelación no anuncia éxito.
+Los reintentos, la recuperación de la cola y el refresco no repiten avisos locales. Dos ID/tag propios actualizan los
+avisos sin acumular copias, en el canal `clb_operaciones_locales`. El permiso denegado o un error del sistema no
+invalidan operaciones ya guardadas. Android 13+ solicita el permiso al abrir la app.
+
+Demo sin red:
+1. Descargar el catálogo e iniciar sesión una vez con conexión; aceptar el permiso de notificaciones.
+2. Activar modo avión (retirar también `adb reverse` si se usaba la pasarela local).
+3. Agregar una prenda: aparece «Producto agregado».
+4. Confirmar el pedido: aparece «Pedido pendiente» y se conserva en SQLite.
+5. Reconectar: se sincroniza con la cola/idempotencia existente sin repetir el aviso local. Una compra nueva
+   aceptada con conexión muestra «Pedido registrado».
+
+No se crean alarmas, colas ni tareas de segundo plano. La implementación FCM existente no cambia.
+
+### Validación de la APK de nube (10-nov-2026)
+
+Release `1.0.12+13`, paquete `bo.clb.store`, instalada con `adb install -r` en Samsung SM-S918U1,
+sin desinstalar ni borrar SQLite. Flutter 3.41.9, Java 17, Android SDK 36; si se utiliza el NDK 27 instalado:
+
+```powershell
+flutter build apk --release --target lib/main.dart --dart-define-from-file=configuracion-nube.json --build-name=1.0.12 --build-number=13 --android-project-arg=clbNdkVersion=27.0.12077973
+```
+
+Ventas e IA se consumen mediante `https://api.leonardoserrate.xyz`: sus hosts directos de Azure están restringidos
+al egreso de la pasarela. Keycloak usa `auth.leonardoserrate.xyz/identidad/realms/clb`; Clientes conserva su host
+HTTPS propio. No se necesita `adb reverse` ni un backend en la laptop. El loopback del probador RA es un servidor
+interno de la propia aplicación que entrega los modelos empaquetados, no un servidor externo.
+
+Comprobado en esa release:
+- Recuperación del pedido original pendiente, conservando UUID y clave; confirmado en Ventas. Repetir la misma
+  solicitud devuelve el mismo pedido, con las mismas fechas y SAGA, y una sola entrada en el historial.
+- Compra nueva de una prenda `[PRUEBA MÓVIL]` y aviso local «Pedido registrado».
+- Modo avión con Wi-Fi apagado y sin `adb reverse`: carrito, «Producto agregado», pedido en SQLite y «Pedido pendiente».
+  Backend 404 antes de reconectar; después, confirmado con el mismo UUID/clave. Reenvío desde la interfaz sin duplicar.
+  Stock de la variante aislada: 10 → 8 por las dos compras, incluso tras reenvíos.
+- Login, logout y nuevo login del comprador; login admin; indicadores, productos, saldos, alertas y propuestas.
+  Generación de reporte de ventas interpretado por el modelo del servidor y presentado con datos reales.
+- RA empaquetada y cámara abiertas en modo avión; no se evaluó exactitud ni calce físico.
+- `flutter test --dart-define-from-file=configuracion-nube.json`: 137 aprobadas, 4 omitidas.
+  Análisis de los nueve archivos involucrados: sin errores ni advertencias; 12 observaciones de estilo preexistentes.
+
+CatVTON: inicialmente devolvía 503. Se corrigió el generador Nginx de GCP para incluir Host y las credenciales
+privadas de Cloudflare Access también en la ruta de trabajos (su `if OPTIONS` impedía el reemplazo genérico).
+Configuración validada con `nginx -t` y recargada conservando respaldo privado. Después, `/salud/probador` respondió
+200 y una foto de prueba del repositorio llegó a LISTO; la imagen se mostró en el Samsung y permaneció visible
+en modo avión. Túnel directo sin Access y trabajos sin JWT: ambos 401. No se publican credenciales en la APK.
+
+Límite comprobado:
+El código FCM se conserva y sus pruebas pasan; esta APK muestra push no disponible por falta de configuración local
+Firebase, por lo que no se verificó recepción push real en esta instalación. Las notificaciones locales sí se
+observaron en NotificationManager de Android, con permiso concedido y los dos ID/tag propios.
+
 ## Notificaciones push (Firebase)
 `android/app/google-services.json` es configuración local y no se versiona. Obtenerlo en Firebase Console → Configuración
 del proyecto → app Android `bo.clb.store` → descargar `google-services.json`, y copiarlo en `android/app/`. Sin ese
@@ -52,8 +137,8 @@ aunque el archivo exista: `flutter build apk --debug --android-project-arg=clbSi
 
 Firebase se inicializa en segundo plano después de `runApp`. Un fallo (sin configuración, sin Play Services o sin red,
 con límite de 10 s) deja el push no disponible y no retrasa el arranque ni el uso offline. No se usa FirebaseMessaging
-antes de que Firebase esté listo, el token no se escribe en logs y el permiso de notificaciones no se pide al abrir la
-app. El registro del token en el backend y las preferencias aún no están implementados (fase F2/F3 del plan).
+antes de que Firebase esté listo y el token no se escribe en logs. El permiso solicitado al abrir corresponde a las
+notificaciones locales; FCM conserva su flujo de registro del dispositivo y preferencias en Clientes.
 
 ## Guion de la demo
 ### Cola de fotografías (1.0.8+9)

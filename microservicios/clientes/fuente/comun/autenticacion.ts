@@ -30,7 +30,8 @@ export class VerificadorTokens {
   }
 
   async verificar(token: string): Promise<Titular> {
-    const { payload } = await jwtVerify(token, this.llaves, { issuer: this.emisor, audience: this.audiencia, algorithms: ["RS256"] });
+    const { payload } = await jwtVerify(token, this.llaves, { issuer: this.emisor, audience: this.audiencia,
+      algorithms: ["RS256"], requiredClaims: ["exp", "iss", "sub", "aud"] });
     const roles = (payload["realm_access"] as { roles?: unknown } | undefined)?.roles;
     if (typeof payload.sub !== "string") throw new Error("El token no identifica al titular.");
     const correo = typeof payload["email"] === "string" && /^[^\s@]+@[^\s@]+$/.test(payload["email"]) ? payload["email"] : undefined;

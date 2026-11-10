@@ -17,6 +17,7 @@ import 'datos/servidor_probador.dart';
 import 'datos/recursos_prendas.dart';
 import 'datos/sesion_keycloak.dart';
 import 'datos/servicio_notificaciones.dart';
+import 'datos/notificaciones_locales.dart';
 import 'datos/avisos_rest.dart';
 import 'dominio/avisos.dart';
 import 'datos/probador_fotografico_rest.dart';
@@ -34,23 +35,39 @@ Future<void> main() async {
     databaseFactory,
     join(await getDatabasesPath(), 'clb_android.db'),
   );
-  final cliente = ClienteJson(http.Client());
+  final cliente = ClienteJson(
+    http.Client(),
+    base: '$urlInventario/api/v1',
+    destinos: const {
+      '/pedidos': '$urlVentas/api/v1',
+      '/graphql': '$urlIA/api/v1',
+      '/reportes': '$urlIA/api/v1',
+      '/agentes': '$urlIA/api/v1',
+      '/voz': '$urlIA/api/v1',
+      '/tallas': '$urlIA/api/v1',
+      '/notificaciones': '$urlIA/api/v1',
+      '/perfiles': '$urlClientes/api/v1',
+      '/dispositivos': '$urlClientes/api/v1',
+    },
+  );
   // Administración y gestión (rol admin): mismas rutas que la web por la pasarela; sus cambios usan la cola única.
   final administracion = AdministracionRest(cliente);
   final procesadorExistencias = ProcesadorExistencias(cliente);
   final recursos = RecursosPrendas(
     join(await getDatabasesPath(), 'clb_prendas'),
     http.Client(),
-    pasarela,
+    urlInventario,
     espacioDisponible: () => const MethodChannel(
       'bo.clb.store/almacenamiento',
     ).invokeMethod<int>('disponible'),
   );
   final sesion = SesionKeycloak();
+  final notificacionesLocales = NotificacionesLocales();
   final motorFotografico = ProbadorFotograficoRest(
     sesion,
     join(await getDatabasesPath(), 'clb_vton'),
     http.Client(),
+    base: urlProbador,
   );
   final colaFotografica = ColaGeneraciones(
     await ColaGeneracionesSqlite.abrir(
@@ -117,6 +134,7 @@ Future<void> main() async {
     recursosPrendas: recursos,
     // Avisos de pedido: push (FCM, puede no estar disponible) y preferencias en Clientes.
     avisos: ServicioNotificaciones.instancia,
+    avisosLocales: notificacionesLocales,
     fuenteAvisos: AvisosRest(cliente),
     instalacion: IdentidadInstalacionSegura(),
     crearCompositor: CompositorCamisetaLocal.new,
@@ -131,6 +149,7 @@ Future<void> main() async {
     },
   );
   runApp(AppClb(estado));
+  unawaited(notificacionesLocales.iniciar());
   // Push en segundo plano: un fallo o la falta de red/configuración de Firebase no retrasa ni impide el arranque.
   unawaited(ServicioNotificaciones.instancia.iniciar());
   await estado.iniciar();

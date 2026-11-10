@@ -18,7 +18,12 @@ final class ProveedorInventario extends ServiceProvider
     {
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoGestionarRecursosProbador::class, \Clb\Inventario\Aplicacion\GestionarRecursosProbador::class);
         $this->app->bind(\Clb\Inventario\Puertos\Salida\RepositorioRecursosProbador::class, fn () => new \Clb\Inventario\Adaptadores\Salida\RecursosProbadorMongoDB(DB::connection('mongodb')->getCollection(config('inventario.colección'))));
-        $this->app->bind(\Clb\Inventario\Puertos\Salida\AlmacenRecursosProbador::class, fn () => new \Clb\Inventario\Adaptadores\Salida\ArchivosRecursosProbador(config('recursos_probador.directorio')));
+        $this->app->bind(\Clb\Inventario\Puertos\Salida\AlmacenRecursosProbador::class, function () {
+            $local = new \Clb\Inventario\Adaptadores\Salida\ArchivosRecursosProbador(config('recursos_probador.directorio'));
+            return config('recursos_probador.archivos_url') === '' ? $local : new \Clb\Inventario\Adaptadores\Salida\ArchivosCompartidos(
+                $local, config('recursos_probador.directorio').'/comprobantes-s3', config('recursos_probador.archivos_url'),
+                config('recursos_probador.url_token'), config('recursos_probador.secreto'), $this->app->make(\Illuminate\Http\Client\Factory::class));
+        });
         $this->app->bind(\Clb\Inventario\Puertos\Entrada\PuertoGestionarExistencias::class, \Clb\Inventario\Aplicacion\GestionarExistencias::class);
         // Fase 7: por defecto los puertos de acceso usan tokens de Keycloak; el modo local queda solo para pruebas.
         $this->app->singleton(LlavesIdentidad::class, fn () => new LlavesIdentidad(config('administracion.identidad_jwks')));

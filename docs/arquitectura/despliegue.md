@@ -60,7 +60,27 @@ Volúmenes de ventas, inventario, configuración MongoDB, clientes, identidad, m
 
 La validación offline de Android exige modo avión y retirar `adb reverse`; de otro modo el USB puede seguir dando acceso a la laptop. La cámara Web requiere localhost o HTTPS. Los datos OIDC y el emisor deben permanecer coherentes entre aplicaciones.
 
-Cloud futuro se describe como migración de adaptadores/configuración, no como dependencia de esta entrega: PostgreSQL gestionado, MongoDB Atlas, DynamoDB y almacenamiento de objetos. No está desplegado ni se usa para el probador offline.
+El entorno local conserva sus bases y volúmenes para funcionar por sí mismo. La configuración AWS de Clientes, DynamoDB y almacenamiento privado se documenta en la [guía AWS](../../infraestructura/aws/LEEME.md), con sus verificaciones y pendientes explícitos. PostgreSQL, MongoDB, Keycloak y la integración de los otros servicios entre nubes requieren su propio despliegue; no se convierten en dependencias del probador offline.
+
+## AWS de Clientes y archivos (9-nov-2026)
+
+```mermaid
+flowchart LR
+  GCP[Ventas / Keycloak futuros en GCP] -. HTTPS + JWT .-> Caddy
+  AZ[IA / Inventario futuros en Azure o GCP] -. HTTPS + JWT .-> Caddy
+  WEB[Web / Android] -. API + JWT .-> Caddy
+  subgraph AWS[Ohio: cuenta de despliegue CLB]
+    Caddy[Caddy 80/443] --> C[Clientes NestJS loopback:3000]
+    C --> D[DynamoDB: clb_fidelizacion]
+    C --> R[DynamoDB: clb_archivos]
+    C --> S[S3 privado: objetos funcionales]
+    SSM[Systems Manager] --> C
+    PAQ[S3 privado: paquetes de actualización] --> SSM
+  end
+  WEB -. PUT / GET firmado por 300 s .-> S
+```
+
+El módulo técnico de archivos pertenece a Clientes y aplica su arquitectura de tres capas. Los otros microservicios consumen REST y no obtienen acceso directo a DynamoDB. La imagen de catálogo o un reporte en S3 no sustituye al registro de negocio de su propietario. Clientes está publicado en `https://clientes.leonardoserrate.xyz`, certificado público renovable por Caddy; también conserva HTTPS por IP. HTTP del dominio redirige a HTTPS y HTTP por IP solo admite salud. Inventario dispone del adaptador opcional `ArchivosCompartidos`, con idempotencia durable, rutas descriptivas e integridad por hash. Las líneas punteadas son contratos preparados: no constituyen evidencia de conexión con servicios que aún no están publicados. Keycloak público y activación desde otras nubes pendientes. Dominio activado tras la migración DNS realizada por el usuario; configuración y verificación en la guía operativa.
 
 ## Modelos de material y preparación
 
