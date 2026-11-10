@@ -2,7 +2,7 @@
 
 **10 de noviembre de 2026 · Ingeniería de Software II · Grupo 5**
 
-**13 de 16 cumplen, 3 parciales, 0 no cumplen y 0 no verificables. Cumplimiento completo: 81,25 %.** Las subfilas no cuentan en el denominador. R01–R16 son los IDs de esta auditoría, D1–D21 los del [docente](docs/requisitos-docente.md).
+**14 de 16 cumplen, 2 parciales, 0 no cumplen y 0 no verificables. Cumplimiento completo: 87,5 %.** Las subfilas no cuentan en el denominador. R01–R16 son los IDs de esta auditoría, D1–D21 los del [docente](docs/requisitos-docente.md).
 
 Fuentes: código y contratos, [estado de pruebas](docs/estado.md), [decisiones](docs/decisiones.md), [trazabilidad](docs/iconix/trazabilidad.md), [PDF final de 232 páginas](<C:/Users/Leonardo/Downloads/CLB_STORE_ENTREGA_FINAL/CLB_STORE_ICONIX_FINAL.pdf>) y [proyecto EA](<C:/Users/Leonardo/Downloads/CLB_STORE_ENTREGA_FINAL/CLB_STORE_ICONIX_FINAL.eap>). «p.» identifica páginas físicas del PDF. «EA #» es Diagram_ID, consultado en t_diagram vía ODBC de 32 bits sobre copia temporal del EAP. Se identificaron 97 diagramas por tipo y nombre. La inspección del EAP fue de metadatos y correspondencia con el PDF.
 
@@ -40,10 +40,10 @@ Las rutas son relativas a la raíz. En subfilas, las rutas precedidas por «IA»
 | R11 · D4 | Angular, React y complementos | CUMPLE | Tienda Angular, probador React, móvil Flutter | Frontends | aplicaciones/web/package.json; aplicaciones/probador-virtual/package.json; aplicaciones/android/pubspec.yaml | Tienda y manifiesto 200 hoy. PDF 22–23, 100, 166–168; EA #17–19, #94 | Mostrar una prenda en ambos clientes |
 | R12 · D15 | PostgreSQL, MongoDB y DynamoDB | CUMPLE | Persistencia privada por dueño y adaptadores explícitos | Backend | microservicios/ventas/src/main/java/clb/ventas/infraestructura/persistencia/RepositorioPedidosJdbc.java; microservicios/inventario/config/database.php; microservicios/clientes/fuente/fidelizacion/datos/repositorio-dynamodb.ts; IA fuente/infraestructura/analitica.py | Salud actual y persistencia histórica. PDF 101–113, 115–137; EA #67–78, #95 | Correlacionar operaciones por ID |
 | R13 · D16 | Keycloak, OIDC y SSO | CUMPLE | Code/PKCE y AppAuth, sesión reutilizable dentro del navegador, autorización JWT | Keycloak, web, Flutter, servicios | infraestructura/identidad/realm-clb.json; aplicaciones/web/fuente/sesion/adaptadores/sesion-oidc.ts; aplicaciones/android/lib/datos/sesion_keycloak.dart | PKCE real hoy; histórico Android → Brave sin repetir contraseña. PDF 56, 135–136, 145, 169, 190–191; EA #20, #28, #77 | Mostrar roles comprador/admin |
-| R14 · D17–D18 | DDD, Hexagonal, TCLEAR y niveles | PARCIAL | DDD y Hexagonal identificados. IA aplica la interpretación CLEAR del equipo | Backend y arquitectura | Subfilas A–C | PDF 94–143, 213; EA #79–82, #91–97 | Confirmar TCLEAR con el docente |
+| R14 · D17–D18 | DDD, Hexagonal, CLEAR y niveles | CUMPLE | Ventas aplica DDD, Inventario Hexagonal e IA CLEAR | Backend y arquitectura | Subfilas A–C | PDF 94–143, 213; EA #79–82, #91–97 | Mostrar la separación de responsabilidades en la defensa |
 | R14-A | DDD | CUMPLE | Pedido, invariantes, casos de uso y persistencia por contrato | Ventas | microservicios/ventas/src/main/java/clb/ventas/dominio y aplicacion/OrquestadorSagaCompra.java | PDF 97, 150, 160, 197–199; EA #11, #33 | Mostrar estado y compensación |
 | R14-B | Hexagonal | CUMPLE | Dominio, casos de uso, puertos y adaptadores REST/Mongo | Inventario | microservicios/inventario/fuente/Dominio, Aplicacion, Puertos, Adaptadores y Configuracion/ProveedorInventario.php | PDF 97, 151–152, 161–162; EA #12–13 | Mostrar sustitución por puerto |
-| R14-C | TCLEAR/CLEAR | PARCIAL | Separación entre dominio, aplicación, puertos e infraestructura; interpretación CLEAR documentada | IA | IA fuente/dominio, aplicacion, puertos, infraestructura/arranque.py; docs/decisiones.md; docs/requisitos-docente.md | PDF 97, 164–165, 170, 213; EA #15–16, #21, #93 | Significado de TCLEAR sin confirmar |
+| R14-C | CLEAR | CUMPLE | Separación entre dominio, aplicación, puertos e infraestructura | IA | IA fuente/dominio, aplicacion, puertos, infraestructura/arranque.py; docs/decisiones.md; docs/requisitos-docente.md | PDF 97, 164–165, 170, 213; EA #15–16, #21, #93 | Mostrar el ensamblado de dependencias en arranque.py |
 | R15 · D19–D20 | ICONIX y trazabilidad | CUMPLE | Requisitos, dominio inicial/refinado, casos, prototipos, robustez, secuencias, clases, pruebas y trazabilidad | PDF, EA, repo | docs/iconix/LEEME.md y artefactos enlazados arriba | PDF 27–79, 80–93, 144–177, 189–213. EA #1–10, #22–46, #57–66, #83–90. 97 diagramas | Conciliar numeración del repo y del PDF |
 | R16 | Plataforma de tienda integrada | CUMPLE | Compra, catálogo, probador, gestión, stock, puntos y eventos conectados | Todos | infraestructura/pasarela/nginx.conf; infraestructura/gcp/Caddyfile; docs/arquitectura/despliegue.md | Compra histórica local y servicios cloud saludables hoy. PDF 19–25, 94–102, 138–143, 186–196; EA #79–82, #91, #96–97 | Ensayo cloud continuo, de pedido a aviso y foto |
 
@@ -114,7 +114,7 @@ Keycloak realm clb emite JWT después de Code + PKCE. Angular y AppAuth gestiona
 
 ### R14 · Arquitecturas
 
-Ventas concentra el agregado Pedido y sus invariantes en dominio. Inventario separa puertos y adaptadores HTTP/Mongo del caso de uso. IA organiza dominio, aplicación, puertos y dependencias ensambladas en fuente/infraestructura/arranque.py. El equipo lo identifica como CLEAR. Backend, frontend, datos y despliegue se modelaron por separado. **Defensa:** seguir una solicitud por cada arquitectura y explicar la interpretación del equipo; no atribuir una expansión a TCLEAR hasta confirmarla con el docente.
+Ventas concentra el agregado Pedido y sus invariantes en dominio. Inventario separa puertos y adaptadores HTTP/Mongo del caso de uso. IA organiza dominio, aplicación, puertos y dependencias ensambladas en fuente/infraestructura/arranque.py. El usuario confirmó que el requisito del examen es CLEAR. Backend, frontend, datos y despliegue se modelaron por separado. **Defensa:** seguir una solicitud por cada arquitectura y explicar cómo se aplica CLEAR en IA.
 
 ### R15 · ICONIX
 
@@ -130,7 +130,6 @@ Sesión → catálogo → probador → carrito → pedido → stock y puntos →
 |---|---|---|---|---|---|---|
 | 1 | R08 | Falta evidencia real de micrófono a reporte con exportación | Confirmar Whisper precargado y registrar una prueba con audio de ensayo usando el código actual | docs/estado.md y ficha CU09 tras el ensayo; voz.py solo si aparece un fallo | HTTPS, permiso, modelo y datos analíticos | Audio, texto reconocido, pantalla y PDF/XLSX del mismo reporte |
 | 1 | R09 | Falta traza de herramienta MCP en el mismo recorrido de voz | Reusar R08 y observar generar_reporte. Si se exige dictar cualquier misión, reutilizar el micrófono para rellenar la misión y mantener envío explícito | docs/estado.md; si se exige dictado libre, pagina-gestion.ts y pantalla_gestion.dart | Admin, MCP interno y Whisper | Audio → transcripción → GraphQL → llamada MCP → resultado |
-| 2 | R14 | Grafía y significado académico de TCLEAR sin confirmar | Consultar al docente, registrar la respuesta y ajustar la explicación si corresponde | docs/requisitos-docente.md, docs/decisiones.md, docs/arquitectura/backend.md | Aclaración académica | Mostrar implementación y compararla con la definición confirmada |
 
 ## Estado real de operación
 
@@ -149,12 +148,12 @@ Sesión → catálogo → probador → carrito → pedido → stock y puntos →
 
 | Estado principal | Cantidad | IDs |
 |---|---:|---|
-| CUMPLE | 13 | R01–R07, R10–R13, R15–R16 |
-| PARCIAL | 3 | R08, R09, R14 |
+| CUMPLE | 14 | R01–R07, R10–R16 |
+| PARCIAL | 2 | R08, R09 |
 | NO CUMPLE | 0 | — |
 | NO VERIFICABLE | 0 | — |
 
-**Cierre mínimo:** un ensayo real de voz → reporte → MCP, y aclarar TCLEAR/CLEAR. Llevar también la referencia que corrige Next.js/NestJS. D17 queda respaldado por los cuatro niveles del PDF/EA y D20 por el entregable escrito disponible; D21 es fecha de presentación y queda fuera de los 16 requisitos técnicos.
+**Cierre mínimo:** un ensayo real de voz → reporte → MCP. Llevar también la referencia que corrige Next.js/NestJS. D17 queda respaldado por los cuatro niveles del PDF/EA y D20 por el entregable escrito disponible; D21 es fecha de presentación y queda fuera de los 16 requisitos técnicos.
 
 **Diferencias documentales:** el README ICONIX marca EA pendiente, pero el EAP final existe y contiene 97 diagramas. La numeración histórica del repo difiere de la institucional. El preliminar dice Next.js y el código/PDF final dicen NestJS. El dictado está en el código, pero la ficha principal de reporte documenta una prueba textual. El mapa de despliegue PDF p. 138–141 describe un estado fechado; las verificaciones actuales se registran arriba.
 

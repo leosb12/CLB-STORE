@@ -23,7 +23,7 @@ export class EstadoGestion {
   readonly auditoria = signal<Auditoria[]>([]);
   readonly notificaciones = signal<Notificacion[]>([]);
   /** Qué está en curso: una sola operación larga a la vez evita misiones duplicadas por doble clic. */
-  readonly ocupado = signal<"" | "mision" | "reporte" | "voz" | "grabando" | "datos" | "propuesta">("");
+  readonly ocupado = signal<"" | "mision" | "reporte" | "voz" | "microfono" | "grabando" | "datos" | "propuesta">("");
   readonly error = signal("");
   /** Petición que no nombra qué medir: el servidor pide aclarar y propone ejemplos en vez de inventar un reporte. */
   readonly ambigua = signal<{ mensaje: string; sugerencias: string[] } | null>(null);
@@ -129,22 +129,32 @@ export class EstadoGestion {
     await this.tarea("datos", async () => this.reporte.set(await this.rest.reporteGuardado(identificador)));
   }
 
-  async empezarGrabacion(): Promise<void> {
+  async empezarGrabacion(señal: AbortSignal): Promise<void> {
+    if (this.ocupado()) return;
+    this.ocupado.set("microfono");
     this.error.set("");
     try {
-      await this.grabadora.iniciar();
+      await this.grabadora.iniciar(señal);
       this.ocupado.set("grabando");
     } catch {
-      this.error.set("No se pudo usar el micrófono. Revisa el permiso del navegador o escribe la petición.");
+      this.ocupado.set("");
+      if (!señal.aborted)
+        this.error.set("No se pudo usar el micrófono. Revisa el permiso del navegador o escribe la petición.");
     }
+  }
+
+  cancelarGrabacion(): void {
+    if (this.ocupado() !== "grabando") return;
+    this.grabadora.cancelar();
+    this.ocupado.set("");
   }
 
   /** Detiene la grabación y devuelve el texto reconocido por faster-whisper en el servidor. */
   async terminarGrabacion(): Promise<string> {
-    const audio = await this.grabadora.detener();
-    this.ocupado.set("");
     let texto = "";
-    await this.tarea("voz", async () => { texto = await this.rest.transcribir(audio); });
+    await this.tarea("voz", async () => {
+      texto = await this.rest.transcribir(await this.grabadora.detener());
+    });
     return texto;
   }
 

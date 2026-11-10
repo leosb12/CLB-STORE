@@ -8,12 +8,28 @@ export class GrabadoraVoz {
   }
 
   /** El permiso del micrófono se pide recién aquí, al pulsar «Hablar». */
-  async iniciar(): Promise<void> {
+  async iniciar(señal: AbortSignal): Promise<void> {
     const flujo = await navigator.mediaDevices.getUserMedia({ audio: true });
+    try {
+      señal.throwIfAborted();
+      this.partes = [];
+      const grabadora = new MediaRecorder(flujo);
+      grabadora.ondataavailable = evento => { if (evento.data.size) this.partes.push(evento.data); };
+      grabadora.start();
+      this.grabadora = grabadora;
+    } catch (error) {
+      flujo.getTracks().forEach(pista => pista.stop());
+      throw error;
+    }
+  }
+
+  cancelar(): void {
+    const grabadora = this.grabadora;
+    if (!grabadora) return;
+    grabadora.ondataavailable = null;
+    grabadora.stream.getTracks().forEach(pista => pista.stop());
+    this.grabadora = null;
     this.partes = [];
-    this.grabadora = new MediaRecorder(flujo);
-    this.grabadora.ondataavailable = evento => { if (evento.data.size) this.partes.push(evento.data); };
-    this.grabadora.start();
   }
 
   detener(): Promise<Blob> {

@@ -105,7 +105,8 @@ if vton == "https://clb-vton.leonardoserrate.xyz":
     # La ruta de trabajos contiene un `if OPTIONS { ... }`: el reemplazo genérico
     # de locations anterior no atraviesa esas llaves. Cubrir cada proxy_pass VTON.
     nginx = re.sub(r"(?:proxy_set_header Host \$proxy_host;\s*)?proxy_pass \$vton(?=[;$/])", (
-        "proxy_set_header Host $proxy_host; "
+        "proxy_set_header Host clb-vton.leonardoserrate.xyz; "
+        "proxy_ssl_name clb-vton.leonardoserrate.xyz; "
         f'proxy_set_header CF-Access-Client-Id "{access_id}"; '
         f'proxy_set_header CF-Access-Client-Secret "{access_secreto}"; '
         "proxy_hide_header Set-Cookie; proxy_pass $vton"

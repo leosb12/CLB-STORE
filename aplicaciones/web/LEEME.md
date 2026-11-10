@@ -11,6 +11,8 @@ npm start
 
 Desarrollo: `http://127.0.0.1:4200`. El proxy remite `/api` a la pasarela en `127.0.0.1:18000`.
 
+En **Gestión → Monitoreo → Otra misión**, **Dictar por voz** graba desde el micrófono y usa el mismo servicio de transcripción que Reportes. Al detener la grabación, el texto se puede editar antes de pulsar **Enviar misión**. El dictado necesita conexión con IA y permiso de micrófono.
+
 Para instalar y comprobar la PWA se necesita la compilación de producción:
 
 ```powershell

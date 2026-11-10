@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from "@angular/core";
+import { Component, DestroyRef, OnInit, inject, signal } from "@angular/core";
 import { DatePipe, JsonPipe } from "@angular/common";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import { EstadoGestion } from "../aplicacion/estado-gestion";
@@ -43,6 +43,7 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
     <div class="pestanas" role="tablist" aria-label="Agentes de gestión">
       @for (s of secciones; track s.id) {
         <button role="tab" [id]="'pestana-' + s.id" [attr.aria-selected]="seccion() === s.id" [attr.aria-controls]="'panel-' + s.id"
+          [disabled]="estado.ocupado() === 'microfono' || estado.ocupado() === 'grabando'"
           [class.actual]="seccion() === s.id" (click)="abrir(s.id)">{{ s.nombre }}</button>
       }
     </div>
@@ -60,6 +61,12 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
           <div class="campo-accion">
             <input id="mision-libre" maxlength="500" [value]="misionTexto()" (input)="misionTexto.set(valor($event))"
               placeholder="Ej.: ¿qué segmentos de clientes tengo y cuáles conviene recuperar?" />
+            @if (estado.vozDisponible) {
+              <button type="button" class="botón-secundario" [class.grabando]="estado.ocupado() === 'grabando'"
+                [disabled]="!!estado.ocupado() && estado.ocupado() !== 'grabando'" (click)="voz('mision')"
+                [attr.aria-pressed]="estado.ocupado() === 'grabando'">
+                {{ etiquetaVoz() }}</button>
+            }
             <button type="submit" class="botón-secundario" [disabled]="!!estado.ocupado() || misionTexto().trim().length < 3">Enviar misión</button>
           </div>
           @if (estado.ocupado() === "mision") {
@@ -122,9 +129,9 @@ const MISION_REPOSICION = "Revisa el stock bajo y propone reposiciones para las 
           <div class="acciones-reporte">
             @if (estado.vozDisponible) {
               <button type="button" class="botón-secundario" [class.grabando]="estado.ocupado() === 'grabando'"
-                [disabled]="!!estado.ocupado() && estado.ocupado() !== 'grabando'" (click)="voz()"
+                [disabled]="!!estado.ocupado() && estado.ocupado() !== 'grabando'" (click)="voz('reporte')"
                 [attr.aria-pressed]="estado.ocupado() === 'grabando'">
-                {{ estado.ocupado() === "grabando" ? "Detener y transcribir" : estado.ocupado() === "voz" ? "Transcribiendo…" : "Dictar por voz" }}</button>
+                {{ etiquetaVoz() }}</button>
             }
             <label class="destino">Salida
               <select (change)="salida.set(valor($event))">
@@ -330,6 +337,7 @@ export class PaginaGestion implements OnInit {
   protected readonly estado = inject(EstadoGestion);
   private readonly ruta = inject(ActivatedRoute);
   private readonly enrutador = inject(Router);
+  private readonly cicloVoz = new AbortController();
   protected readonly secciones = SECCIONES;
   protected readonly sugerencias = SUGERENCIAS;
   protected readonly nombres = NOMBRES_AGENTE;
@@ -343,6 +351,13 @@ export class PaginaGestion implements OnInit {
   protected readonly esV2 = esV2;
   protected readonly ajusteAbierto = signal(false);
   protected readonly minutosDesactualizado = MINUTOS_DESACTUALIZADO;
+
+  constructor() {
+    inject(DestroyRef).onDestroy(() => {
+      this.cicloVoz.abort();
+      this.estado.cancelarGrabacion();
+    });
+  }
 
   ngOnInit(): void {
     const pedida = this.ruta.snapshot.queryParamMap.get("seccion") as Seccion | null;
@@ -409,10 +424,21 @@ export class PaginaGestion implements OnInit {
     return minutosDesde(reporte.datos_al);
   }
 
-  protected async voz(): Promise<void> {
-    if (this.estado.ocupado() !== "grabando") return this.estado.empezarGrabacion();
+  protected etiquetaVoz(): string {
+    switch (this.estado.ocupado()) {
+      case "microfono": return "Solicitando micrófono…";
+      case "grabando": return "Detener y transcribir";
+      case "voz": return "Transcribiendo…";
+      default: return "Dictar por voz";
+    }
+  }
+
+  protected async voz(destino: "mision" | "reporte"): Promise<void> {
+    if (this.estado.ocupado() !== "grabando") return this.estado.empezarGrabacion(this.cicloVoz.signal);
     const texto = await this.estado.terminarGrabacion();
-    if (texto) this.peticion.set(texto);
+    if (!texto.trim() || this.cicloVoz.signal.aborted) return;
+    const campo = destino === "mision" ? this.misionTexto : this.peticion;
+    campo.set(texto.trim().slice(0, 500));
   }
 
   protected resolver(propuesta: Propuesta, accion: "confirmar" | "rechazar"): Promise<void> {
